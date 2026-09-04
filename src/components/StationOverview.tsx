@@ -21,6 +21,14 @@ export const StationOverview: React.FC<StationOverviewProps> = ({
         return 'Core monsoon trough corridor; heavily influenced by Bay of Bengal low-pressure system passages.';
       case 'DEL_SAFDARJUNG':
         return 'Northern monsoon terminus; sensitive to Western Disturbance & monsoon trough interaction floods.';
+      case 'CCU_ALIPORE':
+        return 'Bay of Bengal head maritime delta; NWP often lags on rapid cyclonic depression landfall rain intensities.';
+      case 'BLR_HAL':
+        return 'Elevated southern peninsula; sharp evening convective cloudbursts smoothed out by coarse hydrostatic models.';
+      case 'GAU_BORJHAR':
+        return 'Brahmaputra funnel topography; severe orographic lifting bias causing NWP extreme event underestimation.';
+      case 'JAI_SANGANER':
+        return 'Semi-arid western margin; high evaporation rates causing NWP to trigger persistent false drizzle alarms.';
       default:
         return '';
     }

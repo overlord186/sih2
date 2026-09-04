@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { predictScenario } from '../ml/postProcessor';
 import { PredictionScenarioInput, PredictionResult, RainfallRegime } from '../types';
+import { SynopticSimulator } from './SynopticSimulator';
+import { IndiaRegionMapSimulator } from './IndiaRegionMapSimulator';
 import {
   Sliders,
   Sparkles,
@@ -12,6 +14,7 @@ import {
   Flame,
   Info,
   RefreshCw,
+  Gauge,
 } from 'lucide-react';
 
 export const InteractivePredictor: React.FC = () => {
@@ -35,7 +38,7 @@ export const InteractivePredictor: React.FC = () => {
     setResult(res);
   };
 
-  // Quick preset test cases tailored for judging demonstration
+  // Quick preset test cases tailored for operational meteorological testing
   const applyPreset = (type: 'drizzle' | 'heavy' | 'moderate' | 'dry') => {
     let preset: Partial<PredictionScenarioInput> = {};
     if (type === 'drizzle') {
@@ -106,20 +109,20 @@ export const InteractivePredictor: React.FC = () => {
             <span className="px-2 py-0.5 rounded bg-blue-500/20 text-blue-300 text-xs font-bold uppercase tracking-wider border border-blue-500/30">
               Live Inference Sandbox
             </span>
-            <span className="text-xs text-slate-400 font-mono">Simulating 24h NWP Cycle</span>
+            <span className="text-xs text-slate-400 font-mono">Real-Time Model Pipeline</span>
           </div>
           <h2 className="text-lg font-bold text-white mt-1">
             Real-Time Regime Diagnosis & AI Post-Processing Engine
           </h2>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl">
-            Input arbitrary raw Numerical Weather Prediction outputs alongside key synoptic atmospheric variables. Watch how the regime classifier dynamically determines physical state and applies the appropriate post-processing model.
+            Input arbitrary raw Numerical Weather Prediction outputs alongside key synoptic atmospheric variables or run dynamic weather timeline simulations below. Watch how the regime classifier dynamically determines physical state and applies the appropriate post-processing model.
           </p>
         </div>
 
-        {/* Demo Presets */}
+        {/* Operational Presets */}
         <div className="flex flex-col gap-1.5 self-stretch sm:self-auto shrink-0">
           <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-            Quick Judge Test Presets:
+            Operational Benchmarks:
           </span>
           <div className="flex flex-wrap gap-1.5">
             <button
@@ -155,6 +158,12 @@ export const InteractivePredictor: React.FC = () => {
         </div>
       </div>
 
+      {/* Dynamic 24h Synoptic Weather Timeline Simulator */}
+      <SynopticSimulator
+        onApplyStep={(stepInput) => handleRunPrediction(stepInput)}
+        currentInput={input}
+      />
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Parameter Sliders */}
         <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4.5">
@@ -171,6 +180,13 @@ export const InteractivePredictor: React.FC = () => {
               <RefreshCw className="w-3 h-3" /> Reset
             </button>
           </div>
+
+          {/* India Regional Map Simulator Component */}
+          <IndiaRegionMapSimulator
+            currentInput={input}
+            currentResult={result}
+            onSelectStationAndPreset={(updates) => handleRunPrediction(updates)}
+          />
 
           {/* Station and Lead Time */}
           <div className="grid grid-cols-2 gap-3">

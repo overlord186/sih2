@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, ShieldCheck, CheckCircle, Database, GitBranch, Cpu, Award, AlertCircle } from 'lucide-react';
+import { BookOpen, ShieldCheck, CheckCircle, Database, GitBranch, Cpu, AlertCircle, Layers } from 'lucide-react';
 
 export const MethodologyView: React.FC = () => {
   return (
@@ -12,13 +12,13 @@ export const MethodologyView: React.FC = () => {
           </div>
           <div>
             <span className="text-xs font-bold text-blue-600 uppercase tracking-wider">
-              Scientific Architecture & Design Defense
+              Scientific Architecture & Formulation
             </span>
             <h2 className="text-xl font-bold text-slate-900 mt-0.5">
-              SIH26080: Physics-Informed Regime-Aware Post-Processing
+              Physics-Informed Regime-Aware Post-Processing Architecture
             </h2>
             <p className="text-sm text-slate-600 mt-1 leading-relaxed">
-              Numerical Weather Prediction (NWP) models operate on discrete grid resolutions (typically 12km to 4km for regional models). Convective clouds that trigger intense Indian monsoon downpours are sub-grid scale, causing models to severely dampen extreme rainfall while generating persistent false drizzle. SIH26080 addresses this through regime-conditioned machine learning.
+              Numerical Weather Prediction (NWP) models operate on discrete grid resolutions (typically 12km to 4km for regional models). Convective clouds that trigger intense Indian monsoon downpours are sub-grid scale, causing models to severely dampen extreme rainfall while generating persistent false drizzle. Our architecture addresses this through regime-conditioned machine learning.
             </p>
           </div>
         </div>
@@ -82,7 +82,7 @@ export const MethodologyView: React.FC = () => {
                 <th className="px-4 py-2.5 font-semibold">IMD Classification</th>
                 <th className="px-4 py-2.5 font-semibold">24h Rainfall Amount</th>
                 <th className="px-4 py-2.5 font-semibold">Typical NWP Model Failure</th>
-                <th className="px-4 py-2.5 font-semibold">SIH26080 AI Correction Action</th>
+                <th className="px-4 py-2.5 font-semibold">Regime-Aware AI Correction Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
@@ -131,47 +131,29 @@ export const MethodologyView: React.FC = () => {
         </div>
       </div>
 
-      {/* Judge Defense FAQ */}
-      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4">
+      {/* Operational Workflow Card */}
+      <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-3">
         <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-          <Award className="w-4 h-4 text-blue-600" />
-          Key Hackathon Judging Questions & Technical Answers
+          <Layers className="w-4 h-4 text-blue-600" />
+          Operational Pipeline Integration Workflow
         </h3>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1.5">
-            <span className="text-xs font-bold text-slate-900 block">
-              Q: Why not just use Deep Learning (e.g., ConvLSTM / Transformers)?
-            </span>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong>Answer:</strong> Operational meteorology requires <strong>interpretability, sub-second inference, and low training data footprint</strong>. For a 3-day hackathon prototype and operational deployment on edge weather stations, regime-conditioned Gradient Boosted Trees and decision gates deliver superior generalization without black-box hallucination risks.
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-600">
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1">
+            <strong className="text-slate-900 block font-semibold">Step 1: Synoptic State Ingestion</strong>
+            <p className="leading-relaxed">
+              After the 00Z / 12Z operational NWP run completes, grid-point total precipitation, 850hPa moisture, pressure anomaly, and 10m wind fields are ingested into memory.
             </p>
           </div>
-
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1.5">
-            <span className="text-xs font-bold text-slate-900 block">
-              Q: How does this prevent data leakage across time?
-            </span>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong>Answer:</strong> We strictly avoid random train/test shuffling. The models are trained strictly on earlier monsoonal dates and validated on completely unseen future monsoonal dates, mimicking true operational operational deployment where tomorrow's weather is unknown.
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1">
+            <strong className="text-slate-900 block font-semibold">Step 2: Dynamic Regime Diagnosis</strong>
+            <p className="leading-relaxed">
+              The regime classifier computes the atmospheric stability indices and dispatches one of 4 specialized model branches (Zero-rain, Light, Moderate, or Heavy).
             </p>
           </div>
-
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1.5">
-            <span className="text-xs font-bold text-slate-900 block">
-              Q: What is the baseline benchmark?
-            </span>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong>Answer:</strong> We benchmark against two baselines: <strong>Baseline 1</strong> (Raw NWP with zero post-processing) and <strong>Baseline 2</strong> (Standard Global Linear Mean Bias Correction). The AI model beats both by more than 20% in MAE and significantly improves the Critical Success Index for heavy events.
-            </p>
-          </div>
-
-          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1.5">
-            <span className="text-xs font-bold text-slate-900 block">
-              Q: How would IMD operationalize this?
-            </span>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              <strong>Answer:</strong> In operational workflow, after the global NWP run finishes (e.g. 00Z or 12Z cycle), this lightweight regime-aware inference step runs in under 2 seconds per station/grid cell, immediately generating calibrated rainfall advisories for disaster management authorities before flood onset.
+          <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 space-y-1">
+            <strong className="text-slate-900 block font-semibold">Step 3: Dissemination & Alerting</strong>
+            <p className="leading-relaxed">
+              Sub-second inference executes per station or 0.25° grid box, producing calibrated flood alerts and reservoir runoff guidance for emergency disaster response.
             </p>
           </div>
         </div>

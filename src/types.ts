@@ -7,6 +7,7 @@ export enum RainfallRegime {
 
 export interface RainfallDataPoint {
   id: string;
+  year: number; // 2024 (recent operational benchmark), 2023
   date: string; // YYYY-MM-DD
   dayOfYear: number;
   stationId: string;

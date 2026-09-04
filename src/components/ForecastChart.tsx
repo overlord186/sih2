@@ -25,10 +25,11 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   const [viewMode, setViewMode] = useState<'rainfall' | 'residual'>('rainfall');
   const [showImdLine, setShowImdLine] = useState<boolean>(true);
 
-  // Take the first 45-60 daily data points for crisp rendering if many
+  // Take up to 60 daily data points for crisp rendering
   const chartData = data.slice(0, 60).map((d) => ({
-    date: d.date.substring(5), // MM-DD
+    date: d.date.length >= 10 ? d.date.substring(5) : d.date, // MM-DD
     fullDate: d.date,
+    year: d.year,
     observed: d.observedMm,
     rawForecast: d.rawForecastMm,
     baseline: d.baselineLinearMm,

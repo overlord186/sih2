@@ -10,6 +10,7 @@ import { ForecastChart } from './components/ForecastChart';
 import { RegimeBreakdownView } from './components/RegimeBreakdownView';
 import { InteractivePredictor } from './components/InteractivePredictor';
 import { MethodologyView } from './components/MethodologyView';
+import { HelpGuideView } from './components/HelpGuideView';
 import { StationOverview } from './components/StationOverview';
 import { MONSOON_DATASET, MET_STATIONS } from './data/monsoonDataset';
 import { calculateMetrics, calculateRegimeBreakdown } from './ml/postProcessor';
@@ -18,16 +19,18 @@ import { ShieldCheck, CloudRain, Award, Activity } from 'lucide-react';
 export default function App() {
   const [selectedStationId, setSelectedStationId] = useState<string>('ALL');
   const [selectedLeadTime, setSelectedLeadTime] = useState<number>(1); // default to Day +1
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'predictor' | 'methodology'>('dashboard');
+  const [selectedYear, setSelectedYear] = useState<number>(2025); // default to 2025 Operational Season
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'predictor' | 'methodology' | 'help'>('dashboard');
 
-  // Filter dataset based on selected station and lead time
+  // Filter dataset based on selected station, lead time, and season year
   const filteredData = useMemo(() => {
     return MONSOON_DATASET.filter((d) => {
+      const matchYear = selectedYear === 0 || d.year === selectedYear;
       const matchStation = selectedStationId === 'ALL' || d.stationId === selectedStationId;
       const matchLead = selectedLeadTime === 0 || d.leadTimeDays === selectedLeadTime;
-      return matchStation && matchLead;
+      return matchYear && matchStation && matchLead;
     });
-  }, [selectedStationId, selectedLeadTime]);
+  }, [selectedYear, selectedStationId, selectedLeadTime]);
 
   // Compute live metrics dynamically
   const metrics = useMemo(() => {
@@ -46,13 +49,15 @@ export default function App() {
   }, [selectedStationId]);
 
   return (
-    <div id="sih26080-app-root" className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
+    <div id="monsoon-ai-app-root" className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans">
       {/* App Header & Navigation */}
       <Header
         selectedStationId={selectedStationId}
         onStationChange={setSelectedStationId}
         selectedLeadTime={selectedLeadTime}
         onLeadTimeChange={setSelectedLeadTime}
+        selectedYear={selectedYear}
+        onYearChange={setSelectedYear}
         activeTab={activeTab}
         onTabChange={setActiveTab}
         totalSamples={filteredData.length}
@@ -75,6 +80,7 @@ export default function App() {
             <RegimeBreakdownView
               breakdowns={regimeBreakdowns}
               totalSamples={filteredData.length}
+              selectedYear={selectedYear}
             />
 
             {/* Meteorological Observatories Grid */}
@@ -92,6 +98,10 @@ export default function App() {
         {activeTab === 'methodology' && (
           <MethodologyView />
         )}
+
+        {activeTab === 'help' && (
+          <HelpGuideView />
+        )}
       </main>
 
       {/* Scientific Footer */}
@@ -100,11 +110,18 @@ export default function App() {
           <div className="flex items-center gap-2">
             <CloudRain className="w-4 h-4 text-blue-600" />
             <span>
-              <strong>SIH26080 Prototype</strong>: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts
+              <strong>Operational AI Platform</strong>: Regime-Aware Post-Processing of Monsoon Rainfall Forecasts
             </span>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-4 text-[11px]">
+            <button
+              onClick={() => setActiveTab('help')}
+              className="text-blue-600 hover:text-blue-800 font-semibold underline underline-offset-2 transition-colors cursor-pointer"
+            >
+              Terms & Glossary Help
+            </button>
+            <span>•</span>
             <span className="flex items-center gap-1 text-slate-600">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               Verified Leakage-Free Temporal Split
