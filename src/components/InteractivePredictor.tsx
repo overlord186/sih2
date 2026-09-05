@@ -4,6 +4,15 @@ import { predictScenario } from '../ml/postProcessor';
 import { PredictionScenarioInput, PredictionResult, RainfallRegime } from '../types';
 import { SynopticSimulator } from './SynopticSimulator';
 import { IndiaRegionMapSimulator } from './IndiaRegionMapSimulator';
+import { CloudVisualizerD3 } from './CloudVisualizerD3';
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from 'recharts';
 import {
   Sliders,
   Sparkles,
@@ -15,6 +24,8 @@ import {
   Info,
   RefreshCw,
   Gauge,
+  Activity,
+  CloudLightning
 } from 'lucide-react';
 
 export const InteractivePredictor: React.FC = () => {
@@ -47,6 +58,7 @@ export const InteractivePredictor: React.FC = () => {
         stationId: 'PNQ_SHIVAJINAGAR',
         rawForecastMm: 4.8,
         relativeHumidity: 66,
+        temp2m: 31.0,
         surfacePressure: 1010.5,
         windSpeed: 14,
         prevDayRain: 0.0,
@@ -58,6 +70,7 @@ export const InteractivePredictor: React.FC = () => {
         stationId: 'BOM_SANTACRUZ',
         rawForecastMm: 46.0,
         relativeHumidity: 94,
+        temp2m: 25.5,
         surfacePressure: 996.0,
         windSpeed: 38,
         prevDayRain: 65.0,
@@ -68,6 +81,7 @@ export const InteractivePredictor: React.FC = () => {
         stationId: 'NAG_SONEGAON',
         rawForecastMm: 28.0,
         relativeHumidity: 84,
+        temp2m: 28.0,
         surfacePressure: 1002.0,
         windSpeed: 22,
         prevDayRain: 18.0,
@@ -78,6 +92,7 @@ export const InteractivePredictor: React.FC = () => {
         stationId: 'DEL_SAFDARJUNG',
         rawForecastMm: 1.2,
         relativeHumidity: 58,
+        temp2m: 38.5,
         surfacePressure: 1012.0,
         windSpeed: 10,
         prevDayRain: 0.0,
@@ -99,6 +114,15 @@ export const InteractivePredictor: React.FC = () => {
         return 'bg-purple-100 text-purple-900 border-purple-300';
     }
   };
+
+  // Convert current parameters to standardized 0-100 values for the Radar Chart
+  const radarData = [
+    { subject: 'Moisture (RH)', value: input.relativeHumidity },
+    { subject: 'NWP Signal', value: Math.min(100, (input.rawForecastMm / 100) * 100) },
+    { subject: 'Wind Shear', value: Math.min(100, (input.windSpeed / 50) * 100) },
+    { subject: 'Instability (Press)', value: Math.max(0, 100 - ((input.surfacePressure - 990) / 25) * 100) },
+    { subject: 'Antecedent Rain', value: Math.min(100, (input.prevDayRain / 80) * 100) },
+  ];
 
   return (
     <div id="interactive-predictor-sandbox" className="space-y-6">
@@ -271,6 +295,24 @@ export const InteractivePredictor: React.FC = () => {
               />
             </div>
 
+            {/* Temperature Slider */}
+            <div>
+              <div className="flex justify-between items-center text-xs mb-1">
+                <span className="text-slate-600 font-medium">2m Surface Temperature:</span>
+                <span className="font-mono font-bold text-slate-800">{input.temp2m} °C</span>
+              </div>
+              <input
+                id="slider-temp"
+                type="range"
+                min={15}
+                max={45}
+                step={0.5}
+                value={input.temp2m}
+                onChange={(e) => handleRunPrediction({ temp2m: Number(e.target.value) })}
+                className="w-full accent-amber-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+              />
+            </div>
+
             {/* Surface Pressure Slider */}
             <div>
               <div className="flex justify-between items-center text-xs mb-1">
@@ -329,6 +371,16 @@ export const InteractivePredictor: React.FC = () => {
 
         {/* Right Column: Dynamic AI Diagnosis & Calibration Output */}
         <div className="lg:col-span-6 space-y-4">
+          
+          {/* D3 Atmospheric Visualizer Sandbox */}
+          <CloudVisualizerD3 
+            rainMm={result.correctedForecastMm} 
+            humidity={input.relativeHumidity}
+            pressure={input.surfacePressure}
+            temp={input.temp2m}
+            windSpeed={input.windSpeed}
+          />
+
           {/* Main Transformation Result Card */}
           <div
             id="result-transformation-card"
@@ -406,7 +458,18 @@ export const InteractivePredictor: React.FC = () => {
               Physical Attribution Breakdown
             </h4>
 
-            <div className="space-y-2">
+            {/* XAI Radar Chart */}
+            <div className="h-48 w-full -mt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={radarData}>
+                  <PolarGrid stroke="#cbd5e1" strokeDasharray="3 3" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fill: '#64748b', fontSize: 10, fontWeight: 600 }} />
+                  <Radar name="Intensity" dataKey="value" stroke="#3b82f6" fill="#60a5fa" fillOpacity={0.4} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+
+            <div className="space-y-2 pt-2 border-t border-slate-100">
               {result.physicalFactors.map((pf, idx) => (
                 <div
                   key={idx}

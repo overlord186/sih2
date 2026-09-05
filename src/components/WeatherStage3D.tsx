@@ -172,7 +172,9 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.shadowMap.type = THREE.PCFShadowMap; // Reverted to avoid deprecation warning
+    renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic tone mapping
+    renderer.toneMappingExposure = 1.1; // Cinematic exposure
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
@@ -571,19 +573,101 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
 
     // 16. ANIMATION LOOP
     let animationFrameId: number;
-    let clock = new THREE.Clock();
+    let timer = new THREE.Timer();
+    timer.connect(document);
     let nextLightningTime = 2.0;
 
-    const animate = () => {
+    // State for smooth interpolations
+    const animState = {
+      windSpeed: windSpeed,
+      rainMm: aiForecastMm,
+      waterHeight: 0.05,
+      bgColor: new THREE.Color(0x38bdf8),
+      fogColor: new THREE.Color(0xbae6fd),
+      hemiColor: new THREE.Color(0xffffff),
+      hemiGroundColor: new THREE.Color(0x15803d),
+      sunColor: new THREE.Color(0xffedd5),
+      hemiIntensity: 1.1,
+      sunIntensity: 1.3,
+    };
+    
+    // Helper to get target colors based on time and weather
+    const getTargetLighting = (hour: number, regime: RainfallRegime) => {
+      const isNightTime = hour === 0 || hour >= 21 || hour <= 4;
+      const isDawnTime = hour > 4 && hour <= 8;
+      const isDuskTime = hour >= 18 && hour < 21;
+      
+      let tBg = 0x38bdf8, tFog = 0xbae6fd, tHemi = 0xffffff, tHemiGr = 0x15803d, tSun = 0xffedd5, tHemiInt = 1.1, tSunInt = 1.3;
+
+      if (isNightTime) {
+        tBg = 0x050814; tFog = 0x050814; tHemi = 0x1e1b4b; tHemiGr = 0x030712; tSun = 0xa5b4fc; tHemiInt = 0.35; tSunInt = 0.4;
+      } else if (isDawnTime) {
+        tBg = 0x312e81; tFog = 0x4338ca; tHemi = 0xfb923c; tHemiGr = 0x1e293b; tSun = 0xfde047; tHemiInt = 0.8; tSunInt = 1.0;
+      } else if (isDuskTime) {
+        tBg = 0x1e1b4b; tFog = 0x312e81; tHemi = 0xf43f5e; tHemiGr = 0x030712; tSun = 0xf97316; tHemiInt = 0.7; tSunInt = 0.8;
+      } else {
+        // Midday
+        if (regime === RainfallRegime.HEAVY_EXTREME) {
+          tBg = 0x0f172a; tFog = 0x0f172a; tHemi = 0x334155; tHemiGr = 0x020617; tSun = 0x94a3b8; tHemiInt = 0.5; tSunInt = 0.5;
+        } else if (regime === RainfallRegime.MODERATE) {
+          tBg = 0x1e293b; tFog = 0x1e293b; tHemi = 0x64748b; tHemiGr = 0x0f172a; tSun = 0xcbd5e1; tHemiInt = 0.75; tSunInt = 0.9;
+        }
+      }
+      return { tBg, tFog, tHemi, tHemiGr, tSun, tHemiInt, tSunInt, isNightTime };
+    };
+
+    const animate = (timestamp?: number) => {
       animationFrameId = requestAnimationFrame(animate);
-      const delta = clock.getDelta();
-      const elapsed = clock.getElapsedTime();
+      timer.update(timestamp);
+      const delta = Math.min(timer.getDelta(), 0.1); // cap delta to prevent large jumps
+      const elapsed = timer.getElapsed();
 
-      const { windSpeed: curWind, hour: curHour, aiForecastMm: curRain, detectedRegime: curRegime } = propsRef.current;
+      const { windSpeed: targetWind, hour: targetHour, aiForecastMm: targetRain, detectedRegime: targetRegime } = propsRef.current;
+      
+      // 1. Smooth Interpolations
+      const lerpSpeed = delta * 2.5; // Controls how fast it transitions
+      animState.windSpeed = THREE.MathUtils.lerp(animState.windSpeed, targetWind, lerpSpeed);
+      animState.rainMm = THREE.MathUtils.lerp(animState.rainMm, targetRain, lerpSpeed);
+      
+      const targetWaterHeight = 0.05 + Math.min(1.8, (targetRain / 100) * 1.5);
+      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.5); // Slower water rise
 
-      // Spin anemometer cups according to live windSpeed
+      const lighting = getTargetLighting(targetHour, targetRegime);
+      animState.bgColor.lerp(new THREE.Color(lighting.tBg), lerpSpeed);
+      animState.fogColor.lerp(new THREE.Color(lighting.tFog), lerpSpeed);
+      animState.hemiColor.lerp(new THREE.Color(lighting.tHemi), lerpSpeed);
+      animState.hemiGroundColor.lerp(new THREE.Color(lighting.tHemiGr), lerpSpeed);
+      animState.sunColor.lerp(new THREE.Color(lighting.tSun), lerpSpeed);
+      animState.hemiIntensity = THREE.MathUtils.lerp(animState.hemiIntensity, lighting.tHemiInt, lerpSpeed);
+      animState.sunIntensity = THREE.MathUtils.lerp(animState.sunIntensity, lighting.tSunInt, lerpSpeed);
+
+      // Apply colors & intensities
+      if (scene.background instanceof THREE.Color) scene.background.copy(animState.bgColor);
+      if (scene.fog instanceof THREE.FogExp2) scene.fog.color.copy(animState.fogColor);
+      
+      if (hemiLightRef.current) {
+        hemiLightRef.current.color.copy(animState.hemiColor);
+        hemiLightRef.current.groundColor.copy(animState.hemiGroundColor);
+        hemiLightRef.current.intensity = animState.hemiIntensity;
+      }
+      if (sunLightRef.current) {
+        sunLightRef.current.color.copy(animState.sunColor);
+        sunLightRef.current.intensity = animState.sunIntensity;
+      }
+      if (starsRef.current) {
+        // Fade stars based on how dark the background is becoming
+        const darkness = 1 - Math.max(animState.bgColor.r, animState.bgColor.g, animState.bgColor.b);
+        (starsRef.current.material as THREE.PointsMaterial).opacity = THREE.MathUtils.lerp(
+           (starsRef.current.material as THREE.PointsMaterial).opacity,
+           lighting.isNightTime ? darkness : 0, 
+           lerpSpeed
+        );
+        starsRef.current.visible = (starsRef.current.material as THREE.PointsMaterial).opacity > 0.01;
+      }
+
+      // Spin anemometer cups
       if (anemometerCupsRef.current) {
-        const spinRate = Math.max(0.6, curWind * 0.18);
+        const spinRate = Math.max(0.6, animState.windSpeed * 0.18);
         anemometerCupsRef.current.rotation.y += spinRate * delta;
       }
 
@@ -599,33 +683,31 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
 
       // Sway trees with wind
       if (treesGroupRef.current) {
-        const swayAmount = Math.min(0.28, Math.max(0.04, curWind * 0.005));
+        const swayAmount = Math.min(0.28, Math.max(0.04, animState.windSpeed * 0.005));
         treesGroupRef.current.children.forEach((tree, idx) => {
-          tree.rotation.z = Math.sin(elapsed * 2.5 + idx) * swayAmount;
+          tree.rotation.z = THREE.MathUtils.lerp(tree.rotation.z, Math.sin(elapsed * 2.5 + idx) * swayAmount, lerpSpeed * 2);
         });
       }
 
-      // Drift clouds slowly
+      // Drift clouds slowly based on wind
       if (cloudsGroupRef.current) {
-        cloudsGroupRef.current.position.x = (elapsed * (curWind * 0.04 + 0.4)) % 60 - 30;
+        cloudsGroupRef.current.position.x = (elapsed * (animState.windSpeed * 0.04 + 0.4)) % 60 - 30;
       }
 
-      // Dynamic water level and wave shimmer
+      // Dynamic water level
       if (waterMeshRef.current) {
-        const baseHeight = 0.05;
-        const floodElevation = Math.min(1.8, (curRain / 100) * 1.5);
-        waterMeshRef.current.position.y = baseHeight + floodElevation;
+        waterMeshRef.current.position.y = animState.waterHeight;
       }
 
       // Rain particle animation
       if (rainSystemRef.current) {
-        const isRaining = curRain >= 1.0;
+        const isRaining = animState.rainMm >= 0.5;
         rainSystemRef.current.visible = isRaining;
 
         if (isRaining) {
           const positions = rainSystemRef.current.geometry.attributes.position.array as Float32Array;
-          const fallSpeed = Math.max(12, curRain * 0.45);
-          const windDrift = (curWind / 35) * fallSpeed * 0.35;
+          const fallSpeed = Math.max(12, animState.rainMm * 0.45);
+          const windDrift = (animState.windSpeed / 35) * fallSpeed * 0.35;
 
           for (let i = 0; i < rainCount; i++) {
             positions[i * 3 + 1] -= fallSpeed * delta;
@@ -639,69 +721,13 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
             }
           }
           rainSystemRef.current.geometry.attributes.position.needsUpdate = true;
-        }
-      }
-
-      // Dynamic Diurnal Lighting & Sky Color update
-      const isNightTime = curHour === 0 || curHour >= 21 || curHour <= 4;
-      const isDawnTime = curHour > 4 && curHour <= 8;
-      const isDuskTime = curHour >= 18 && curHour < 21;
-
-      if (hemiLightRef.current && sunLightRef.current && starsRef.current) {
-        starsRef.current.visible = isNightTime;
-
-        if (isNightTime) {
-          scene.background = new THREE.Color(0x050814);
-          scene.fog.color = new THREE.Color(0x050814);
-          hemiLightRef.current.color.setHex(0x1e1b4b);
-          hemiLightRef.current.groundColor.setHex(0x030712);
-          hemiLightRef.current.intensity = 0.35;
-          sunLightRef.current.color.setHex(0xa5b4fc);
-          sunLightRef.current.intensity = 0.4;
-        } else if (isDawnTime) {
-          scene.background = new THREE.Color(0x312e81);
-          scene.fog.color = new THREE.Color(0x4338ca);
-          hemiLightRef.current.color.setHex(0xfb923c);
-          hemiLightRef.current.groundColor.setHex(0x1e293b);
-          hemiLightRef.current.intensity = 0.8;
-          sunLightRef.current.color.setHex(0xfde047);
-          sunLightRef.current.intensity = 1.0;
-        } else if (isDuskTime) {
-          scene.background = new THREE.Color(0x1e1b4b);
-          scene.fog.color = new THREE.Color(0x312e81);
-          hemiLightRef.current.color.setHex(0xf43f5e);
-          hemiLightRef.current.intensity = 0.7;
-          sunLightRef.current.color.setHex(0xf97316);
-          sunLightRef.current.intensity = 0.8;
-        } else {
-          // Midday
-          if (curRegime === RainfallRegime.HEAVY_EXTREME) {
-            scene.background = new THREE.Color(0x0f172a);
-            scene.fog.color = new THREE.Color(0x0f172a);
-            hemiLightRef.current.color.setHex(0x334155);
-            hemiLightRef.current.intensity = 0.5;
-            sunLightRef.current.intensity = 0.5;
-          } else if (curRegime === RainfallRegime.MODERATE) {
-            scene.background = new THREE.Color(0x1e293b);
-            scene.fog.color = new THREE.Color(0x1e293b);
-            hemiLightRef.current.color.setHex(0x64748b);
-            hemiLightRef.current.intensity = 0.75;
-            sunLightRef.current.intensity = 0.9;
-          } else {
-            // Bright day
-            scene.background = new THREE.Color(0x38bdf8);
-            scene.fog.color = new THREE.Color(0xbae6fd);
-            hemiLightRef.current.color.setHex(0xffffff);
-            hemiLightRef.current.groundColor.setHex(0x15803d);
-            hemiLightRef.current.intensity = 1.1;
-            sunLightRef.current.color.setHex(0xffedd5);
-            sunLightRef.current.intensity = 1.3;
-          }
+          // Dynamically adjust rain opacity based on intensity
+          (rainSystemRef.current.material as THREE.PointsMaterial).opacity = Math.min(0.8, animState.rainMm * 0.02 + 0.1);
         }
       }
 
       // Extreme Convective Thunderstorm Lightning Flash System
-      if (curRegime === RainfallRegime.HEAVY_EXTREME && elapsed > nextLightningTime) {
+      if (targetRegime === RainfallRegime.HEAVY_EXTREME && elapsed > nextLightningTime) {
         nextLightningTime = elapsed + 3.0 + Math.random() * 3.5;
         if (lightningLightRef.current && lightningMeshRef.current) {
           lightningLightRef.current.intensity = 4.5;
@@ -746,6 +772,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
 
     return () => {
       cancelAnimationFrame(animationFrameId);
+      timer.dispose();
       resizeObserver.disconnect();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);

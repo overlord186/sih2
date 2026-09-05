@@ -51,6 +51,17 @@ export const MET_STATIONS: StationMetadata[] = [
     avgMonsoonRainMm: 610,
   },
   {
+    id: 'NOIDA_SECTOR62',
+    name: 'Noida (Sector-62)',
+    subdivision: 'West Uttar Pradesh',
+    state: 'Uttar Pradesh',
+    lat: 28.625,
+    lon: 77.373,
+    elevationM: 200,
+    climateZone: 'Semi-Arid Sub-Humid Monsoon Margin',
+    avgMonsoonRainMm: 650,
+  },
+  {
     id: 'CCU_ALIPORE',
     name: 'Kolkata (Alipore)',
     subdivision: 'Gangetic West Bengal',
@@ -146,6 +157,13 @@ function buildMonsoonDataset(): RainfallDataPoint[] {
       heavyEvents2023: [38, 39, 40, 71], // Severe July 2023 Yamuna flood surge
       heavyEvents2024: [28, 62, 74, 90], // June 28, 2024 Delhi all-time 228mm deluge + Aug rain spells
       heavyEvents2025: [34, 45, 69, 70, 88], // 2025 Monsoon trough & Western Disturbance interaction episodes
+    },
+    NOIDA_SECTOR62: {
+      rainScale: 11.0,
+      dryProb: 0.58,
+      heavyEvents2023: [38, 40, 72],
+      heavyEvents2024: [28, 63, 75],
+      heavyEvents2025: [34, 45, 70],
     },
     CCU_ALIPORE: {
       rainScale: 22.0,

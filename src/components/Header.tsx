@@ -1,5 +1,5 @@
 import React from 'react';
-import { CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle } from 'lucide-react';
+import {  CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download , Briefcase } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 
 interface HeaderProps {
@@ -9,9 +9,10 @@ interface HeaderProps {
   onLeadTimeChange: (lead: number) => void;
   selectedYear: number; // 0 = all, 2024, 2023
   onYearChange: (year: number) => void;
-  activeTab: 'dashboard' | 'predictor' | 'methodology' | 'help';
-  onTabChange: (tab: 'dashboard' | 'predictor' | 'methodology' | 'help') => void;
+  activeTab: 'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner';
+  onTabChange: (tab: 'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner') => void;
   totalSamples: number;
+  onDownloadReport?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -24,6 +25,7 @@ export const Header: React.FC<HeaderProps> = ({
   activeTab,
   onTabChange,
   totalSamples,
+  onDownloadReport,
 }) => {
   return (
     <header id="app-header" className="bg-slate-900 border-b border-slate-800 text-white">
@@ -63,7 +65,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/80 self-start md:self-auto">
+          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/80">
             <button
               id="tab-dashboard-btn"
               onClick={() => onTabChange('dashboard')}
@@ -88,17 +91,18 @@ export const Header: React.FC<HeaderProps> = ({
               <Cpu className="w-3.5 h-3.5" />
               Live Predictor Sandbox
             </button>
-            <button
-              id="tab-methodology-btn"
-              onClick={() => onTabChange('methodology')}
+            
+                        <button
+              id="tab-planner-btn"
+              onClick={() => onTabChange('planner')}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
-                activeTab === 'methodology'
+                activeTab === 'planner'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
-              <BookOpen className="w-3.5 h-3.5" />
-              ML Methodology & Formulation
+              <Briefcase className="w-3.5 h-3.5" />
+              AI Action Planner
             </button>
             <button
               id="tab-help-btn"
@@ -110,8 +114,19 @@ export const Header: React.FC<HeaderProps> = ({
               }`}
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              Help & Terms Glossary
+              Methodology & Glossary
             </button>
+          </div>
+          {activeTab === 'dashboard' && onDownloadReport && (
+            <button
+               onClick={onDownloadReport}
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white rounded-md text-xs font-semibold shadow-sm transition-colors"
+               title="Download Forecast Report PDF"
+            >
+               <Download className="w-3.5 h-3.5" />
+               <span className="hidden sm:inline">Download Report</span>
+            </button>
+          )}
           </div>
         </div>
 

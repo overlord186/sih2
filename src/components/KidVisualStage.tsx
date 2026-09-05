@@ -330,8 +330,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
                     top: '-30px',
                     height: `${height}px`,
                     opacity,
-                    animation: `fall ${duration}s linear infinite`,
-                    animationDelay: `${delay}s`,
+                    animation: `fall ${duration}s linear ${delay}s infinite`,
                     transform: `rotate(${rainSlant}deg)`,
                   }}
                 />
@@ -354,8 +353,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
                   className="absolute bottom-1"
                   style={{
                     left: `${leftPercent}%`,
-                    animation: `splashBounce ${duration}s ease-out infinite`,
-                    animationDelay: `${delay}s`,
+                    animation: `splashBounce ${duration}s ease-out ${delay}s infinite`,
                   }}
                 >
                   <svg width="18" height="12" viewBox="0 0 18 12">

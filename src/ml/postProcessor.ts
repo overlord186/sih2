@@ -231,7 +231,7 @@ export function predictScenario(input: PredictionScenarioInput): PredictionResul
  * Mathematically calculate genuine error metrics
  */
 export function calculateMetrics(data: RainfallDataPoint[]): MetricSummary {
-  if (data.length === 0) {
+  if (!data || data.length === 0) {
     return {
       sampleCount: 0,
       maeRaw: 0,

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RainfallRegime, PredictionScenarioInput, PredictionResult } from '../types';
+import { WindIsobarCanvas } from './WindIsobarCanvas';
 import {
   Compass,
   MapPin,
@@ -508,6 +509,63 @@ const REGION_NODES: StationMapNode[] = [
       },
     ],
   },
+  {
+    id: 'NOIDA_SECTOR62',
+    name: 'Noida (Sector-62)',
+    state: 'Uttar Pradesh (NCR)',
+    subdivision: 'West Uttar Pradesh',
+    climateZone: 'Semi-Arid Sub-Humid Monsoon Margin',
+    lat: 28.625,
+    lon: 77.373,
+    typicalMonsoonIssue: 'Severe urban waterlogging triggered by sudden intense convection in NCR.',
+    scenarioPresets: [
+      {
+        id: 'noida-flash-flood',
+        label: 'Urban Flash Flood',
+        icon: '⛈️🚗',
+        description: 'Intense localized convective cloudburst causing rapid urban waterlogging.',
+        input: {
+          stationId: 'NOIDA_SECTOR62',
+          rawForecastMm: 55.0,
+          relativeHumidity: 95,
+          surfacePressure: 994.0,
+          windSpeed: 25,
+          prevDayRain: 15.0,
+          leadTimeDays: 1,
+        },
+      },
+      {
+        id: 'noida-monsoon-drizzle',
+        label: 'Continuous Light Rain',
+        icon: '🌧️',
+        description: 'Steady light rain under active monsoon trough conditions.',
+        input: {
+          stationId: 'NOIDA_SECTOR62',
+          rawForecastMm: 12.0,
+          relativeHumidity: 88,
+          surfacePressure: 1002.0,
+          windSpeed: 15,
+          prevDayRain: 10.0,
+          leadTimeDays: 1,
+        },
+      },
+      {
+        id: 'noida-humid-heat',
+        label: 'Humid Break Spell',
+        icon: '🥵',
+        description: 'High humidity and temperature with no rain, typical of a monsoon break.',
+        input: {
+          stationId: 'NOIDA_SECTOR62',
+          rawForecastMm: 1.0,
+          relativeHumidity: 70,
+          surfacePressure: 1007.0,
+          windSpeed: 10,
+          prevDayRain: 0.0,
+          leadTimeDays: 1,
+        },
+      },
+    ],
+  },
 ];
 
 // Exact station positions calibrated on the authentic India States & Union Territories Map (800 x 953)
@@ -520,6 +578,7 @@ const CALIBRATED_STATION_COORDS: Record<string, { x: number; y: number }> = {
   BLR_HAL: { x: 274, y: 726 },          // Bengaluru, South Interior Karnataka plateau
   GAU_BORJHAR: { x: 672, y: 366 },      // Guwahati, Assam Brahmaputra valley
   JAI_SANGANER: { x: 236, y: 344 },     // Jaipur, East Rajasthan near Aravalli range
+  NOIDA_SECTOR62: { x: 292, y: 295 },   // Noida, adjacent to Delhi in NCR
 };
 
 // Projected station points on the authentic 800 x 953 map
@@ -544,6 +603,7 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
 }) => {
   const [selectedStationId, setSelectedStationId] = useState<string>(currentInput.stationId);
   const [isMapExpanded, setIsMapExpanded] = useState<boolean>(true);
+  const [expandedMacro, setExpandedMacro] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState<'neon-dark' | 'meteorological' | 'satellite' | 'radar'>('neon-dark');
   const [showRadar, setShowRadar] = useState<boolean>(true);
   const [showWindVectors, setShowWindVectors] = useState<boolean>(true);
@@ -554,6 +614,7 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
   const [showVortexDepression, setShowVortexDepression] = useState<boolean>(true);
   const [showGeoGrid, setShowGeoGrid] = useState<boolean>(true);
   const [showStationTags, setShowStationTags] = useState<boolean>(true);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   // Sync with prop if it changed externally
   React.useEffect(() => {
@@ -561,6 +622,36 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
   }, [currentInput.stationId]);
 
   const activeNode = PROJECTED_STATIONS.find((n) => n.id === selectedStationId) || PROJECTED_STATIONS[0];
+
+  // Group overlapping stations for map rendering
+  const renderNodes = React.useMemo(() => {
+    const groups: Record<string, any> = {};
+    const singles: any[] = [];
+
+    PROJECTED_STATIONS.forEach(node => {
+      if (node.id === 'DEL_SAFDARJUNG' || node.id === 'NOIDA_SECTOR62') {
+        const macro = 'Delhi NCR Region';
+        if (!groups[macro]) {
+          groups[macro] = {
+            isGroup: true,
+            id: macro,
+            name: macro,
+            mapX: 289,
+            mapY: 295.5,
+            nodes: []
+          };
+        }
+        groups[macro].nodes.push(node);
+      } else {
+        singles.push({
+          isGroup: false,
+          ...node,
+          nodes: [node]
+        });
+      }
+    });
+    return [...Object.values(groups), ...singles];
+  }, []);
 
   return (
     <div id="india-region-map-simulator" className="bg-slate-900 text-white rounded-xl border border-slate-800 overflow-hidden shadow-xs">
@@ -638,18 +729,24 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-lg bg-slate-950/80 border border-slate-800 text-xs">
           <div className="flex items-center gap-1.5 text-slate-300 font-semibold text-[11px] shrink-0">
             <MapPin className="w-3.5 h-3.5 text-rose-400" />
-            <span>Select Station ({PROJECTED_STATIONS.length} Subdivisions):</span>
+            <span>Select Station ({renderNodes.length} Regions):</span>
           </div>
 
           <div className="flex flex-wrap items-center gap-1.5">
-            {PROJECTED_STATIONS.map((node) => {
-              const isSelected = node.id === selectedStationId;
+            {renderNodes.map((node) => {
+              const isSelected = node.isGroup ? node.nodes.some((n: any) => n.id === selectedStationId) : node.id === selectedStationId;
+              const isExpanded = node.isGroup && expandedMacro === node.id;
               return (
                 <button
                   key={node.id}
                   onClick={() => {
-                    setSelectedStationId(node.id);
-                    onSelectStationAndPreset({ stationId: node.id });
+                    if (node.isGroup) {
+                      setExpandedMacro(isExpanded ? null : node.id);
+                    } else {
+                      setExpandedMacro(null);
+                      setSelectedStationId(node.id);
+                      onSelectStationAndPreset({ stationId: node.id });
+                    }
                   }}
                   className={`px-2 py-1 rounded text-[11px] font-medium transition-all flex items-center gap-1 ${
                     isSelected
@@ -663,7 +760,7 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                     }`}
                   />
                   <span>{node.name.split(' ')[0]}</span>
-                  <span className="text-[9px] opacity-70 hidden sm:inline">({node.subdivision.split(' ')[0]})</span>
+                  <span className="text-[9px] opacity-70 hidden sm:inline">({node.subdivision || 'Subdivisions'})</span>
                 </button>
               );
             })}
@@ -788,6 +885,30 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
 
               {/* Map Canvas with Authentic Base Image & Projected Meteorological Layers */}
               <div className="relative w-full max-w-[420px] aspect-[800/953] rounded-lg overflow-hidden border border-slate-700/80 shadow-2xl bg-slate-900 group select-none">
+                
+                {/* Map Zoom Controls */}
+                <div className="absolute top-2 left-2 z-50 flex flex-col gap-1 bg-slate-800/80 rounded-md border border-slate-600/50 p-1 backdrop-blur-sm">
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.min(z + 0.5, 4)); }}
+                    className="w-8 h-8 flex items-center justify-center text-white bg-slate-700 hover:bg-blue-600 rounded cursor-pointer transition-colors"
+                  >
+                    +
+                  </button>
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setZoomLevel(z => Math.max(z - 0.5, 1)); }}
+                    className="w-8 h-8 flex items-center justify-center text-white bg-slate-700 hover:bg-blue-600 rounded cursor-pointer transition-colors"
+                  >
+                    -
+                  </button>
+                </div>
+
+                <div 
+                  className="absolute inset-0 w-full h-full transition-transform duration-300 ease-out" 
+                  style={{ 
+                    transform: `scale(${zoomLevel})`,
+                    transformOrigin: `${(activeNode.mapX / 800) * 100}% ${(activeNode.mapY / 953) * 100}%`
+                  }}
+                >
                 {/* India Map Image Base */}
                 <img
                   src={mapMode === 'neon-dark' ? INDIA_MAP_BLACK_BLUE_SRC : INDIA_MAP_IMAGE_SRC}
@@ -815,6 +936,14 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                       ? 'bg-emerald-950/30 mix-blend-multiply'
                       : 'bg-slate-900/15 mix-blend-multiply'
                   }`}
+                />
+
+                <WindIsobarCanvas 
+                  windSpeed={currentInput.windSpeed} 
+                  pressure={currentInput.surfacePressure} 
+                  lat={activeNode.lat} 
+                  lon={activeNode.lon} 
+                  intensityMm={currentResult.correctedForecastMm} 
                 />
 
                 {/* SVG Overlay aligned to 800 x 953 pixel coordinates */}
@@ -1051,16 +1180,22 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                   )}
 
                   {/* Interactive Station Markers */}
-                  {PROJECTED_STATIONS.map((node) => {
-                    const isSelected = node.id === selectedStationId;
+                  {renderNodes.map((node) => {
+                    const isSelected = node.isGroup ? node.nodes.some((n: any) => n.id === selectedStationId) : node.id === selectedStationId;
+                    const isExpanded = node.isGroup && expandedMacro === node.id;
 
                     return (
+                      <React.Fragment key={node.id}>
                       <g
-                        key={node.id}
                         className="cursor-pointer group"
                         onClick={() => {
-                          setSelectedStationId(node.id);
-                          onSelectStationAndPreset({ stationId: node.id });
+                          if (node.isGroup) {
+                            setExpandedMacro(isExpanded ? null : node.id);
+                          } else {
+                            setExpandedMacro(null);
+                            setSelectedStationId(node.id);
+                            onSelectStationAndPreset({ stationId: node.id });
+                          }
                         }}
                       >
                         {/* Pulse circle for selected */}
@@ -1149,9 +1284,74 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                           </g>
                         )}
                       </g>
+                      {isExpanded && (
+                        <foreignObject
+                          x={node.mapX - 85}
+                          y={node.mapY + 15}
+                          width="170"
+                          height="120"
+                          className="overflow-visible z-50"
+                        >
+                          <div className="bg-slate-900/95 border border-slate-600 shadow-2xl rounded-lg p-2 flex flex-col gap-1" style={{ pointerEvents: 'auto' }}>
+                            <span className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider px-1 text-center">{node.name}</span>
+                            {node.nodes.map((subNode: any) => (
+                              <button
+                                key={subNode.id}
+                                className={`text-left text-xs px-2 py-1.5 rounded transition-colors ${selectedStationId === subNode.id ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50' : 'hover:bg-slate-800 text-slate-200 border border-transparent'}`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedStationId(subNode.id);
+                                  onSelectStationAndPreset({ stationId: subNode.id });
+                                  setExpandedMacro(null);
+                                }}
+                              >
+                                {subNode.name}
+                              </button>
+                            ))}
+                          </div>
+                        </foreignObject>
+                      )}
+                    </React.Fragment>
                     );
                   })}
                 </svg>
+
+                {/* HTML Overlay for Popovers (Avoids SVG foreignObject scaling blur) */}
+                {renderNodes.map((node) => {
+                  const isExpanded = node.isGroup && expandedMacro === node.id;
+                  if (!isExpanded) return null;
+                  return (
+                    <div
+                      key={`popover-${node.id}`}
+                      className="absolute z-50 transform -translate-x-1/2 pointer-events-auto"
+                      style={{ 
+                        left: `${(node.mapX / 800) * 100}%`, 
+                        top: `${(node.mapY / 953) * 100}%`,
+                        marginTop: '15px',
+                        width: '170px'
+                      }}
+                    >
+                      <div className="bg-slate-900/95 backdrop-blur-md border border-slate-600 shadow-2xl rounded-lg p-2 flex flex-col gap-1">
+                        <span className="text-[10px] text-slate-400 font-bold mb-1 uppercase tracking-wider px-1 text-center">{node.name}</span>
+                        {node.nodes.map((subNode: any) => (
+                          <button
+                            key={subNode.id}
+                            className={`text-left text-xs px-2 py-1.5 rounded transition-colors ${selectedStationId === subNode.id ? 'bg-sky-500/20 text-sky-400 border border-sky-500/50' : 'hover:bg-slate-800 text-slate-200 border border-transparent'}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedStationId(subNode.id);
+                              onSelectStationAndPreset({ stationId: subNode.id });
+                              setExpandedMacro(null);
+                            }}
+                          >
+                            {subNode.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+                </div>
               </div>
 
               {/* Comprehensive Synoptic Legend & Scale */}
@@ -1297,7 +1497,7 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                     }`}>
                       {currentResult.adjustmentDeltaMm > 0 ? `+${currentResult.adjustmentDeltaMm}` : currentResult.adjustmentDeltaMm} mm
                     </span>
-                    <span className="text-[9px] text-slate-400 block mt-0.5">Confidence: {currentResult.confidence}%</span>
+                    <span className="text-[9px] text-slate-400 block mt-0.5">Confidence: {currentResult.regimeConfidence}%</span>
                   </div>
                 </div>
 

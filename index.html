@@ -9,6 +9,29 @@
     <meta property="og:description" content="Physics-Informed Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+  
+    <script>
+      // Suppress Vite HMR WebSocket connection errors in the console
+      const originalConsoleError = console.error;
+      const originalConsoleWarn = console.warn;
+      console.warn = function(...args) {
+        if (typeof args[0] === 'string' && args[0].includes('THREE.Clock: This module has been deprecated')) return;
+        originalConsoleWarn.apply(console, args);
+      };
+      console.error = function(...args) {
+        if (typeof args[0] === 'string' && args[0].includes('[vite] failed to connect to websocket')) return;
+        if (args[0] && args[0].message && args[0].message.includes('WebSocket closed without opened')) return;
+        originalConsoleError.apply(console, args);
+      };
+      window.addEventListener('unhandledrejection', function(event) {
+        if (event.reason && (
+          (event.reason.message && event.reason.message.includes('WebSocket closed without opened')) ||
+          (typeof event.reason === 'string' && event.reason.includes('WebSocket closed'))
+        )) {
+          event.preventDefault();
+        }
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>
