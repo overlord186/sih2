@@ -42,23 +42,41 @@ export const ActionPlanner: React.FC = () => {
 
       const response = await fetch('/api/plan', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ location, occupation, weatherContext })
       });
       
-      const text = await response.text();
-      let data;
+      let planText = '';
       try {
-        data = JSON.parse(text);
-      } catch (e) {
-        throw new Error(response.ok ? 'Invalid response format' : 'Service is currently unavailable or restarting. Please try again in a moment.');
+        const rawBody = await response.text();
+        const trimmed = rawBody.trim();
+        if (trimmed.startsWith('{')) {
+          const parsed = JSON.parse(trimmed);
+          if (parsed.error) {
+            throw new Error(parsed.error);
+          }
+          planText = parsed.text || '';
+        } else if (trimmed.length > 0 && !trimmed.startsWith('<')) {
+          planText = trimmed;
+        }
+      } catch (parseErr: any) {
+        if (parseErr.message && !parseErr.message.includes('JSON')) {
+          throw parseErr;
+        }
       }
       
       if (!response.ok) {
-        throw new Error(data?.error || 'Failed to generate plan');
+        throw new Error(planText || `The strategic planner service is temporarily busy (status ${response.status}). Please try again in a moment.`);
       }
       
-      setPlan(data.text);
+      if (!planText.trim()) {
+        throw new Error("Unable to formulate a strategic plan at this moment. Please check your connection and try again.");
+      }
+      
+      setPlan(planText);
     } catch (err: any) {
       setError(err.message);
     } finally {

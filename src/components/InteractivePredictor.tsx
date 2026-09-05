@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { predictScenario } from '../ml/postProcessor';
 import { PredictionScenarioInput, PredictionResult, RainfallRegime } from '../types';
@@ -40,14 +40,13 @@ export const InteractivePredictor: React.FC = () => {
     prevDayRain: 45.0,
   });
 
-  const [result, setResult] = useState<PredictionResult>(() => predictScenario(input));
+  // Purely derived result guaranteed to remain in sync without dual-state race conditions
+  const result = useMemo<PredictionResult>(() => predictScenario(input), [input]);
 
-  const handleRunPrediction = (override?: Partial<PredictionScenarioInput>) => {
-    const updated = { ...input, ...override };
-    setInput(updated);
-    const res = predictScenario(updated);
-    setResult(res);
-  };
+  const handleRunPrediction = useCallback((override?: Partial<PredictionScenarioInput>) => {
+    if (!override) return;
+    setInput((prev) => ({ ...prev, ...override }));
+  }, []);
 
   // Quick preset test cases tailored for operational meteorological testing
   const applyPreset = (type: 'drizzle' | 'heavy' | 'moderate' | 'dry') => {
@@ -184,7 +183,7 @@ export const InteractivePredictor: React.FC = () => {
 
       {/* Dynamic 24h Synoptic Weather Timeline Simulator */}
       <SynopticSimulator
-        onApplyStep={(stepInput) => handleRunPrediction(stepInput)}
+        onApplyStep={handleRunPrediction}
         currentInput={input}
       />
 

@@ -239,11 +239,28 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Distant Mountain Ridges
-    const mountainGeo = new THREE.ConeGeometry(14, 18, 5);
+    // Distant Fantasy Mountain Ridges with Glacial Snowcaps
+    const mountainGeo = new THREE.ConeGeometry(15, 20, 7);
     const mountainMat = new THREE.MeshStandardMaterial({
-      color: 0x1e293b,
-      roughness: 0.9,
+      color: 0x18142c, // deep midnight indigo rock
+      roughness: 0.85,
+      metalness: 0.15,
+      flatShading: true,
+    });
+
+    const snowCapGeo = new THREE.ConeGeometry(6.5, 8.5, 7);
+    const snowCapMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc, // crisp alpine snow
+      roughness: 0.35,
+      metalness: 0.2,
+      flatShading: true,
+    });
+
+    const crystalVeinMat = new THREE.MeshStandardMaterial({
+      color: 0xc084fc,
+      emissive: 0x7e22ce,
+      emissiveIntensity: 0.5,
+      roughness: 0.2,
       flatShading: true,
     });
 
@@ -255,20 +272,131 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       [-38, 6, -15],
     ];
     mtnPositions.forEach(([mx, my, mz], idx) => {
-      const mtn = new THREE.Mesh(mountainGeo, mountainMat);
+      const scaleX = 1 + (idx % 3) * 0.3;
+      const scaleY = 1 + (idx % 2) * 0.4;
+      const scaleZ = 1 + (idx % 3) * 0.3;
+
+      // Base Rocky Mountain Body
+      const mtn = new THREE.Mesh(mountainGeo, idx % 2 === 0 ? mountainMat : crystalVeinMat);
       mtn.position.set(mx, my, mz);
-      mtn.scale.set(1 + (idx % 3) * 0.3, 1 + (idx % 2) * 0.4, 1 + (idx % 3) * 0.3);
+      mtn.scale.set(scaleX, scaleY, scaleZ);
+      mtn.rotation.y = idx * 1.1;
       scene.add(mtn);
+
+      // Glacial Snowcap perched on peak summit
+      const snow = new THREE.Mesh(snowCapGeo, snowCapMat);
+      snow.position.set(mx, my + (10 * scaleY) - (4.2 * scaleY), mz);
+      snow.scale.set(scaleX * 0.98, scaleY, scaleZ * 0.98);
+      snow.rotation.y = idx * 1.1;
+      scene.add(snow);
     });
 
-    // 7. Water Catchment Basin / Lake (Dynamic Height)
-    const waterGeo = new THREE.PlaneGeometry(28, 18, 24, 24);
-    const waterMat = new THREE.MeshStandardMaterial({
-      color: 0x0284c7,
-      roughness: 0.1,
-      metalness: 0.8,
+    // Floating Fantasy Rock Crags (Hovering above the mountain ridges)
+    const floatRockGeo = new THREE.DodecahedronGeometry(2.5, 1);
+    const floatRockMat = new THREE.MeshStandardMaterial({
+      color: 0x241442,
+      emissive: 0x3b0764,
+      emissiveIntensity: 0.4,
+      roughness: 0.7,
+      flatShading: true,
+    });
+    const floatPositions = [
+      [-26, 22, -30],
+      [16, 20, -32],
+    ];
+    floatPositions.forEach(([fx, fy, fz]) => {
+      const floatRock = new THREE.Mesh(floatRockGeo, floatRockMat);
+      floatRock.position.set(fx, fy, fz);
+      scene.add(floatRock);
+    });
+
+    // 6B. Realistic 3D Mountain Gorge Waterfall (Matching photo's sheer dark slate canyon & conifers)
+    const cliffGroup = new THREE.Group();
+    cliffGroup.position.set(14, 4, -10);
+    scene.add(cliffGroup);
+
+    const cliffMat = new THREE.MeshStandardMaterial({
+      color: 0x222a30, // natural dark charcoal slate
+      roughness: 0.75,
+      metalness: 0.2,
+      flatShading: true,
+    });
+    const wetCliffMat = new THREE.MeshStandardMaterial({
+      color: 0x141b20,
+      roughness: 0.25,
+      metalness: 0.5,
+      flatShading: true,
+    });
+
+    const mainCliff = new THREE.Mesh(new THREE.BoxGeometry(8, 12, 7), cliffMat);
+    cliffGroup.add(mainCliff);
+
+    const wetFlank = new THREE.Mesh(new THREE.BoxGeometry(5, 11, 4), wetCliffMat);
+    wetFlank.position.set(0, -0.5, 2.5);
+    cliffGroup.add(wetFlank);
+
+    // Pine trees clinging to the waterfall cliff
+    const pineTrunkMat = new THREE.MeshStandardMaterial({ color: 0x271e16, roughness: 0.9 });
+    const pineLeafMat = new THREE.MeshStandardMaterial({ color: 0x0d2215, roughness: 0.75, flatShading: true });
+    [-2.8, 2.8].forEach((px, pIdx) => {
+      const pTree = new THREE.Group();
+      const pTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.8, 5), pineTrunkMat);
+      pTrunk.position.y = 0.9;
+      pTree.add(pTrunk);
+      [1.8, 2.7, 3.5].forEach((cy, cIdx) => {
+        const pCone = new THREE.Mesh(new THREE.ConeGeometry(1.2 - cIdx * 0.3, 1.4, 6), pineLeafMat);
+        pCone.position.y = cy;
+        pTree.add(pCone);
+      });
+      pTree.position.set(px, 5.5, (pIdx === 0 ? -1 : 1));
+      pTree.scale.set(0.9, 0.9, 0.9);
+      cliffGroup.add(pTree);
+    });
+
+    const waterfallRibbonGeo = new THREE.PlaneGeometry(3.5, 18, 16, 36);
+    const waterfallRibbonMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xdff1fc,
+      emissiveIntensity: 0.42,
+      roughness: 0.12,
+      metalness: 0.55,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+    });
+    const waterfallMesh = new THREE.Mesh(waterfallRibbonGeo, waterfallRibbonMat);
+    waterfallMesh.position.set(14, 4.5, -4.5);
+    waterfallMesh.rotation.x = -0.68;
+    scene.add(waterfallMesh);
+
+    // Waterfall 3D Falling Spray Droplets
+    const WF_DROP_COUNT = 300;
+    const wfDropGeo = new THREE.BufferGeometry();
+    const wfDropPositions = new Float32Array(WF_DROP_COUNT * 3);
+    for (let i = 0; i < WF_DROP_COUNT; i++) {
+      wfDropPositions[i * 3] = 14 + (Math.random() - 0.5) * 3.0;
+      wfDropPositions[i * 3 + 1] = Math.random() * 8 + 0.5;
+      wfDropPositions[i * 3 + 2] = -10 + Math.random() * 14;
+    }
+    wfDropGeo.setAttribute('position', new THREE.BufferAttribute(wfDropPositions, 3));
+    const wfDropMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.38,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    });
+    const wfDropPoints = new THREE.Points(wfDropGeo, wfDropMat);
+    scene.add(wfDropPoints);
+
+    // 7. Water Catchment Basin / Lake (Dynamic Height)
+    const waterGeo = new THREE.PlaneGeometry(36, 26, 28, 28);
+    const waterMat = new THREE.MeshStandardMaterial({
+      color: 0x112838, // realistic deep alpine mountain lake water
+      roughness: 0.12,
+      metalness: 0.82,
+      transparent: true,
+      opacity: 0.9,
     });
     const waterMesh = new THREE.Mesh(waterGeo, waterMat);
     waterMesh.rotation.x = -Math.PI / 2;
@@ -629,8 +757,12 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       animState.windSpeed = THREE.MathUtils.lerp(animState.windSpeed, targetWind, lerpSpeed);
       animState.rainMm = THREE.MathUtils.lerp(animState.rainMm, targetRain, lerpSpeed);
       
-      const targetWaterHeight = 0.05 + Math.min(1.8, (targetRain / 100) * 1.5);
-      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.5); // Slower water rise
+      // Dramatic water level rise on heavy rain & flood regimes
+      const targetWaterHeight = 0.05 + Math.min(
+        4.8,
+        (targetRain / 100) * 3.6 + (targetRegime === RainfallRegime.HEAVY_EXTREME ? 1.8 : targetRegime === RainfallRegime.MODERATE ? 0.9 : 0)
+      );
+      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.75);
 
       const lighting = getTargetLighting(targetHour, targetRegime);
       animState.bgColor.lerp(new THREE.Color(lighting.tBg), lerpSpeed);
@@ -694,9 +826,35 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         cloudsGroupRef.current.position.x = (elapsed * (animState.windSpeed * 0.04 + 0.4)) % 60 - 30;
       }
 
-      // Dynamic water level
+      // Dynamic water level & dramatic flood inundation expansion
       if (waterMeshRef.current) {
         waterMeshRef.current.position.y = animState.waterHeight;
+        const floodSpread = 1.0 + Math.min(1.5, animState.waterHeight * 0.28);
+        waterMeshRef.current.scale.set(floodSpread, floodSpread, 1);
+      }
+
+      // Animate 3D Mountain Waterfall
+      if (waterfallMesh) {
+        const wfPos = waterfallRibbonGeo.attributes.position;
+        for (let i = 0; i < wfPos.count; i++) {
+          const py = wfPos.getY(i);
+          wfPos.setZ(i, Math.sin(py * 2.5 - elapsed * 14) * 0.18);
+        }
+        waterfallRibbonGeo.computeVertexNormals();
+        waterfallRibbonGeo.attributes.position.needsUpdate = true;
+      }
+      if (wfDropPoints) {
+        const dArr = wfDropGeo.attributes.position.array as Float32Array;
+        for (let i = 0; i < WF_DROP_COUNT; i++) {
+          dArr[i * 3 + 1] -= (9 + (i % 5)) * delta;
+          dArr[i * 3 + 2] += (10 + (i % 4)) * delta;
+          if (dArr[i * 3 + 1] < animState.waterHeight || dArr[i * 3 + 2] > 4) {
+            dArr[i * 3] = 14 + (Math.random() - 0.5) * 3.0;
+            dArr[i * 3 + 1] = 8.5;
+            dArr[i * 3 + 2] = -9.5;
+          }
+        }
+        wfDropGeo.attributes.position.needsUpdate = true;
       }
 
       // Rain particle animation

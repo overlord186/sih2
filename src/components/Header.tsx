@@ -1,5 +1,5 @@
-import React from 'react';
-import {  CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download , Briefcase } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download, Briefcase, Sparkles, Volume2, VolumeX, ArrowUpRight, Bot, MessageSquare } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 
 interface HeaderProps {
@@ -13,6 +13,9 @@ interface HeaderProps {
   onTabChange: (tab: 'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner') => void;
   totalSamples: number;
   onDownloadReport?: () => void;
+  onReplayIntro?: () => void;
+  isAudioMuted?: boolean;
+  onToggleAudio?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,7 +29,23 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   totalSamples,
   onDownloadReport,
+  onReplayIntro,
+  isAudioMuted,
+  onToggleAudio,
 }) => {
+  const [isChatOpen, setIsChatOpen] = useState(false);
+
+  useEffect(() => {
+    const handleChatState = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail && typeof customEvent.detail.isOpen === 'boolean') {
+        setIsChatOpen(customEvent.detail.isOpen);
+      }
+    };
+    window.addEventListener('chat-assistant-state', handleChatState);
+    return () => window.removeEventListener('chat-assistant-state', handleChatState);
+  }, []);
+
   return (
     <header id="app-header" className="bg-slate-900 border-b border-slate-800 text-white">
       {/* Top Banner */}
@@ -39,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2.5 py-0.5 text-xs font-bold tracking-wide rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  IMD Operational AI
+                  Samvartka AI
                 </span>
                 <span className="px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -54,9 +73,26 @@ export const Header: React.FC<HeaderProps> = ({
                     ? '2024 Season (June - Sept)'
                     : '2023 Historical Benchmark (June - Sept)'}
                 </span>
+
+                {onReplayIntro && (
+                  <button
+                    id="replay-intro-showcase-btn"
+                    onClick={onReplayIntro}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-900/80 via-fuchsia-900/70 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-purple-400/50 text-purple-200 text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all hover:scale-105 active:scale-95 cursor-pointer ml-auto sm:ml-2"
+                    title="Watch Samvartka AI Cinematic Intro (Twin Peaks & Cascading Waterfall)"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-spin" />
+                    <span>Intro Showcase</span>
+                    <ArrowUpRight className="w-3 h-3 text-purple-300" />
+                  </button>
+                )}
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1">
-                Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1 flex flex-wrap items-center gap-2">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 font-black tracking-tight">
+                  Samvartka AI
+                </span>
+                <span className="text-slate-500 font-normal hidden sm:inline">|</span>
+                <span>Regime-Aware Rainfall Post-Processor</span>
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
                 Physics-informed machine learning post-processor eliminating NWP drizzle bias and resolving smoothed convective extremes
@@ -116,7 +152,40 @@ export const Header: React.FC<HeaderProps> = ({
               <HelpCircle className="w-3.5 h-3.5" />
               Methodology & Glossary
             </button>
+
+            <button
+              id="header-open-chat-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-all border cursor-pointer ${
+                isChatOpen
+                  ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] ring-2 ring-blue-400/40'
+                  : 'bg-slate-700/60 hover:bg-slate-700 border-slate-600/60 text-blue-300 hover:text-white'
+              }`}
+              title="Open Samvartka AI Meteorological Assistant Chat"
+            >
+              <Bot className="w-3.5 h-3.5 text-blue-400" />
+              <span>AI Meteorologist</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            </button>
           </div>
+          {onToggleAudio && (
+            <button
+               onClick={onToggleAudio}
+               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm border transition-all cursor-pointer ${
+                 isAudioMuted
+                   ? 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-400'
+                   : 'bg-emerald-950/60 hover:bg-emerald-900/60 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+               }`}
+               title={isAudioMuted ? "Enable Ambient Weather Audio" : "Mute Ambient Weather Audio"}
+            >
+               {isAudioMuted ? (
+                 <VolumeX className="w-3.5 h-3.5 text-slate-400" />
+               ) : (
+                 <Volume2 className="w-3.5 h-3.5 text-emerald-400 animate-pulse" />
+               )}
+               <span className="hidden sm:inline">{isAudioMuted ? 'Sound Off' : 'Sound On'}</span>
+            </button>
+          )}
           {activeTab === 'dashboard' && onDownloadReport && (
             <button
                onClick={onDownloadReport}

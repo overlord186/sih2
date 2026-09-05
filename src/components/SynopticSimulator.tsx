@@ -519,16 +519,25 @@ interface SynopticSimulatorProps {
   currentInput: PredictionScenarioInput;
 }
 
-export const SynopticSimulator: React.FC<SynopticSimulatorProps> = ({ onApplyStep }) => {
+export const SynopticSimulator: React.FC<SynopticSimulatorProps> = ({ onApplyStep, currentInput }) => {
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>(SIMULATION_SCENARIOS[0].id);
   const [currentStepIdx, setCurrentStepIdx] = useState<number>(0);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(4500); // Relaxed default playback speed (4.5s per step)
   const [visualMode, setVisualMode] = useState<'3d' | '2d' | 'meteorological'>('3d'); // default to 3D WebGL world
-  const timerRef = useRef<number | null>(null);
 
   const scenario = SIMULATION_SCENARIOS.find((s) => s.id === selectedScenarioId) || SIMULATION_SCENARIOS[0];
   const step = scenario.steps[currentStepIdx] || scenario.steps[0];
+
+  // Up-to-date refs for stable access in asynchronous interval callback
+  const currentStepIdxRef = useRef(currentStepIdx);
+  currentStepIdxRef.current = currentStepIdx;
+
+  const scenarioRef = useRef(scenario);
+  scenarioRef.current = scenario;
+
+  const onApplyStepRef = useRef(onApplyStep);
+  onApplyStepRef.current = onApplyStep;
 
   // Compute prediction result for current simulated step
   const currentStepPrediction = predictScenario({
@@ -577,41 +586,42 @@ export const SynopticSimulator: React.FC<SynopticSimulatorProps> = ({ onApplySte
     });
   };
 
-  // Playback timer effect
+  // Playback timer effect - safely advances timeline and triggers onApplyStep outside any React state updater
   useEffect(() => {
-    if (isPlaying) {
-      timerRef.current = window.setInterval(() => {
-        setCurrentStepIdx((prev) => {
-          const nextIdx = prev + 1;
-          if (nextIdx >= scenario.steps.length) {
-            setIsPlaying(false);
-            return prev;
-          }
-          const s = scenario.steps[nextIdx];
-          onApplyStep({
-            stationId: s.stationId,
-            leadTimeDays: s.leadTimeDays,
-            rawForecastMm: s.rawForecastMm,
-            relativeHumidity: s.relativeHumidity,
-            temp2m: s.temp2m,
-            surfacePressure: s.surfacePressure,
-            windSpeed: s.windSpeed,
-            prevDayRain: s.prevDayRain,
-          });
-          return nextIdx;
-        });
-      }, playbackSpeed);
-    } else {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
+    if (!isPlaying) {
+      return;
     }
 
+    const timer = window.setInterval(() => {
+      const currentIdx = currentStepIdxRef.current;
+      const currentScenario = scenarioRef.current;
+      const nextIdx = currentIdx + 1;
+
+      if (nextIdx >= currentScenario.steps.length) {
+        setIsPlaying(false);
+        return;
+      }
+
+      const nextStep = currentScenario.steps[nextIdx];
+      setCurrentStepIdx(nextIdx);
+
+      // Call parent update callback in timer tick outside of any setState updater
+      onApplyStepRef.current?.({
+        stationId: nextStep.stationId,
+        leadTimeDays: nextStep.leadTimeDays,
+        rawForecastMm: nextStep.rawForecastMm,
+        relativeHumidity: nextStep.relativeHumidity,
+        temp2m: nextStep.temp2m,
+        surfacePressure: nextStep.surfacePressure,
+        windSpeed: nextStep.windSpeed,
+        prevDayRain: nextStep.prevDayRain,
+      });
+    }, playbackSpeed);
+
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      window.clearInterval(timer);
     };
-  }, [isPlaying, scenario, playbackSpeed, onApplyStep]);
+  }, [isPlaying, playbackSpeed]);
 
   const getStationObj = (stnId: string) => MET_STATIONS.find((s) => s.id === stnId);
   const stationInfo = getStationObj(step.stationId);

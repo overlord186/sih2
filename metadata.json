@@ -1,6 +1,6 @@
 {
-  "name": "SIH26080 Monsoon Rainfall Post-Processor",
-  "description": "Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across 2025, 2024, and 2023 operational seasons",
+  "name": "Samvartka AI - Rainfall Post-Processor",
+  "description": "Samvartka AI: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across operational seasons",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

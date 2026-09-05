@@ -33,11 +33,13 @@ import { RainfallRegime } from './types';
 
 export default function App() {
   const [showIntro, setShowIntro] = useState<boolean>(true);
+  const [isFogClearing, setIsFogClearing] = useState<boolean>(false);
+  const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true); // Default to muted until user opts in
   const [selectedStationId, setSelectedStationId] = useState<string>('ALL');
   const [selectedLeadTime, setSelectedLeadTime] = useState<number>(1); // default to Day +1
   const [selectedYear, setSelectedYear] = useState<number>(2025); // default to 2025 Operational Season
   const [activeTab, setActiveTab] = useState<'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner'>('dashboard');
-const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
+  const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
   const [hoverIntensity, setHoverIntensity] = useState<number>(0);
   const [atmosphereMode, setAtmosphereMode] = useState<AtmosphereMode>('auto');
   
@@ -66,6 +68,22 @@ const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
   useEffect(() => {
     weatherSynth.setIntensity(effectiveIntensity);
   }, [effectiveIntensity]);
+
+  const toggleAudio = () => {
+    const nextMuted = !isAudioMuted;
+    setIsAudioMuted(nextMuted);
+    weatherSynth.setMuted(nextMuted);
+  };
+
+  const handleIntroComplete = () => {
+    setShowIntro(false);
+    setIsFogClearing(true);
+  };
+
+  const handleReplayIntro = () => {
+    setIsFogClearing(false);
+    setShowIntro(true);
+  };
   
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [compareYear, setCompareYear] = useState<number>(2024);
@@ -154,10 +172,62 @@ const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
           <motion.div
             key="intro-wrapper"
             exit={{ opacity: 0 }}
-            transition={{ duration: 1.5, ease: 'easeInOut' }}
+            transition={{ duration: 0.8, ease: 'easeInOut' }}
             className="fixed inset-0 z-[100]"
           >
-            <CinematicIntro onComplete={() => setShowIntro(false)} />
+            <CinematicIntro onComplete={handleIntroComplete} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Waterfall Thick Fog Reveal Overlay: Webpage slowly emerges and becomes visible as fog clears */}
+      <AnimatePresence>
+        {isFogClearing && (
+          <motion.div
+            key="waterfall-fog-reveal-overlay"
+            initial={{ opacity: 1 }}
+            animate={{ opacity: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 2.5, ease: [0.22, 1, 0.36, 1] }}
+            onAnimationComplete={() => setIsFogClearing(false)}
+            className="fixed inset-0 z-[95] pointer-events-none flex flex-col items-center justify-center overflow-hidden"
+          >
+            {/* Dense Backdrop Blur Dissolve */}
+            <motion.div 
+              initial={{ backdropFilter: 'blur(36px)' }}
+              animate={{ backdropFilter: 'blur(0px)' }}
+              transition={{ duration: 2.5, ease: 'easeOut' }}
+              className="absolute inset-0 bg-gradient-to-b from-white/98 via-slate-100/95 to-indigo-50/85"
+            />
+
+            {/* Billowing Mist Tendrils Parting Outwards */}
+            <motion.div
+              initial={{ scale: 1, opacity: 0.98 }}
+              animate={{ scale: 1.5, opacity: 0 }}
+              transition={{ duration: 2.4, ease: 'easeOut' }}
+              className="absolute -inset-24 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,rgba(224,231,255,0.92)_45%,transparent_75%)]"
+            />
+            <motion.div
+              initial={{ scale: 1, opacity: 0.85 }}
+              animate={{ scale: 1.65, opacity: 0 }}
+              transition={{ duration: 2.6, ease: 'easeOut' }}
+              className="absolute -inset-24 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.95)_0%,rgba(192,132,252,0.45)_50%,transparent_80%)]"
+            />
+
+            {/* Calibrating tag emerging from clearing mist */}
+            <motion.div 
+              initial={{ opacity: 1, y: 0, scale: 1 }}
+              animate={{ opacity: 0, y: -25, scale: 0.95 }}
+              transition={{ duration: 1.8, delay: 0.35, ease: 'easeOut' }}
+              className="relative z-10 flex flex-col items-center gap-3"
+            >
+              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/85 border border-purple-300/70 shadow-[0_10px_35px_rgba(168,85,247,0.25)] backdrop-blur-md">
+                <CloudRain className="w-4 h-4 text-purple-600 animate-bounce" />
+                <span className="text-xs font-bold tracking-[0.25em] text-purple-950 uppercase">
+                  Entering Samvartka AI Atmospheric Grid
+                </span>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -178,25 +248,28 @@ const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
       {!showIntro && (
         <motion.div
           key="main-app"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.5, ease: 'easeInOut' }}
+          initial={{ opacity: 0, scale: 0.985, filter: 'blur(8px)' }}
+          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+          transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
           id="monsoon-ai-app-root"
           className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${effectiveRegime ? 'bg-transparent' : 'bg-slate-50 transition-colors duration-1000'}`}
         >
           {/* App Header & Navigation */}
           <Header
-        onDownloadReport={handleDownloadReport}
-        selectedStationId={selectedStationId}
-        onStationChange={setSelectedStationId}
-        selectedLeadTime={selectedLeadTime}
-        onLeadTimeChange={setSelectedLeadTime}
-        selectedYear={selectedYear}
-        onYearChange={setSelectedYear}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        totalSamples={filteredData.length}
-      />
+            onDownloadReport={handleDownloadReport}
+            onReplayIntro={handleReplayIntro}
+            selectedStationId={selectedStationId}
+            onStationChange={setSelectedStationId}
+            selectedLeadTime={selectedLeadTime}
+            onLeadTimeChange={setSelectedLeadTime}
+            selectedYear={selectedYear}
+            onYearChange={setSelectedYear}
+            activeTab={activeTab}
+            onTabChange={setActiveTab}
+            totalSamples={filteredData.length}
+            isAudioMuted={isAudioMuted}
+            onToggleAudio={toggleAudio}
+          />
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
@@ -287,10 +360,11 @@ const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
           </div>
         </div>
       </footer>
-      
-      <ChatAssistant />
         </motion.div>
       )}
+
+      {/* Global AI Meteorological Assistant (Available in both Intro and Dashboard) */}
+      <ChatAssistant />
     </>
   );
 }
