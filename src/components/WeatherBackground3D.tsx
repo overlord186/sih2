@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, Component, ReactNode } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { Points, PointMaterial } from '@react-three/drei';
 import * as THREE from 'three';
@@ -6,6 +6,20 @@ import { AtmosphereMode } from './AtmosphereWidget';
 
 interface Props {
   mode: AtmosphereMode;
+}
+
+class ThreeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false };
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  componentDidCatch(err: any) {
+    console.warn('3D Canvas rendering bypassed due to WebGL availability:', err);
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
 }
 
 const Particles = ({ mode }: { mode: AtmosphereMode }) => {
@@ -106,11 +120,35 @@ const Particles = ({ mode }: { mode: AtmosphereMode }) => {
 };
 
 export const WeatherBackground3D: React.FC<Props> = ({ mode }) => {
+  // Check if WebGL context creation is supported
+  const isWebGLAvailable = useMemo(() => {
+    try {
+      const canvas = document.createElement('canvas');
+      return !!(window.WebGLRenderingContext && (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')));
+    } catch {
+      return false;
+    }
+  }, []);
+
+  if (!isWebGLAvailable) return null;
+
   return (
     <div className="fixed inset-0 pointer-events-none z-0">
-      <Canvas camera={{ position: [0, 5, 20], fov: 75 }}>
-        <Particles mode={mode} />
-      </Canvas>
+      <ThreeErrorBoundary>
+        <Canvas 
+          camera={{ position: [0, 5, 20], fov: 75 }}
+          gl={{ powerPreference: 'default', antialias: false }}
+          onCreated={({ gl }) => {
+            try {
+              gl.setClearColor(0x000000, 0);
+            } catch {
+              // ignore
+            }
+          }}
+        >
+          <Particles mode={mode} />
+        </Canvas>
+      </ThreeErrorBoundary>
     </div>
   );
 };

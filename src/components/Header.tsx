@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download, Briefcase, Sparkles, Volume2, VolumeX, ArrowUpRight, Bot, MessageSquare } from 'lucide-react';
+import { CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download, Briefcase, Sparkles, Volume2, VolumeX, ArrowUpRight, Bot, MessageSquare, Moon, Printer, FileText, Upload } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
+
+export type NavigationTab =
+  | 'dashboard'
+  | 'regimes'
+  | 'probabilities'
+  | 'districts'
+  | 'verification'
+  | 'uploader'
+  | 'predictor'
+  | 'planner'
+  | 'methodology'
+  | 'help';
 
 interface HeaderProps {
   selectedStationId: string;
@@ -9,10 +21,11 @@ interface HeaderProps {
   onLeadTimeChange: (lead: number) => void;
   selectedYear: number; // 0 = all, 2024, 2023
   onYearChange: (year: number) => void;
-  activeTab: 'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner';
-  onTabChange: (tab: 'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner') => void;
+  activeTab: NavigationTab;
+  onTabChange: (tab: NavigationTab) => void;
   totalSamples: number;
   onDownloadReport?: () => void;
+  onOpenBulletin?: () => void;
   onReplayIntro?: () => void;
   isAudioMuted?: boolean;
   onToggleAudio?: () => void;
@@ -29,11 +42,23 @@ export const Header: React.FC<HeaderProps> = ({
   onTabChange,
   totalSamples,
   onDownloadReport,
+  onOpenBulletin,
   onReplayIntro,
   isAudioMuted,
   onToggleAudio,
 }) => {
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isNightMode, setIsNightMode] = useState(() => document.body.classList.contains('dark-black-font-mode'));
+
+  const toggleNightMode = () => {
+    const next = !isNightMode;
+    setIsNightMode(next);
+    if (next) {
+      document.body.classList.add('dark-black-font-mode');
+    } else {
+      document.body.classList.remove('dark-black-font-mode');
+    }
+  };
 
   useEffect(() => {
     const handleChatState = (e: Event) => {
@@ -58,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
             <div>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-2.5 py-0.5 text-xs font-bold tracking-wide rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                  Samvartka AI
+                  SAMVARTAKA AI
                 </span>
                 <span className="px-2 py-0.5 text-xs font-medium rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
@@ -79,7 +104,7 @@ export const Header: React.FC<HeaderProps> = ({
                     id="replay-intro-showcase-btn"
                     onClick={onReplayIntro}
                     className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-900/80 via-fuchsia-900/70 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-purple-400/50 text-purple-200 text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all hover:scale-105 active:scale-95 cursor-pointer ml-auto sm:ml-2"
-                    title="Watch Samvartka AI Cinematic Intro (Twin Peaks & Cascading Waterfall)"
+                    title="Watch SAMVARTAKA AI Cinematic Intro (Twin Peaks & Cascading Waterfall)"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-spin" />
                     <span>Intro Showcase</span>
@@ -89,7 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1 flex flex-wrap items-center gap-2">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 font-black tracking-tight">
-                  Samvartka AI
+                  SAMVARTAKA AI
                 </span>
                 <span className="text-slate-500 font-normal hidden sm:inline">|</span>
                 <span>Regime-Aware Rainfall Post-Processor</span>
@@ -101,56 +126,115 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Tab Navigation */}
-          <div className="flex items-center gap-3 self-start md:self-auto">
-          <div className="flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/80">
+          <div className="flex items-center gap-2 self-start md:self-auto flex-wrap">
+          <div className="flex items-center bg-slate-800/80 p-1 rounded-lg border border-slate-700/80 flex-wrap gap-1">
             <button
               id="tab-dashboard-btn"
               onClick={() => onTabChange('dashboard')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'dashboard'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <Gauge className="w-3.5 h-3.5" />
-              Evaluation Dashboard
+              <span>Dashboard</span>
+            </button>
+            <button
+              id="tab-regimes-btn"
+              onClick={() => onTabChange('regimes')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'regimes'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Regime Classifier</span>
+            </button>
+            <button
+              id="tab-probabilities-btn"
+              onClick={() => onTabChange('probabilities')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'probabilities'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <CloudRain className="w-3.5 h-3.5 text-amber-400" />
+              <span>Heavy Rain Probability</span>
+            </button>
+            <button
+              id="tab-districts-btn"
+              onClick={() => onTabChange('districts')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'districts'
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+              <span>District Products</span>
+            </button>
+            <button
+              id="tab-verification-btn"
+              onClick={() => onTabChange('verification')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'verification'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Verification Report</span>
+            </button>
+            <button
+              id="tab-uploader-btn"
+              onClick={() => onTabChange('uploader')}
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
+                activeTab === 'uploader'
+                  ? 'bg-purple-600 text-white shadow-sm'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
+              }`}
+            >
+              <Upload className="w-3.5 h-3.5 text-purple-300" />
+              <span>Batch NWP Pipeline</span>
             </button>
             <button
               id="tab-predictor-btn"
               onClick={() => onTabChange('predictor')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'predictor'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <Cpu className="w-3.5 h-3.5" />
-              Live Predictor Sandbox
+              <span>Live Predictor</span>
             </button>
-            
-                        <button
+            <button
               id="tab-planner-btn"
               onClick={() => onTabChange('planner')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'planner'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <Briefcase className="w-3.5 h-3.5" />
-              AI Action Planner
+              <span>AI Planner</span>
             </button>
             <button
               id="tab-help-btn"
               onClick={() => onTabChange('help')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs font-semibold transition-colors cursor-pointer ${
                 activeTab === 'help'
                   ? 'bg-blue-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white hover:bg-slate-700/50'
               }`}
             >
               <HelpCircle className="w-3.5 h-3.5" />
-              Methodology & Glossary
+              <span>Methodology</span>
             </button>
 
             <button
@@ -161,7 +245,7 @@ export const Header: React.FC<HeaderProps> = ({
                   ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white border-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)] ring-2 ring-blue-400/40'
                   : 'bg-slate-700/60 hover:bg-slate-700 border-slate-600/60 text-blue-300 hover:text-white'
               }`}
-              title="Open Samvartka AI Meteorological Assistant Chat"
+              title="Open SAMVARTAKA AI Meteorological Assistant Chat"
             >
               <Bot className="w-3.5 h-3.5 text-blue-400" />
               <span>AI Meteorologist</span>
@@ -186,15 +270,51 @@ export const Header: React.FC<HeaderProps> = ({
                <span className="hidden sm:inline">{isAudioMuted ? 'Sound Off' : 'Sound On'}</span>
             </button>
           )}
-          {activeTab === 'dashboard' && onDownloadReport && (
+          <button
+             onClick={toggleNightMode}
+             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold shadow-sm border transition-all cursor-pointer ${
+               isNightMode
+                 ? 'bg-purple-950/80 hover:bg-purple-900 border-purple-500 text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.4)] ring-2 ring-purple-500/40'
+                 : 'bg-slate-800/80 hover:bg-slate-700/80 border-slate-700 text-slate-300'
+             }`}
+             title="Toggle Webpage Night Mode"
+          >
+             <Moon className={`w-3.5 h-3.5 ${isNightMode ? 'text-purple-300' : 'text-slate-400'}`} />
+             <span className="hidden sm:inline">{isNightMode ? 'Night Active' : 'Night Mode'}</span>
+          </button>
+          {onOpenBulletin && (
             <button
-               onClick={onDownloadReport}
-               className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white rounded-md text-xs font-semibold shadow-sm transition-colors"
-               title="Download Forecast Report PDF"
+               onClick={onOpenBulletin}
+               className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-700/80 hover:bg-blue-600 border border-blue-500/80 text-white rounded-md text-xs font-bold shadow-sm transition-all cursor-pointer active:scale-95"
+               title="Generate Official IMD National Weather Bulletin Text"
             >
-               <Download className="w-3.5 h-3.5" />
-               <span className="hidden sm:inline">Download Report</span>
+               <FileText className="w-3.5 h-3.5 text-blue-200" />
+               <span className="hidden sm:inline">IMD Bulletin</span>
             </button>
+          )}
+          {activeTab === 'dashboard' && (
+            <div className="flex items-center gap-1.5">
+              <button
+                 onClick={() => {
+                   window.print();
+                 }}
+                 className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 hover:text-white rounded-md text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
+                 title="Open Browser Print Dialog to Print Page or Save as PDF"
+              >
+                 <Printer className="w-3.5 h-3.5 text-cyan-400" />
+                 <span className="hidden sm:inline">Print / Save PDF</span>
+              </button>
+              {onDownloadReport && (
+                <button
+                   onClick={onDownloadReport}
+                   className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 border border-indigo-500 text-white rounded-md text-xs font-semibold shadow-sm transition-colors cursor-pointer active:scale-95"
+                   title="Generate and Download Official PDF Forecast Dossier"
+                >
+                   <Download className="w-3.5 h-3.5 text-indigo-200" />
+                   <span className="hidden sm:inline">Download Dossier</span>
+                </button>
+              )}
+            </div>
           )}
           </div>
         </div>

@@ -47,7 +47,7 @@ export class WeatherSynthesizer {
       b1L = 0.99332 * b1L + whiteL * 0.0750759;
       b2L = 0.96900 * b2L + whiteL * 0.1538520;
       b3L = 0.86650 * b3L + whiteL * 0.3104856;
-      left[i] = (b0L + b1L + b2L + b3L) * 0.16 + (Math.random() > 0.996 ? (Math.random() - 0.5) * 0.6 : 0);
+      left[i] = (b0L + b1L + b2L + b3L) * 0.22 + (Math.random() > 0.994 ? (Math.random() - 0.5) * 0.6 : 0);
 
       // Right channel pink-brown noise with slight decorrelation
       const whiteR = Math.random() * 2 - 1;
@@ -55,7 +55,7 @@ export class WeatherSynthesizer {
       b1R = 0.99332 * b1R + whiteR * 0.0750759;
       b2R = 0.96900 * b2R + whiteR * 0.1538520;
       b3R = 0.86650 * b3R + whiteR * 0.3104856;
-      right[i] = (b0R + b1R + b2R + b3R) * 0.16 + (Math.random() > 0.996 ? (Math.random() - 0.5) * 0.6 : 0);
+      right[i] = (b0R + b1R + b2R + b3R) * 0.22 + (Math.random() > 0.994 ? (Math.random() - 0.5) * 0.6 : 0);
     }
     return noiseBuffer;
   }
@@ -76,7 +76,7 @@ export class WeatherSynthesizer {
 
       // Master Gain
       const master = ctx.createGain();
-      master.gain.value = this._muted ? 0 : 0.85;
+      master.gain.value = this._muted ? 0.0001 : 0.9;
       master.connect(ctx.destination);
       this.masterGain = master;
 
@@ -84,7 +84,7 @@ export class WeatherSynthesizer {
       const convolver = ctx.createConvolver();
       convolver.buffer = this.createReverbBuffer(ctx, 3.2, 2.5);
       const reverbG = ctx.createGain();
-      reverbG.gain.value = 0.15;
+      reverbG.gain.value = 0.22;
       convolver.connect(reverbG);
       reverbG.connect(master);
       this.reverbGain = reverbG;
@@ -101,7 +101,7 @@ export class WeatherSynthesizer {
       rainFilter.Q.value = 0.65;
 
       const rainG = ctx.createGain();
-      rainG.gain.value = 0.04; // Gentle ambient baseline
+      rainG.gain.value = 0.14; // Gentle ambient baseline
       rainSource.connect(rainFilter);
       rainFilter.connect(rainG);
       rainG.connect(master);
@@ -117,11 +117,11 @@ export class WeatherSynthesizer {
 
       const windF = ctx.createBiquadFilter();
       windF.type = 'lowpass';
-      windF.frequency.value = 350;
+      windF.frequency.value = 380;
       this.windFilter = windF;
 
       const windG = ctx.createGain();
-      windG.gain.value = 0.05; // Soft gentle breeze baseline
+      windG.gain.value = 0.12; // Soft gentle breeze baseline
       windSource.connect(windF);
       windF.connect(windG);
       windG.connect(master);
@@ -138,10 +138,10 @@ export class WeatherSynthesizer {
 
       const droneF = ctx.createBiquadFilter();
       droneF.type = 'lowpass';
-      droneF.frequency.value = 180;
+      droneF.frequency.value = 220;
 
       const droneG = ctx.createGain();
-      droneG.gain.value = 0.06; // Ethereal base layer
+      droneG.gain.value = 0.18; // Ethereal base layer, clearly audible
       droneOsc1.connect(droneF);
       droneOsc2.connect(droneF);
       droneF.connect(droneG);
@@ -183,7 +183,6 @@ export class WeatherSynthesizer {
     if (this.dropInterval) clearInterval(this.dropInterval);
     this.dropInterval = setInterval(() => {
       if (!this.ctx || this._muted || this.ctx.state === 'suspended') return;
-      if (this.currentIntensity < 3 && Math.random() > 0.25) return;
 
       try {
         const t = this.ctx.currentTime;
@@ -195,7 +194,7 @@ export class WeatherSynthesizer {
         osc.frequency.setValueAtTime(freq, t);
         osc.frequency.exponentialRampToValueAtTime(freq * 0.7, t + 0.06);
 
-        const dropVol = Math.min(0.06, 0.015 + this.currentIntensity * 0.0006);
+        const dropVol = Math.min(0.08, 0.02 + this.currentIntensity * 0.0008);
         gain.gain.setValueAtTime(dropVol, t);
         gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.08);
 
@@ -212,42 +211,42 @@ export class WeatherSynthesizer {
     if (!this.ctx || !this.isInit) return;
 
     const t = this.ctx.currentTime;
-    const TIME_CONST = 0.4;
+    const TIME_CONST = 0.3;
 
     // Calculate dynamic audio gains based on meteorological intensity
-    let rVol = 0.05; // Base rain volume
-    let wVol = 0.05; // Base wind volume
+    let rVol = 0.12; // Base rain volume
+    let wVol = 0.10; // Base wind volume
     let tVol = 0.0001; // Base thunder
-    let wFreq = 320;
-    let revMix = 0.12;
+    let wFreq = 380;
+    let revMix = 0.18;
 
     if (intensityMm > 0 && intensityMm < 15) {
       // Light rain
-      rVol = 0.16;
-      wVol = 0.08;
-      wFreq = 420;
-      revMix = 0.15;
+      rVol = 0.24;
+      wVol = 0.16;
+      wFreq = 480;
+      revMix = 0.22;
     } else if (intensityMm >= 15 && intensityMm < 64.5) {
       // Moderate monsoon rain
-      rVol = 0.32;
-      wVol = 0.18;
-      wFreq = 580;
-      tVol = 0.02;
-      revMix = 0.28;
+      rVol = 0.42;
+      wVol = 0.28;
+      wFreq = 680;
+      tVol = 0.04;
+      revMix = 0.35;
     } else if (intensityMm >= 64.5 && intensityMm < 120) {
       // Heavy torrential rainfall
-      rVol = 0.52;
-      wVol = 0.35;
-      wFreq = 850;
-      tVol = 0.12;
-      revMix = 0.45;
+      rVol = 0.65;
+      wVol = 0.45;
+      wFreq = 950;
+      tVol = 0.18;
+      revMix = 0.55;
     } else if (intensityMm >= 120) {
       // Cyclonic / Extreme cloudburst
-      rVol = 0.75;
-      wVol = 0.55;
-      wFreq = 1200;
-      tVol = 0.35;
-      revMix = 0.75;
+      rVol = 0.88;
+      wVol = 0.68;
+      wFreq = 1300;
+      tVol = 0.45;
+      revMix = 0.85;
     }
 
     if (this.rainGain) {
@@ -281,20 +280,22 @@ export class WeatherSynthesizer {
       this.init();
     }
 
-    if (this.ctx && this.masterGain) {
-      const t = this.ctx.currentTime;
+    if (this.ctx) {
       if (muted) {
-        this.masterGain.gain.setTargetAtTime(0.0001, t, 0.15);
-        setTimeout(() => {
-          if (this._muted && this.ctx?.state === 'running') {
-            this.ctx.suspend().catch(() => {});
-          }
-        }, 200);
+        if (this.masterGain) {
+          const t = this.ctx.currentTime;
+          this.masterGain.gain.cancelScheduledValues(t);
+          this.masterGain.gain.setTargetAtTime(0.0001, t, 0.08);
+        }
       } else {
         if (this.ctx.state === 'suspended') {
           this.ctx.resume().catch(() => {});
         }
-        this.masterGain.gain.setTargetAtTime(0.85, t, 0.12);
+        if (this.masterGain) {
+          const t = this.ctx.currentTime;
+          this.masterGain.gain.cancelScheduledValues(t);
+          this.masterGain.gain.setValueAtTime(0.9, t);
+        }
         // Play an immediate sweet confirmation chime to confirm audio is active
         this.playConfirmationTone();
         // Ensure intensity gains are applied
@@ -304,25 +305,64 @@ export class WeatherSynthesizer {
   }
 
   // Play a soft bell/chime on sound un-mute
-  private playConfirmationTone() {
-    if (!this.ctx || !this.masterGain) return;
+  public playConfirmationTone() {
+    if (!this.ctx) return;
     try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
       const t = this.ctx.currentTime;
-      [523.25, 659.25, 783.99].forEach((freq, idx) => {
+      // Majestic chord: C5, E5, G5, C6
+      const notes = [523.25, 659.25, 783.99, 1046.50];
+      notes.forEach((freq, idx) => {
         const osc = this.ctx!.createOscillator();
         const gain = this.ctx!.createGain();
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, t + idx * 0.05);
+        const start = t + idx * 0.06;
+        osc.frequency.setValueAtTime(freq, start);
 
-        gain.gain.setValueAtTime(0.001, t + idx * 0.05);
-        gain.gain.exponentialRampToValueAtTime(0.08 / (idx + 1), t + idx * 0.05 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, t + idx * 0.05 + 0.4);
+        gain.gain.setValueAtTime(0.001, start);
+        gain.gain.linearRampToValueAtTime(0.18 / (idx + 1), start + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.6);
 
         osc.connect(gain);
-        gain.connect(this.masterGain!);
-        osc.start(t + idx * 0.05);
-        osc.stop(t + idx * 0.05 + 0.45);
+        gain.connect(this.ctx!.destination);
+        osc.start(start);
+        osc.stop(start + 0.65);
       });
+    } catch {}
+  }
+
+  // Play a dynamic water splash sound effect
+  public playSplashSound(strength: number = 1.0) {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') {
+        this.ctx.resume().catch(() => {});
+      }
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const bufferSize = Math.floor(ctx.sampleRate * 0.25);
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.06));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(800 + Math.random() * 500, t);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(Math.min(0.3, 0.12 * strength), t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+      noise.start(t);
     } catch {}
   }
 

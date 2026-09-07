@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { MapPin, ArrowUpRight, CloudRain, Mountain, Wind, Clock, Activity } from 'lucide-react';
+import { fetchHourlyRainData } from '../utils/weatherApi';
 
 const LiveTicker = ({ stationId }: { stationId: string }) => {
   const [readings, setReadings] = useState<{time: string, rain: number}[]>([]);
   
   useEffect(() => {
+    let isMounted = true;
     if (stationId === 'ALL') {
       setReadings([]);
       return;
@@ -13,10 +15,10 @@ const LiveTicker = ({ stationId }: { stationId: string }) => {
     const station = MET_STATIONS.find(s => s.id === stationId);
     if (!station) return;
     
-    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${station.lat}&longitude=${station.lon}&hourly=rain`)
-      .then(res => res.json())
+    fetchHourlyRainData(station.lat, station.lon)
       .then(data => {
-        if (data.hourly && data.hourly.time && data.hourly.rain) {
+        if (!isMounted) return;
+        if (data && data.hourly && Array.isArray(data.hourly.time) && Array.isArray(data.hourly.rain)) {
           const now = new Date();
           let currentIndex = data.hourly.time.findIndex((t: string) => new Date(t) > now);
           if (currentIndex === -1) currentIndex = data.hourly.time.length;
@@ -25,7 +27,7 @@ const LiveTicker = ({ stationId }: { stationId: string }) => {
           const recent = [];
           for (let i = 1; i <= 3; i++) {
             const idx = currentIndex - i;
-            if (idx >= 0) {
+            if (idx >= 0 && data.hourly.rain[idx] !== undefined) {
               const dateObj = new Date(data.hourly.time[idx]);
               const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               recent.push({ time: timeStr, rain: data.hourly.rain[idx] });
@@ -34,7 +36,9 @@ const LiveTicker = ({ stationId }: { stationId: string }) => {
           setReadings(recent.reverse());
         }
       })
-      .catch(() => { /* silently ignore fetch errors */ });
+      .catch(() => { /* silently ignore */ });
+
+    return () => { isMounted = false; };
   }, [stationId]);
 
   if (stationId === 'ALL' || readings.length === 0) return null;

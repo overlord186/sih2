@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, X, Bot, User, Globe, ChevronDown, Check, Loader2 } from 'lucide-react';
+import { MessageSquare, Send, X, Bot, User, Globe, ChevronDown, Check, Loader2, RotateCcw } from 'lucide-react';
 import Markdown from 'react-markdown';
 
 interface ChatMessage {
@@ -7,7 +7,11 @@ interface ChatMessage {
   parts: { text: string }[];
 }
 
-export const ChatAssistant: React.FC = () => {
+interface ChatAssistantProps {
+  isIntroActive?: boolean;
+}
+
+export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([{
     role: 'model',
@@ -15,7 +19,7 @@ export const ChatAssistant: React.FC = () => {
   }]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [model, setModel] = useState<'gemini-3.8-flash' | 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-lite'>('gemini-3.8-flash');
+  const [model, setModel] = useState<'gemini-3.7-flash' | 'gemini-3.1-pro-preview' | 'gemini-3.1-flash-lite'>('gemini-3.7-flash');
   const [useSearch, setUseSearch] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSearchPopoverOpen, setIsSearchPopoverOpen] = useState(false);
@@ -97,7 +101,7 @@ export const ChatAssistant: React.FC = () => {
           message: userMessage.parts[0].text,
           modelConfig: {
             model: model,
-            useSearch: useSearch && model === 'gemini-3.8-flash' // Grounding supported on 3.8-flash
+            useSearch: useSearch && model === 'gemini-3.7-flash' // Grounding supported on 3.7-flash
           }
         }),
       });
@@ -146,6 +150,8 @@ export const ChatAssistant: React.FC = () => {
   };
 
   if (!isOpen) {
+    if (isIntroActive) return null;
+
     return (
       <div className="fixed bottom-6 right-6 z-[160] group pointer-events-auto">
         <button
@@ -186,7 +192,7 @@ export const ChatAssistant: React.FC = () => {
               <Bot size={20} className="text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-[15px] tracking-wide">Samvartka AI Assistant</h3>
+              <h3 className="font-semibold text-[15px] tracking-wide">SAMVARTAKA AI Assistant</h3>
               <p className="text-[10px] text-blue-100/80 font-medium uppercase tracking-widest">Meteorological Advisor</p>
             </div>
           </div>
@@ -208,7 +214,7 @@ export const ChatAssistant: React.FC = () => {
               title="Select AI Model"
             >
               <span className="font-medium tracking-wide">
-                {model === 'gemini-3.1-pro-preview' ? 'Pro (Complex)' : model === 'gemini-3.8-flash' ? 'Flash (General)' : 'Flash Lite (Fast)'}
+                {model === 'gemini-3.1-pro-preview' ? 'Pro 3.1 (Complex)' : model === 'gemini-3.7-flash' ? 'Flash 3.7 (General)' : 'Flash Lite (Fast)'}
               </span>
               <ChevronDown size={14} className={`opacity-80 transition-transform duration-200 ${isModelDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -220,17 +226,17 @@ export const ChatAssistant: React.FC = () => {
                 </div>
                 
                 <div className="space-y-1">
-                  {/* Gemini Flash */}
+                  {/* Gemini 3.7 Flash */}
                   <button 
-                    className={`w-full text-left p-2.5 rounded-xl transition-all flex flex-col gap-0.5 ${model === 'gemini-3.8-flash' ? 'bg-blue-600/30 border border-blue-500/50 text-white' : 'hover:bg-slate-800/80 text-slate-200'}`}
+                    className={`w-full text-left p-2.5 rounded-xl transition-all flex flex-col gap-0.5 ${model === 'gemini-3.7-flash' ? 'bg-blue-600/30 border border-blue-500/50 text-white' : 'hover:bg-slate-800/80 text-slate-200'}`}
                     onClick={() => { 
-                      setModel('gemini-3.8-flash'); 
+                      setModel('gemini-3.7-flash'); 
                       setIsModelDropdownOpen(false); 
                     }}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-xs text-white">Gemini 3.8 Flash</span>
-                      {model === 'gemini-3.8-flash' ? (
+                      <span className="font-semibold text-xs text-white">Gemini 3.7 Flash</span>
+                      {model === 'gemini-3.7-flash' ? (
                         <Check size={14} className="text-sky-400" />
                       ) : (
                         <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-300 rounded font-medium">Default</span>
@@ -241,7 +247,7 @@ export const ChatAssistant: React.FC = () => {
                     </p>
                   </button>
 
-                  {/* Gemini Pro */}
+                  {/* Gemini 3.1 Pro */}
                   <button 
                     className={`w-full text-left p-2.5 rounded-xl transition-all flex flex-col gap-0.5 ${model === 'gemini-3.1-pro-preview' ? 'bg-indigo-600/30 border border-indigo-500/50 text-white' : 'hover:bg-slate-800/80 text-slate-200'}`}
                     onClick={() => { 
@@ -258,7 +264,7 @@ export const ChatAssistant: React.FC = () => {
                     </p>
                   </button>
 
-                  {/* Gemini Flash Lite */}
+                  {/* Gemini 3.1 Flash Lite */}
                   <button 
                     className={`w-full text-left p-2.5 rounded-xl transition-all flex flex-col gap-0.5 ${model === 'gemini-3.1-flash-lite' ? 'bg-emerald-600/30 border border-emerald-500/50 text-white' : 'hover:bg-slate-800/80 text-slate-200'}`}
                     onClick={() => { 
@@ -308,8 +314,8 @@ export const ChatAssistant: React.FC = () => {
                   </div>
                   <button
                     onClick={() => {
-                      if (model !== 'gemini-3.8-flash') {
-                        setModel('gemini-3.8-flash');
+                      if (model !== 'gemini-3.7-flash') {
+                        setModel('gemini-3.7-flash');
                       }
                       setUseSearch((prev) => !prev);
                     }}
@@ -324,14 +330,14 @@ export const ChatAssistant: React.FC = () => {
                   Grounds AI responses with real-time web search for current IMD press releases, active cyclone tracks, and regional cloudburst bulletins.
                 </div>
 
-                {model !== 'gemini-3.8-flash' && (
+                {model !== 'gemini-3.7-flash' && (
                   <div className="mt-2.5 p-2 bg-amber-500/15 border border-amber-500/30 rounded-xl text-[10.5px] text-amber-200 flex items-start gap-2">
                     <div className="shrink-0 mt-0.5 w-1.5 h-1.5 rounded-full bg-amber-400" />
                     <div>
                       <span>Search grounding works with Flash model. </span>
                       <button 
                         onClick={() => {
-                          setModel('gemini-3.8-flash');
+                          setModel('gemini-3.7-flash');
                           setUseSearch(true);
                         }}
                         className="underline font-semibold text-amber-300 hover:text-white ml-1"
@@ -366,7 +372,22 @@ export const ChatAssistant: React.FC = () => {
                 {msg.role === 'user' ? (
                   msg.parts[0].text
                 ) : (
-                  <Markdown>{msg.parts[0].text}</Markdown>
+                  <>
+                    <Markdown>{msg.parts[0].text}</Markdown>
+                    {msg.parts[0].text.startsWith('⚠️') && (
+                      <button
+                        onClick={() => {
+                          const lastUserMsg = [...messages.slice(0, idx)].reverse().find(m => m.role === 'user');
+                          if (lastUserMsg) {
+                            setInput(lastUserMsg.parts[0].text);
+                          }
+                        }}
+                        className="mt-2.5 text-xs text-blue-600 font-semibold hover:text-blue-800 flex items-center gap-1.5 transition-colors border-t border-slate-100 pt-2"
+                      >
+                        <RotateCcw size={12} /> Retry this question
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </div>

@@ -187,199 +187,202 @@ export const InteractivePredictor: React.FC = () => {
         currentInput={input}
       />
 
+      {/* India Regional Map Simulator (Full Width Edge-to-Edge) */}
+      <div className="w-full">
+        <IndiaRegionMapSimulator
+          currentInput={input}
+          currentResult={result}
+          onSelectStationAndPreset={(updates) => handleRunPrediction(updates)}
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column: Parameter Sliders */}
-        <div className="lg:col-span-6 bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4.5">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <div className="flex items-center gap-2">
-              <Sliders className="w-4 h-4 text-blue-600" />
-              <h3 className="text-sm font-bold text-slate-900">Meteorological Input Parameters</h3>
-            </div>
-            <button
-              id="reset-inputs-btn"
-              onClick={() => handleRunPrediction({ rawForecastMm: 35.0, relativeHumidity: 85 })}
-              className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1"
-            >
-              <RefreshCw className="w-3 h-3" /> Reset
-            </button>
-          </div>
-
-          {/* India Regional Map Simulator Component */}
-          <IndiaRegionMapSimulator
-            currentInput={input}
-            currentResult={result}
-            onSelectStationAndPreset={(updates) => handleRunPrediction(updates)}
-          />
-
-          {/* Station and Lead Time */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Meteorological Station
-              </label>
-              <select
-                id="input-station-select"
-                value={input.stationId}
-                onChange={(e) => handleRunPrediction({ stationId: e.target.value })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+        {/* Left Column: Parameter Sliders & D3 Atmospheric Sandbox Engine */}
+        <div className="lg:col-span-6 space-y-6">
+          <div className="bg-white rounded-xl border border-slate-200 p-5 shadow-xs space-y-4.5">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-blue-600" />
+                <h3 className="text-sm font-bold text-slate-900">Meteorological Input Parameters</h3>
+              </div>
+              <button
+                id="reset-inputs-btn"
+                onClick={() => handleRunPrediction({ rawForecastMm: 35.0, relativeHumidity: 85 })}
+                className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer"
               >
-                {MET_STATIONS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.name} ({s.subdivision})
-                  </option>
-                ))}
-              </select>
+                <RefreshCw className="w-3 h-3" /> Reset
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-medium text-slate-600 mb-1">
-                Forecast Lead Time
-              </label>
-              <select
-                id="input-lead-select"
-                value={input.leadTimeDays}
-                onChange={(e) => handleRunPrediction({ leadTimeDays: Number(e.target.value) })}
-                className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
-                <option value={1}>Day +1 (24 hours)</option>
-                <option value={2}>Day +2 (48 hours)</option>
-                <option value={3}>Day +3 (72 hours)</option>
-              </select>
-            </div>
-          </div>
+            {/* Station and Lead Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Meteorological Station
+                </label>
+                <select
+                  id="input-station-select"
+                  value={input.stationId}
+                  onChange={(e) => handleRunPrediction({ stationId: e.target.value })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  {MET_STATIONS.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.subdivision})
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-          {/* Raw Forecast Rainfall Slider */}
-          <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-lg border border-slate-200/80">
-            <div className="flex justify-between items-center text-xs">
-              <span className="font-semibold text-slate-700">Raw NWP Forecast Rainfall:</span>
-              <span className="font-mono font-bold text-sm text-rose-600">
-                {input.rawForecastMm} mm/day
-              </span>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 mb-1">
+                  Forecast Lead Time
+                </label>
+                <select
+                  id="input-lead-select"
+                  value={input.leadTimeDays}
+                  onChange={(e) => handleRunPrediction({ leadTimeDays: Number(e.target.value) })}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                >
+                  <option value={1}>Day +1 (24 hours)</option>
+                  <option value={2}>Day +2 (48 hours)</option>
+                  <option value={3}>Day +3 (72 hours)</option>
+                </select>
+              </div>
             </div>
-            <input
-              id="slider-raw-forecast"
-              type="range"
-              min={0}
-              max={150}
-              step={0.5}
-              value={input.rawForecastMm}
-              onChange={(e) => handleRunPrediction({ rawForecastMm: Number(e.target.value) })}
-              className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-slate-400">
-              <span>0 mm (Dry)</span>
-              <span>15.5 mm (Light)</span>
-              <span>64.5 mm (Heavy Threshold)</span>
-              <span>150 mm (Extreme)</span>
-            </div>
-          </div>
 
-          {/* Atmospheric Predictors Grid */}
-          <div className="space-y-3 pt-1">
-            {/* Relative Humidity Slider */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-slate-600 font-medium">850hPa Relative Humidity (RH):</span>
-                <span className="font-mono font-bold text-slate-800">{input.relativeHumidity}%</span>
+            {/* Raw Forecast Rainfall Slider */}
+            <div className="space-y-1.5 bg-slate-50/80 p-3 rounded-lg border border-slate-200/80">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700">Raw NWP Forecast Rainfall:</span>
+                <span className="font-mono font-bold text-sm text-rose-600">
+                  {input.rawForecastMm} mm/day
+                </span>
               </div>
               <input
-                id="slider-rh"
-                type="range"
-                min={45}
-                max={99}
-                step={1}
-                value={input.relativeHumidity}
-                onChange={(e) => handleRunPrediction({ relativeHumidity: Number(e.target.value) })}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Temperature Slider */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-slate-600 font-medium">2m Surface Temperature:</span>
-                <span className="font-mono font-bold text-slate-800">{input.temp2m} °C</span>
-              </div>
-              <input
-                id="slider-temp"
-                type="range"
-                min={15}
-                max={45}
-                step={0.5}
-                value={input.temp2m}
-                onChange={(e) => handleRunPrediction({ temp2m: Number(e.target.value) })}
-                className="w-full accent-amber-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Surface Pressure Slider */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-slate-600 font-medium">Surface Pressure (Depression Trough):</span>
-                <span className="font-mono font-bold text-slate-800">{input.surfacePressure} hPa</span>
-              </div>
-              <input
-                id="slider-pressure"
-                type="range"
-                min={990}
-                max={1016}
-                step={0.5}
-                value={input.surfacePressure}
-                onChange={(e) => handleRunPrediction({ surfacePressure: Number(e.target.value) })}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* 10m Wind Speed Slider */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-slate-600 font-medium">10m Surface Wind Speed:</span>
-                <span className="font-mono font-bold text-slate-800">{input.windSpeed} km/h</span>
-              </div>
-              <input
-                id="slider-wind"
-                type="range"
-                min={5}
-                max={60}
-                step={1}
-                value={input.windSpeed}
-                onChange={(e) => handleRunPrediction({ windSpeed: Number(e.target.value) })}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Previous Day Observed Rainfall */}
-            <div>
-              <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-slate-600 font-medium">Antecedent Rainfall (Prev Day Obs):</span>
-                <span className="font-mono font-bold text-slate-800">{input.prevDayRain} mm</span>
-              </div>
-              <input
-                id="slider-prev-rain"
+                id="slider-raw-forecast"
                 type="range"
                 min={0}
-                max={100}
-                step={1}
-                value={input.prevDayRain}
-                onChange={(e) => handleRunPrediction({ prevDayRain: Number(e.target.value) })}
-                className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                max={150}
+                step={0.5}
+                value={input.rawForecastMm}
+                onChange={(e) => handleRunPrediction({ rawForecastMm: Number(e.target.value) })}
+                className="w-full accent-blue-600 h-2 bg-slate-200 rounded-lg cursor-pointer"
               />
+              <div className="flex justify-between text-[10px] text-slate-400">
+                <span>0 mm (Dry)</span>
+                <span>15.5 mm (Light)</span>
+                <span>64.5 mm (Heavy Threshold)</span>
+                <span>150 mm (Extreme)</span>
+              </div>
+            </div>
+
+            {/* Atmospheric Predictors Grid */}
+            <div className="space-y-3 pt-1">
+              {/* Relative Humidity Slider */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-600 font-medium">850hPa Relative Humidity (RH):</span>
+                  <span className="font-mono font-bold text-slate-800">{input.relativeHumidity}%</span>
+                </div>
+                <input
+                  id="slider-rh"
+                  type="range"
+                  min={45}
+                  max={99}
+                  step={1}
+                  value={input.relativeHumidity}
+                  onChange={(e) => handleRunPrediction({ relativeHumidity: Number(e.target.value) })}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Temperature Slider */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-600 font-medium">2m Surface Temperature:</span>
+                  <span className="font-mono font-bold text-slate-800">{input.temp2m} °C</span>
+                </div>
+                <input
+                  id="slider-temp"
+                  type="range"
+                  min={15}
+                  max={45}
+                  step={0.5}
+                  value={input.temp2m}
+                  onChange={(e) => handleRunPrediction({ temp2m: Number(e.target.value) })}
+                  className="w-full accent-amber-500 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Surface Pressure Slider */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-600 font-medium">Surface Pressure (Depression Trough):</span>
+                  <span className="font-mono font-bold text-slate-800">{input.surfacePressure} hPa</span>
+                </div>
+                <input
+                  id="slider-pressure"
+                  type="range"
+                  min={990}
+                  max={1016}
+                  step={0.5}
+                  value={input.surfacePressure}
+                  onChange={(e) => handleRunPrediction({ surfacePressure: Number(e.target.value) })}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* 10m Wind Speed Slider */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-600 font-medium">10m Surface Wind Speed:</span>
+                  <span className="font-mono font-bold text-slate-800">{input.windSpeed} km/h</span>
+                </div>
+                <input
+                  id="slider-wind"
+                  type="range"
+                  min={5}
+                  max={60}
+                  step={1}
+                  value={input.windSpeed}
+                  onChange={(e) => handleRunPrediction({ windSpeed: Number(e.target.value) })}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Previous Day Observed Rainfall */}
+              <div>
+                <div className="flex justify-between items-center text-xs mb-1">
+                  <span className="text-slate-600 font-medium">Antecedent Rainfall (Prev Day Obs):</span>
+                  <span className="font-mono font-bold text-slate-800">{input.prevDayRain} mm</span>
+                </div>
+                <input
+                  id="slider-prev-rain"
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={input.prevDayRain}
+                  onChange={(e) => handleRunPrediction({ prevDayRain: Number(e.target.value) })}
+                  className="w-full accent-blue-600 h-1.5 bg-slate-200 rounded-lg cursor-pointer"
+                />
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Right Column: Dynamic AI Diagnosis & Calibration Output */}
-        <div className="lg:col-span-6 space-y-4">
-          
-          {/* D3 Atmospheric Visualizer Sandbox */}
-          <CloudVisualizerD3 
-            rainMm={result.correctedForecastMm} 
+          {/* D3 Atmospheric Visualizer Sandbox Engine (Positioned directly down with meteorological inputs) */}
+          <CloudVisualizerD3
+            rainMm={result.correctedForecastMm}
             humidity={input.relativeHumidity}
             pressure={input.surfacePressure}
             temp={input.temp2m}
             windSpeed={input.windSpeed}
           />
+        </div>
 
+        {/* Right Column: Dynamic AI Diagnosis & Calibration Output */}
+        <div className="lg:col-span-6 space-y-6">
           {/* Main Transformation Result Card */}
           <div
             id="result-transformation-card"

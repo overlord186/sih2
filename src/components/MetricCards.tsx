@@ -54,7 +54,7 @@ const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; i
 };
 
 export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
-  const safeNumber = (num) => (typeof num === 'number' && !isNaN(num) && isFinite(num) ? num : 0);
+  const safeNumber = (num: unknown): number => (typeof num === 'number' && !isNaN(num) && isFinite(num) ? num : 0);
   
   const maeRaw = safeNumber(metrics.maeRaw);
   const maeCorrected = safeNumber(metrics.maeCorrected);

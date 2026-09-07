@@ -1,39 +1,30 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" style="background-color: #020617; color: #f8fafc; height: 100%; margin: 0; padding: 0;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Samvartka AI - Regime-Aware Rainfall Post-Processor</title>
-    <meta name="description" content="Samvartka AI: Physics-Informed Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts" />
-    <meta property="og:title" content="Samvartka AI - Regime-Aware Rainfall Post-Processor" />
-    <meta property="og:description" content="Samvartka AI: Physics-Informed Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts" />
+    <title>SAMVARTAKA AI - Rainfall Post-Processor</title>
+    <meta name="description" content="SAMVARTAKA AI: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across operational seasons" />
+    <meta property="og:title" content="SAMVARTAKA AI - Rainfall Post-Processor" />
+    <meta property="og:description" content="SAMVARTAKA AI: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across operational seasons" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
-  
-    <script>
-      // Suppress Vite HMR WebSocket connection errors in the console
-      const originalConsoleError = console.error;
-      const originalConsoleWarn = console.warn;
-      console.warn = function(...args) {
-        if (typeof args[0] === 'string' && args[0].includes('THREE.Clock: This module has been deprecated')) return;
-        originalConsoleWarn.apply(console, args);
-      };
-      console.error = function(...args) {
-        if (typeof args[0] === 'string' && args[0].includes('[vite] failed to connect to websocket')) return;
-        if (args[0] && args[0].message && args[0].message.includes('WebSocket closed without opened')) return;
-        originalConsoleError.apply(console, args);
-      };
-      window.addEventListener('unhandledrejection', function(event) {
-        if (event.reason && (
-          (event.reason.message && event.reason.message.includes('WebSocket closed without opened')) ||
-          (typeof event.reason === 'string' && event.reason.includes('WebSocket closed'))
-        )) {
-          event.preventDefault();
-        }
-      });
-    </script>
+    <style>
+      html, body {
+        background-color: #020617 !important;
+        color: #f8fafc !important;
+        margin: 0;
+        padding: 0;
+        min-height: 100vh;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      }
+      #root {
+        min-height: 100vh;
+        background-color: #020617;
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

@@ -1,7 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export const LightningFlashOverlay = ({ intensity }: { intensity: number }) => {
+interface LightningFlashOverlayProps {
+  intensity: number;
+  isDarkModeActive?: boolean;
+}
+
+export const LightningFlashOverlay = ({ intensity, isDarkModeActive }: LightningFlashOverlayProps) => {
   const [flashKey, setFlashKey] = useState<number>(0);
   const [isActive, setIsActive] = useState(false);
 
@@ -10,8 +15,8 @@ export const LightningFlashOverlay = ({ intensity }: { intensity: number }) => {
     let isMounted = true;
 
     const scheduleFlash = () => {
-      // Sporadic trigger: random delay between 3 to 8 seconds
-      const nextFlashDelay = 3000 + Math.random() * 5000;
+      // Sporadic trigger: random delay between 3.5 to 7.5 seconds
+      const nextFlashDelay = 3500 + Math.random() * 4000;
       
       timeout = setTimeout(() => {
         if (!isMounted) return;
@@ -19,27 +24,36 @@ export const LightningFlashOverlay = ({ intensity }: { intensity: number }) => {
         // Trigger a new flash cycle by incrementing key
         setIsActive(true);
         setFlashKey(prev => prev + 1);
+
+        // Notify body & UI elements of lightning flash
+        document.body.classList.add('lightning-active');
+        window.dispatchEvent(new CustomEvent('lightning-flash'));
         
-        // Disable after animation completes so it can be re-triggered
+        // Disable after animation completes
         setTimeout(() => {
-           if (isMounted) setIsActive(false);
-        }, 600);
+          if (isMounted) {
+            setIsActive(false);
+            document.body.classList.remove('lightning-active');
+          }
+        }, 650);
         
         scheduleFlash();
       }, nextFlashDelay);
     };
 
-    if (intensity >= 120) {
+    if (intensity >= 120 || isDarkModeActive) {
       scheduleFlash();
     } else {
       setIsActive(false);
+      document.body.classList.remove('lightning-active');
     }
 
     return () => {
       isMounted = false;
       clearTimeout(timeout);
+      document.body.classList.remove('lightning-active');
     };
-  }, [intensity]);
+  }, [intensity, isDarkModeActive]);
 
   return (
     <AnimatePresence>
@@ -47,9 +61,9 @@ export const LightningFlashOverlay = ({ intensity }: { intensity: number }) => {
         <motion.div
           key={flashKey}
           initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 0.85, 0.1, 0.7, 0] }}
-          transition={{ duration: 0.5, times: [0, 0.1, 0.2, 0.3, 1], ease: "easeOut" }}
-          className="fixed inset-0 z-[9999] pointer-events-none bg-white mix-blend-overlay"
+          animate={{ opacity: [0, 0.95, 0.15, 0.8, 0] }}
+          transition={{ duration: 0.55, times: [0, 0.12, 0.22, 0.35, 1], ease: "easeOut" }}
+          className="fixed inset-0 z-[9999] pointer-events-none bg-cyan-100/90 mix-blend-overlay"
         />
       )}
     </AnimatePresence>

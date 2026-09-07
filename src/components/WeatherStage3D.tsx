@@ -14,6 +14,8 @@ import {
   Compass,
   Maximize2,
   Box,
+  Sun,
+  Zap,
 } from 'lucide-react';
 import { RainfallRegime } from '../types';
 
@@ -49,6 +51,21 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
   const mountRef = useRef<HTMLDivElement>(null);
   const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
   const [cameraMode, setCameraMode] = useState<'perspective' | 'top' | 'station'>('perspective');
+  const [isBrightBoost, setIsBrightBoost] = useState<boolean>(true); // Default to crystal bright high visibility
+
+  // Stable references for instant dynamic reactivity without scene rebuilding
+  const isBrightBoostRef = useRef<boolean>(isBrightBoost);
+  useEffect(() => {
+    isBrightBoostRef.current = isBrightBoost;
+  }, [isBrightBoost]);
+
+  const isAutoRotatingRef = useRef<boolean>(isAutoRotating);
+  useEffect(() => {
+    isAutoRotatingRef.current = isAutoRotating;
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = isAutoRotating;
+    }
+  }, [isAutoRotating]);
 
   // Animation and scene references for real-time reactivity without recreation
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -59,6 +76,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
   // Dynamic moving meshes refs
   const anemometerCupsRef = useRef<THREE.Group | null>(null);
   const radarDishRef = useRef<THREE.Group | null>(null);
+  const radarPulseRef = useRef<THREE.Mesh | null>(null);
   const windVaneRef = useRef<THREE.Group | null>(null);
   const rainSystemRef = useRef<THREE.Points | null>(null);
   const lightningLightRef = useRef<THREE.PointLight | null>(null);
@@ -67,8 +85,11 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
   const waterMeshRef = useRef<THREE.Mesh | null>(null);
   const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
   const hemiLightRef = useRef<THREE.HemisphereLight | null>(null);
+  const ambLightRef = useRef<THREE.AmbientLight | null>(null);
   const starsRef = useRef<THREE.Points | null>(null);
   const cloudsGroupRef = useRef<THREE.Group | null>(null);
+  const sunbeamsGroupRef = useRef<THREE.Group | null>(null);
+  const beaconLightsRef = useRef<THREE.PointLight[]>([]);
 
   // Keep props in refs for smooth animation loop
   const propsRef = useRef({
@@ -160,7 +181,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     // 1. Scene
     const scene = new THREE.Scene();
     sceneRef.current = scene;
-    scene.fog = new THREE.FogExp2(0x0f172a, 0.018);
+    scene.fog = new THREE.FogExp2(0x1e293b, 0.012); // Lighter, clearer atmospheric fog
 
     // 2. Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
@@ -172,9 +193,9 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap; // Reverted to avoid deprecation warning
-    renderer.toneMapping = THREE.ACESFilmicToneMapping; // Cinematic tone mapping
-    renderer.toneMappingExposure = 1.1; // Cinematic exposure
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = isBrightBoost ? 1.55 : 1.32; // Crisp, luminous high visibility
     rendererRef.current = renderer;
     container.appendChild(renderer.domElement);
 
@@ -188,13 +209,17 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     controls.target.set(0, 4, 0);
     controlsRef.current = controls;
 
-    // 5. Lighting Setup
-    const hemiLight = new THREE.HemisphereLight(0x93c5fd, 0x1e293b, 0.8);
+    // 5. Lighting Setup - Multi-Source Luminous Illumination
+    const ambLight = new THREE.AmbientLight(0xe0f2fe, 0.65); // Soft omnidirectional skylight
+    scene.add(ambLight);
+    ambLightRef.current = ambLight;
+
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x166534, 1.2);
     hemiLight.position.set(0, 50, 0);
     scene.add(hemiLight);
     hemiLightRef.current = hemiLight;
 
-    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.2);
+    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.8);
     sunLight.position.set(25, 40, 20);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 1024;
@@ -208,20 +233,23 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     scene.add(sunLight);
     sunLightRef.current = sunLight;
 
-    // Lightning Flash Light (hidden by default)
-    const lightningLight = new THREE.PointLight(0xa5f3fc, 0, 100, 1.5);
+    // Observatory Station Architectural Warm Floodlight
+    const stationSpotlight = new THREE.PointLight(0xfef08a, 1.2, 35, 1.2);
+    stationSpotlight.position.set(-2, 8, -2);
+    scene.add(stationSpotlight);
+
+    // Lightning Flash Light (convective thunderstorm discharge)
+    const lightningLight = new THREE.PointLight(0xa5f3fc, 0, 120, 1.2);
     lightningLight.position.set(0, 35, 0);
     scene.add(lightningLight);
     lightningLightRef.current = lightningLight;
 
-    // 6. Ground & Terrain Mesh
+    // 6. Ground & Terrain Mesh - Vibrant Alpine Highlands
     const terrainGeo = new THREE.PlaneGeometry(80, 80, 48, 48);
-    // Add subtle rolling contours
     const posAttr = terrainGeo.attributes.position;
     for (let i = 0; i < posAttr.count; i++) {
       const x = posAttr.getX(i);
       const y = posAttr.getY(i);
-      // Gentle slope away from the observatory
       const distFromCenter = Math.sqrt(x * x + y * y);
       const elevation = Math.sin(x * 0.1) * Math.cos(y * 0.1) * 1.2 - (distFromCenter < 12 ? 0 : 0.8);
       posAttr.setZ(i, elevation);
@@ -229,8 +257,8 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     terrainGeo.computeVertexNormals();
 
     const groundMat = new THREE.MeshStandardMaterial({
-      color: 0x15803d,
-      roughness: 0.85,
+      color: 0x16a34a, // Vibrant lush alpine highland green
+      roughness: 0.75,
       metalness: 0.05,
       flatShading: true,
     });
@@ -239,28 +267,28 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     ground.receiveShadow = true;
     scene.add(ground);
 
-    // Distant Fantasy Mountain Ridges with Glacial Snowcaps
+    // Distant Mountain Ridges with Luminous Glacial Snowcaps & Shimmering Crystal Peaks
     const mountainGeo = new THREE.ConeGeometry(15, 20, 7);
     const mountainMat = new THREE.MeshStandardMaterial({
-      color: 0x18142c, // deep midnight indigo rock
-      roughness: 0.85,
-      metalness: 0.15,
+      color: 0x334155, // Rich slate granite rock
+      roughness: 0.8,
+      metalness: 0.2,
       flatShading: true,
     });
 
     const snowCapGeo = new THREE.ConeGeometry(6.5, 8.5, 7);
     const snowCapMat = new THREE.MeshStandardMaterial({
-      color: 0xf8fafc, // crisp alpine snow
-      roughness: 0.35,
-      metalness: 0.2,
+      color: 0xffffff, // Brilliant sunlit alpine snow
+      roughness: 0.2,
+      metalness: 0.1,
       flatShading: true,
     });
 
     const crystalVeinMat = new THREE.MeshStandardMaterial({
-      color: 0xc084fc,
-      emissive: 0x7e22ce,
-      emissiveIntensity: 0.5,
-      roughness: 0.2,
+      color: 0x818cf8,
+      emissive: 0x4338ca,
+      emissiveIntensity: 0.65,
+      roughness: 0.15,
       flatShading: true,
     });
 
@@ -389,19 +417,21 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     const wfDropPoints = new THREE.Points(wfDropGeo, wfDropMat);
     scene.add(wfDropPoints);
 
-    // 7. Water Catchment Basin / Lake (Dynamic Height)
-    const waterGeo = new THREE.PlaneGeometry(36, 26, 28, 28);
+    // 7. Water Catchment Basin / Lake (Dynamic Level & Refractive Ripples)
+    const waterGeo = new THREE.PlaneGeometry(38, 28, 32, 32);
     const waterMat = new THREE.MeshStandardMaterial({
-      color: 0x112838, // realistic deep alpine mountain lake water
-      roughness: 0.12,
-      metalness: 0.82,
+      color: 0x087ea4, // Deep crystal teal alpine lake water
+      roughness: 0.08,
+      metalness: 0.85,
       transparent: true,
-      opacity: 0.9,
+      opacity: 0.94,
+      depthWrite: true,
     });
     const waterMesh = new THREE.Mesh(waterGeo, waterMat);
     waterMesh.rotation.x = -Math.PI / 2;
     waterMesh.position.set(12, 0.05, 12);
     waterMesh.receiveShadow = true;
+    waterMesh.renderOrder = 5;
     scene.add(waterMesh);
     waterMeshRef.current = waterMesh;
 
@@ -460,7 +490,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     tower.castShadow = true;
     stationGroup.add(tower);
 
-    // 9. 3D DOPPLER RADAR RADOME
+    // 9. 3D DOPPLER RADAR RADOME & LOCALIZED SCANNING BEAM
     const radomeBaseGeo = new THREE.CylinderGeometry(0.5, 0.6, 2, 8);
     const radomeBase = new THREE.Mesh(radomeBaseGeo, towerMat);
     radomeBase.position.set(2.5, 5.6, 1.5);
@@ -468,11 +498,11 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
 
     const radomeSphereGeo = new THREE.SphereGeometry(1.4, 16, 16);
     const radomeSphereMat = new THREE.MeshStandardMaterial({
-      color: 0xf1f5f9,
-      roughness: 0.3,
-      metalness: 0.1,
+      color: 0xf8fafc,
+      roughness: 0.25,
+      metalness: 0.15,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.94,
     });
     const radome = new THREE.Mesh(radomeSphereGeo, radomeSphereMat);
     radome.position.set(2.5, 7.6, 1.5);
@@ -482,10 +512,27 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     const radarDishGroup = new THREE.Group();
     radarDishGroup.position.set(2.5, 7.6, 1.5);
     const dishGeo = new THREE.CylinderGeometry(0.9, 0.2, 0.2, 12);
-    const dishMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.7 });
+    const dishMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.2 });
     const dish = new THREE.Mesh(dishGeo, dishMat);
     dish.rotation.z = Math.PI / 3;
     radarDishGroup.add(dish);
+
+    // Localized Doppler scan beam (attached to rotating dish, never occluding landscape or water)
+    const radarBeamGeo = new THREE.ConeGeometry(1.4, 3.0, 16, 1, true);
+    const radarBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const radarBeam = new THREE.Mesh(radarBeamGeo, radarBeamMat);
+    radarBeam.rotation.x = Math.PI / 2;
+    radarBeam.position.set(0, 0, 1.5);
+    radarDishGroup.add(radarBeam);
+    radarPulseRef.current = radarBeam;
+
     stationGroup.add(radarDishGroup);
     radarDishRef.current = radarDishGroup;
 
@@ -500,6 +547,26 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     mast.position.y = 1.75;
     mast.castShadow = true;
     anemometerGroup.add(mast);
+
+    // Red Aviation Warning Beacons (blinking LEDs)
+    const beaconGeo = new THREE.SphereGeometry(0.18, 8, 8);
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const beaconMast = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconMast.position.set(-2, 11.5, -1);
+    stationGroup.add(beaconMast);
+
+    const beaconLight1 = new THREE.PointLight(0xef4444, 1.5, 8);
+    beaconLight1.position.set(-2, 11.5, -1);
+    stationGroup.add(beaconLight1);
+
+    const beaconRadome = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconRadome.position.set(2.5, 9.2, 1.5);
+    stationGroup.add(beaconRadome);
+
+    const beaconLight2 = new THREE.PointLight(0xef4444, 1.5, 8);
+    beaconLight2.position.set(2.5, 9.2, 1.5);
+    stationGroup.add(beaconLight2);
+    beaconLightsRef.current = [beaconLight1, beaconLight2];
 
     // Rotating Spindle & 3 Cups
     const cupsGroup = new THREE.Group();
@@ -553,6 +620,48 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     anemometerGroup.add(vaneGroup);
     windVaneRef.current = vaneGroup;
 
+    // Solar PV Panel Array on Observatory Roof
+    const solarFrameGeo = new THREE.BoxGeometry(3.5, 0.15, 2.2);
+    const solarFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+    const solarFrame = new THREE.Mesh(solarFrameGeo, solarFrameMat);
+    solarFrame.position.set(-1.8, 4.9, 1.8);
+    solarFrame.rotation.x = 0.35; // Tilted toward sunlight
+    stationGroup.add(solarFrame);
+
+    const solarCellGeo = new THREE.PlaneGeometry(3.3, 2.0);
+    const solarCellMat = new THREE.MeshStandardMaterial({
+      color: 0x1e3a8a,
+      roughness: 0.1,
+      metalness: 0.9,
+      emissive: 0x172554,
+      emissiveIntensity: 0.4,
+    });
+    const solarCells = new THREE.Mesh(solarCellGeo, solarCellMat);
+    solarCells.position.set(-1.8, 4.99, 1.8);
+    solarCells.rotation.x = -Math.PI / 2 + 0.35;
+    stationGroup.add(solarCells);
+
+    // Stevenson Meteorological Instrument Screen Box (White wooden slatted shelter)
+    const stevensonGroup = new THREE.Group();
+    stevensonGroup.position.set(5.0, 0, -4.0);
+    const stBoxGeo = new THREE.BoxGeometry(1.4, 1.2, 1.2);
+    const stBoxMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+    const stBox = new THREE.Mesh(stBoxGeo, stBoxMat);
+    stBox.position.y = 2.0;
+    stBox.castShadow = true;
+    stevensonGroup.add(stBox);
+
+    // Stilts / Legs for Stevenson screen
+    [-0.5, 0.5].forEach((sx) => {
+      [-0.4, 0.4].forEach((sz) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 6), stBoxMat);
+        leg.position.set(sx, 0.7, sz);
+        leg.castShadow = true;
+        stevensonGroup.add(leg);
+      });
+    });
+    stationGroup.add(stevensonGroup);
+
     // Rain Gauge Funnel on Building
     const rainGaugeGeo = new THREE.CylinderGeometry(0.4, 0.15, 0.8, 8);
     const rainGaugeMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, metalness: 0.5 });
@@ -561,6 +670,27 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
     stationGroup.add(rainGauge);
 
     scene.add(stationGroup);
+
+    // Volumetric Atmospheric Sunbeams / Light Shafts (God Rays)
+    const sunbeamsGroup = new THREE.Group();
+    const beamGeo = new THREE.ConeGeometry(8, 35, 16, 1, true);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0xfef08a,
+      transparent: true,
+      opacity: 0.12,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    [-12, 4, 16].forEach((bx, bIdx) => {
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.set(bx, 24, -8 + bIdx * 6);
+      beam.rotation.z = -0.25;
+      beam.rotation.x = 0.15;
+      sunbeamsGroup.add(beam);
+    });
+    scene.add(sunbeamsGroup);
+    sunbeamsGroupRef.current = sunbeamsGroup;
 
     // 11. 3D TREES & VEGETATION (Natural Environment)
     const treesGroup = new THREE.Group();
@@ -715,30 +845,33 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       hemiColor: new THREE.Color(0xffffff),
       hemiGroundColor: new THREE.Color(0x15803d),
       sunColor: new THREE.Color(0xffedd5),
-      hemiIntensity: 1.1,
-      sunIntensity: 1.3,
+      hemiIntensity: 1.2,
+      sunIntensity: 1.8,
     };
     
-    // Helper to get target colors based on time and weather
+    // Helper to get target colors based on time and weather (High-Visibility Luminous Palette)
     const getTargetLighting = (hour: number, regime: RainfallRegime) => {
       const isNightTime = hour === 0 || hour >= 21 || hour <= 4;
       const isDawnTime = hour > 4 && hour <= 8;
       const isDuskTime = hour >= 18 && hour < 21;
       
-      let tBg = 0x38bdf8, tFog = 0xbae6fd, tHemi = 0xffffff, tHemiGr = 0x15803d, tSun = 0xffedd5, tHemiInt = 1.1, tSunInt = 1.3;
+      let tBg = 0x38bdf8, tFog = 0xbae6fd, tHemi = 0xffffff, tHemiGr = 0x16a34a, tSun = 0xffedd5, tHemiInt = 1.45, tSunInt = 2.1;
 
       if (isNightTime) {
-        tBg = 0x050814; tFog = 0x050814; tHemi = 0x1e1b4b; tHemiGr = 0x030712; tSun = 0xa5b4fc; tHemiInt = 0.35; tSunInt = 0.4;
+        // Luminous sapphire night with starlight (never dark or murky)
+        tBg = 0x1e295d; tFog = 0x27356a; tHemi = 0xa5b4fc; tHemiGr = 0x1e293b; tSun = 0xc7d2fe; tHemiInt = 0.95; tSunInt = 1.2;
       } else if (isDawnTime) {
-        tBg = 0x312e81; tFog = 0x4338ca; tHemi = 0xfb923c; tHemiGr = 0x1e293b; tSun = 0xfde047; tHemiInt = 0.8; tSunInt = 1.0;
+        // Radiant golden-coral sunrise
+        tBg = 0x4338ca; tFog = 0x6366f1; tHemi = 0xfdba74; tHemiGr = 0x334155; tSun = 0xfef08a; tHemiInt = 1.35; tSunInt = 1.85;
       } else if (isDuskTime) {
-        tBg = 0x1e1b4b; tFog = 0x312e81; tHemi = 0xf43f5e; tHemiGr = 0x030712; tSun = 0xf97316; tHemiInt = 0.7; tSunInt = 0.8;
+        // Vibrant twilight dusk
+        tBg = 0x3730a3; tFog = 0x4f46e5; tHemi = 0xfb7185; tHemiGr = 0x1e293b; tSun = 0xfb923c; tHemiInt = 1.25; tSunInt = 1.65;
       } else {
-        // Midday
+        // Daytime / Midday
         if (regime === RainfallRegime.HEAVY_EXTREME) {
-          tBg = 0x0f172a; tFog = 0x0f172a; tHemi = 0x334155; tHemiGr = 0x020617; tSun = 0x94a3b8; tHemiInt = 0.5; tSunInt = 0.5;
+          tBg = 0x334155; tFog = 0x475569; tHemi = 0x94a3b8; tHemiGr = 0x1e293b; tSun = 0xe2e8f0; tHemiInt = 1.15; tSunInt = 1.45;
         } else if (regime === RainfallRegime.MODERATE) {
-          tBg = 0x1e293b; tFog = 0x1e293b; tHemi = 0x64748b; tHemiGr = 0x0f172a; tSun = 0xcbd5e1; tHemiInt = 0.75; tSunInt = 0.9;
+          tBg = 0x475569; tFog = 0x64748b; tHemi = 0xcbd5e1; tHemiGr = 0x1e293b; tSun = 0xf1f5f9; tHemiInt = 1.3; tSunInt = 1.7;
         }
       }
       return { tBg, tFog, tHemi, tHemiGr, tSun, tHemiInt, tSunInt, isNightTime };
@@ -752,8 +885,8 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
 
       const { windSpeed: targetWind, hour: targetHour, aiForecastMm: targetRain, detectedRegime: targetRegime } = propsRef.current;
       
-      // 1. Smooth Interpolations
-      const lerpSpeed = delta * 2.5; // Controls how fast it transitions
+      // 1. Smooth Framerate-Independent Exponential Interpolation
+      const lerpSpeed = 1 - Math.exp(-delta * 3.2);
       animState.windSpeed = THREE.MathUtils.lerp(animState.windSpeed, targetWind, lerpSpeed);
       animState.rainMm = THREE.MathUtils.lerp(animState.rainMm, targetRain, lerpSpeed);
       
@@ -762,7 +895,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         4.8,
         (targetRain / 100) * 3.6 + (targetRegime === RainfallRegime.HEAVY_EXTREME ? 1.8 : targetRegime === RainfallRegime.MODERATE ? 0.9 : 0)
       );
-      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.75);
+      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.85);
 
       const lighting = getTargetLighting(targetHour, targetRegime);
       animState.bgColor.lerp(new THREE.Color(lighting.tBg), lerpSpeed);
@@ -773,18 +906,26 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       animState.hemiIntensity = THREE.MathUtils.lerp(animState.hemiIntensity, lighting.tHemiInt, lerpSpeed);
       animState.sunIntensity = THREE.MathUtils.lerp(animState.sunIntensity, lighting.tSunInt, lerpSpeed);
 
+      // Smooth Dynamic Brightness Boost Scaling without Scene Recreation
+      const targetExposure = isBrightBoostRef.current ? 1.65 : 1.10;
+      renderer.toneMappingExposure = THREE.MathUtils.lerp(renderer.toneMappingExposure, targetExposure, lerpSpeed * 3);
+      const brightMultiplier = isBrightBoostRef.current ? 1.35 : 0.85;
+
       // Apply colors & intensities
       if (scene.background instanceof THREE.Color) scene.background.copy(animState.bgColor);
       if (scene.fog instanceof THREE.FogExp2) scene.fog.color.copy(animState.fogColor);
       
+      if (ambLightRef.current) {
+        ambLightRef.current.intensity = THREE.MathUtils.lerp(ambLightRef.current.intensity, 0.65 * brightMultiplier, lerpSpeed);
+      }
       if (hemiLightRef.current) {
         hemiLightRef.current.color.copy(animState.hemiColor);
         hemiLightRef.current.groundColor.copy(animState.hemiGroundColor);
-        hemiLightRef.current.intensity = animState.hemiIntensity;
+        hemiLightRef.current.intensity = animState.hemiIntensity * brightMultiplier;
       }
       if (sunLightRef.current) {
         sunLightRef.current.color.copy(animState.sunColor);
-        sunLightRef.current.intensity = animState.sunIntensity;
+        sunLightRef.current.intensity = animState.sunIntensity * brightMultiplier;
       }
       if (starsRef.current) {
         // Fade stars based on how dark the background is becoming
@@ -797,15 +938,38 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         starsRef.current.visible = (starsRef.current.material as THREE.PointsMaterial).opacity > 0.01;
       }
 
-      // Spin anemometer cups
+      // Spin anemometer cups smoothly
       if (anemometerCupsRef.current) {
         const spinRate = Math.max(0.6, animState.windSpeed * 0.18);
         anemometerCupsRef.current.rotation.y += spinRate * delta;
       }
 
-      // Rotate radar dish inside radome
+      // Rotate radar dish & localized scan cone beam
       if (radarDishRef.current) {
         radarDishRef.current.rotation.y += 2.2 * delta;
+      }
+      if (radarPulseRef.current) {
+        (radarPulseRef.current.material as THREE.MeshBasicMaterial).opacity = 0.25 + Math.sin(elapsed * 4) * 0.15;
+      }
+
+      // Blink red aviation warning beacons with realistic strobe pattern
+      if (beaconLightsRef.current.length > 0) {
+        const beaconFlash = Math.sin(elapsed * 5) > 0.25 ? 1.8 : 0.15;
+        beaconLightsRef.current.forEach((bl) => {
+          bl.intensity = beaconFlash;
+        });
+      }
+
+      // Sunbeams visibility & smooth fading
+      if (sunbeamsGroupRef.current) {
+        const showSunbeams = !lighting.isNightTime && (targetRegime === RainfallRegime.DRY || targetRegime === RainfallRegime.LIGHT || (targetHour >= 7 && targetHour <= 17));
+        const targetBeamOpacity = showSunbeams ? (isBrightBoostRef.current ? 0.16 : 0.09) : 0;
+        sunbeamsGroupRef.current.children.forEach((b, idx) => {
+          const mesh = b as THREE.Mesh;
+          const mat = mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetBeamOpacity, lerpSpeed);
+          mesh.rotation.y = elapsed * 0.04 + idx;
+        });
       }
 
       // Align wind vane with wind angle
@@ -813,7 +977,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         windVaneRef.current.rotation.y = Math.sin(elapsed * 0.4) * 0.25;
       }
 
-      // Sway trees with wind
+      // Sway trees with wind smoothly
       if (treesGroupRef.current) {
         const swayAmount = Math.min(0.28, Math.max(0.04, animState.windSpeed * 0.005));
         treesGroupRef.current.children.forEach((tree, idx) => {
@@ -826,11 +990,21 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         cloudsGroupRef.current.position.x = (elapsed * (animState.windSpeed * 0.04 + 0.4)) % 60 - 30;
       }
 
-      // Dynamic water level & dramatic flood inundation expansion
+      // Dynamic water level, flood inundation expansion & refractive surface wave ripples
       if (waterMeshRef.current) {
         waterMeshRef.current.position.y = animState.waterHeight;
         const floodSpread = 1.0 + Math.min(1.5, animState.waterHeight * 0.28);
         waterMeshRef.current.scale.set(floodSpread, floodSpread, 1);
+
+        const pos = waterGeo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const u = pos.getX(i);
+          const v = pos.getY(i);
+          const wave = Math.sin(u * 0.35 + elapsed * 2.5) * Math.cos(v * 0.35 + elapsed * 2.0) * 0.09;
+          pos.setZ(i, wave);
+        }
+        waterGeo.computeVertexNormals();
+        waterGeo.attributes.position.needsUpdate = true;
       }
 
       // Animate 3D Mountain Waterfall
@@ -857,12 +1031,14 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         wfDropGeo.attributes.position.needsUpdate = true;
       }
 
-      // Rain particle animation
+      // Rain particle animation with continuous smooth opacity fade
       if (rainSystemRef.current) {
-        const isRaining = animState.rainMm >= 0.5;
-        rainSystemRef.current.visible = isRaining;
+        const targetRainOpacity = animState.rainMm > 0.5 ? Math.min(0.85, animState.rainMm * 0.02 + 0.15) : 0;
+        const rainMat = rainSystemRef.current.material as THREE.PointsMaterial;
+        rainMat.opacity = THREE.MathUtils.lerp(rainMat.opacity, targetRainOpacity, lerpSpeed);
+        rainSystemRef.current.visible = rainMat.opacity > 0.01;
 
-        if (isRaining) {
+        if (rainSystemRef.current.visible) {
           const positions = rainSystemRef.current.geometry.attributes.position.array as Float32Array;
           const fallSpeed = Math.max(12, animState.rainMm * 0.45);
           const windDrift = (animState.windSpeed / 35) * fallSpeed * 0.35;
@@ -879,8 +1055,6 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
             }
           }
           rainSystemRef.current.geometry.attributes.position.needsUpdate = true;
-          // Dynamically adjust rain opacity based on intensity
-          (rainSystemRef.current.material as THREE.PointsMaterial).opacity = Math.min(0.8, animState.rainMm * 0.02 + 0.1);
         }
       }
 
@@ -888,7 +1062,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       if (targetRegime === RainfallRegime.HEAVY_EXTREME && elapsed > nextLightningTime) {
         nextLightningTime = elapsed + 3.0 + Math.random() * 3.5;
         if (lightningLightRef.current && lightningMeshRef.current) {
-          lightningLightRef.current.intensity = 4.5;
+          lightningLightRef.current.intensity = 5.5;
           lightningLightRef.current.position.set((Math.random() - 0.5) * 30, 25, (Math.random() - 0.5) * 30);
 
           // Generate branching forked lightning path
@@ -903,7 +1077,8 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
             boltPoints.push(curPt.clone());
           }
 
-          lightningMeshRef.current.geometry.setFromPoints(boltPoints);
+          lightningMeshRef.current.geometry.dispose();
+          lightningMeshRef.current.geometry = new THREE.BufferGeometry().setFromPoints(boltPoints);
           lightningMeshRef.current.visible = true;
 
           // Quick fade-out timeout
@@ -914,12 +1089,10 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
         }
       }
 
-      // Auto-orbit camera rotation when enabled
-      if (isAutoRotating && controlsRef.current) {
-        controlsRef.current.autoRotate = true;
+      // Auto-orbit camera rotation when enabled via reactive ref
+      if (controlsRef.current) {
+        controlsRef.current.autoRotate = isAutoRotatingRef.current;
         controlsRef.current.autoRotateSpeed = 0.8;
-      } else if (controlsRef.current) {
-        controlsRef.current.autoRotate = false;
       }
 
       controls.update();
@@ -937,7 +1110,7 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
       }
       renderer.dispose();
     };
-  }, [isAutoRotating]);
+  }, []);
 
   // Handle Preset Camera Angles
   const handleSetCamera = (mode: 'perspective' | 'top' | 'station') => {
@@ -1043,6 +1216,21 @@ export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
             title="Reset 3D View"
           >
             <Maximize2 className="w-3 h-3" />
+          </button>
+
+          <div className="h-3.5 w-[1px] bg-slate-700" />
+
+          <button
+            onClick={() => setIsBrightBoost(!isBrightBoost)}
+            className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-colors flex items-center gap-1 ${
+              isBrightBoost
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Toggle High Brightness & Visibility Mode"
+          >
+            <Sun className="w-3 h-3 text-amber-400" />
+            <span>{isBrightBoost ? 'Bright: ON' : 'Bright: OFF'}</span>
           </button>
 
           {onToggle2D && (

@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import * as THREE from 'three';
-import { Volume2, VolumeX, SkipForward, RotateCcw, ArrowUpRight, Sparkles, Mountain, Droplets, CloudRain, Bot, Waves, Plus, Minus, Activity } from 'lucide-react';
+import { Volume2, VolumeX, SkipForward, RotateCcw, ArrowUpRight, Sparkles, Mountain, Droplets, Bot, Waves, Plus, Minus, Activity, Sun, Zap, Wind, Compass, Sliders, RefreshCw, ShieldCheck, AlertTriangle, AlertOctagon, Info, Eye, X } from 'lucide-react';
+import { GlassCondensationOverlay } from './GlassCondensationOverlay';
+import { DopplerRadarWidget } from './DopplerRadarWidget';
+import { VolumetricFreefall3D } from './VolumetricFreefall3D';
 
 interface CinematicIntroProps {
   onComplete: () => void;
+  isAudioMuted?: boolean;
+  onToggleAudio?: () => void;
 }
 
 // Visual timeline durations (in seconds)
@@ -76,12 +81,12 @@ interface SplashDroplet {
   opacity: number;
 }
 
-export function CinematicIntro({ onComplete }: CinematicIntroProps) {
+export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: CinematicIntroProps) {
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   const mountainCanvasRef = useRef<HTMLCanvasElement>(null);
   const [currentTime, setCurrentTime] = useState<number>(0);
   const [currentPhase, setCurrentPhase] = useState<'peaks' | 'waterfall' | 'reveal'>('peaks');
-  const [isMuted, setIsMuted] = useState<boolean>(true); // Sound defaults to muted until user clicks sound button
+  const [isMuted, setIsMuted] = useState<boolean>(isAudioMuted ?? true); // Sound defaults to muted until user clicks sound button
   const [hasInteracted, setHasInteracted] = useState<boolean>(false);
   const [isPlunging, setIsPlunging] = useState<boolean>(false);
   const isPlungingRef = useRef<boolean>(false);
@@ -91,10 +96,46 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
   isFloodSurgingRef.current = isFloodSurging;
   const lastReportedFloodRef = useRef<number>(0);
 
-  // User Interactive Flood Water Physics & Controls
-  const [manualWaterLevel, setManualWaterLevel] = useState<number | null>(null); // 0.0 to 1.0 (null = auto)
-  const manualWaterLevelRef = useRef<number | null>(null);
-  manualWaterLevelRef.current = manualWaterLevel;
+  // Sync with prop if changed from outside
+  useEffect(() => {
+    if (typeof isAudioMuted === 'boolean') {
+      setIsMuted(isAudioMuted);
+      isMutedRef.current = isAudioMuted;
+    }
+  }, [isAudioMuted]);
+
+  // Time-of-Day Lighting Presets: 'dawn' | 'monsoon' | 'night'
+  const [timeOfDay, setTimeOfDay] = useState<'dawn' | 'monsoon' | 'night'>('monsoon');
+  const timeOfDayRef = useRef<'dawn' | 'monsoon' | 'night'>('monsoon');
+  timeOfDayRef.current = timeOfDay;
+
+  // Lens Condensation & Screen Defogging & Ultra Clarity Mode
+  const [showCondensation, setShowCondensation] = useState<boolean>(false);
+  const [isUltraClarity, setIsUltraClarity] = useState<boolean>(true);
+  const isUltraClarityRef = useRef<boolean>(true);
+  isUltraClarityRef.current = isUltraClarity;
+  const [showWaterMeterDeck, setShowWaterMeterDeck] = useState<boolean>(true);
+  const cameraTremorRef = useRef<number>(0);
+  const [activeWeatherPreset, setActiveWeatherPreset] = useState<'clear' | 'monsoon' | 'squall' | 'surge'>('monsoon');
+
+  // User Interactive Flood Water Physics & Controls (Unified Real-Time Hydrologic Gauge)
+  const [isCircleHubOpen, setIsCircleHubOpen] = useState<boolean>(false);
+  const [waterLevelRatio, setWaterLevelRatio] = useState<number>(0.35); // 0.0 to 1.0 (starts at 0.35 - Regulated Flow)
+  const waterLevelRatioRef = useRef<number>(0.35);
+  waterLevelRatioRef.current = waterLevelRatio;
+  const [isAutoSurging, setIsAutoSurging] = useState<boolean>(false);
+  const isAutoSurgingRef = useRef<boolean>(false);
+  isAutoSurgingRef.current = isAutoSurging;
+
+  // Real-time bidirectional water level setter that updates 3D mesh and state simultaneously
+  const handleSetWaterLevel = useCallback((val: number) => {
+    const clamped = Math.max(0.0, Math.min(1.0, Math.round(val * 100) / 100));
+    setWaterLevelRatio(clamped);
+    waterLevelRatioRef.current = clamped;
+    setIsAutoSurging(false);
+    isAutoSurgingRef.current = false;
+    triggerWaterSplashFnRef.current?.(0, 0, 1.4 + clamped * 1.2);
+  }, []);
 
   const [waterHoverInfo, setWaterHoverInfo] = useState<{ x: number; y: number; depthM: string; currentMps: string } | null>(null);
   const [floatingLogsCount, setFloatingLogsCount] = useState<number>(0);
@@ -106,56 +147,369 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
   // Interactive Letter Hover & Cursor Tracking
   const [hoveredLetterIndex, setHoveredLetterIndex] = useState<number | null>(null);
-  const [letterGlowStrengths, setLetterGlowStrengths] = useState<number[]>(new Array(11).fill(0));
+  const [letterGlowStrengths, setLetterGlowStrengths] = useState<number[]>(new Array(12).fill(0));
   const letterElementsRef = useRef<(HTMLSpanElement | null)[]>([]);
+
+  // Visible Falling Thunder & Lightning Screen Effects
+  const [screenFlash, setScreenFlash] = useState<number>(0);
+  const lightningCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const lightningFlashRef = useRef<number>(0);
+  const showcaseContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Active Thunder Strikes & Water Dilution data for canvas rendering
+  interface LightningSegment {
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    width: number;
+    isBranch?: boolean;
+  }
+  interface LightningSpark {
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    life: number;
+    maxLife: number;
+    color: string;
+  }
+  interface WaterDilutionWave {
+    id: number;
+    cx: number;
+    cy: number;
+    radius: number;
+    maxRadius: number;
+    alpha: number;
+    filaments: LightningSegment[];
+    sparks: LightningSpark[];
+  }
+  interface ActiveStrike {
+    id: number;
+    segments: LightningSegment[];
+    sparks: LightningSpark[];
+    waterImpactX: number;
+    waterImpactY: number;
+    startTime: number;
+    duration: number;
+  }
+  const activeStrikesRef = useRef<ActiveStrike[]>([]);
+  const waterDilutionsRef = useRef<WaterDilutionWave[]>([]);
 
   // Audio synthesis references
   const audioCtxRef = useRef<AudioContext | null>(null);
   const ambientGainRef = useRef<GainNode | null>(null);
   const waterGainRef = useRef<GainNode | null>(null);
   const chimeTriggeredRef = useRef<boolean>(false);
-  const isMutedRef = useRef<boolean>(true);
+  const isMutedRef = useRef<boolean>(isMuted);
   isMutedRef.current = isMuted;
   const startTimeRef = useRef<number>(performance.now());
 
-  // Celestial micro-chime on letter hover
-  const playLetterHoverTone = useCallback((index: number) => {
-    if (!audioCtxRef.current || isMutedRef.current) return;
+  // Deep Procedural Thunder Rumble Sound Synthesizer (Massive volumetric canyon resonance)
+  const playThunderRumble = useCallback((index: number) => {
     try {
+      if (!audioCtxRef.current) {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) audioCtxRef.current = new AudioCtx();
+      }
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-      // Ethereal pentatonic scale (A minor / C celestial notes)
-      const celestialPitches = [
-        329.63, // E4
-        392.00, // G4
-        440.00, // A4
-        523.25, // C5
-        587.33, // D5
-        659.25, // E5
-        783.99, // G5
-        880.00, // A5
-        1046.50, // C6
-        1174.66, // D6
-        1318.51, // E6
-      ];
-      const pitch = celestialPitches[index % celestialPitches.length];
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(pitch, ctx.currentTime);
+      if (!ctx) return;
+      if (ctx.state === 'suspended') {
+        ctx.resume();
+      }
 
-      gain.gain.setValueAtTime(0.001, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.45);
+      const t = ctx.currentTime;
 
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.46);
+      // 1. Initial High-Voltage Lightning Arc Snap / Crack (55ms sharp transient supersonic burst)
+      const crackLen = Math.floor(ctx.sampleRate * 0.075);
+      const crackBuf = ctx.createBuffer(1, crackLen, ctx.sampleRate);
+      const crackData = crackBuf.getChannelData(0);
+      for (let i = 0; i < crackLen; i++) {
+        crackData[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.016));
+      }
+      const crackSource = ctx.createBufferSource();
+      crackSource.buffer = crackBuf;
+      const crackFilter = ctx.createBiquadFilter();
+      crackFilter.type = 'bandpass';
+      crackFilter.frequency.setValueAtTime(1600 + (index % 4) * 180, t);
+      crackFilter.Q.setValueAtTime(3.2, t);
+
+      const crackGain = ctx.createGain();
+      crackGain.gain.setValueAtTime(0.95, t);
+      crackGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+
+      crackSource.connect(crackFilter);
+      crackFilter.connect(crackGain);
+
+      // 2. Rolling Canyon Resonance Reverberation (Brownian Noise Wave)
+      const rumbleLen = Math.floor(ctx.sampleRate * 3.4);
+      const rumbleBuf = ctx.createBuffer(1, rumbleLen, ctx.sampleRate);
+      const rumbleData = rumbleBuf.getChannelData(0);
+      let brownAcc1 = 0;
+      let brownAcc2 = 0;
+      for (let i = 0; i < rumbleLen; i++) {
+        const white1 = Math.random() * 2 - 1;
+        const white2 = Math.random() * 2 - 1;
+        brownAcc1 = (brownAcc1 + 0.048 * white1) / 1.048;
+        brownAcc2 = (brownAcc2 + 0.026 * white2) / 1.026;
+        const progress = i / rumbleLen;
+        const roll1 = Math.sin(progress * Math.PI * 4) * 0.38 + 0.62;
+        const roll2 = Math.sin(progress * Math.PI * 8) * 0.28 + 0.72;
+        rumbleData[i] = (brownAcc1 * 4.6 + brownAcc2 * 3.0) * roll1 * roll2;
+      }
+      const rumbleSource = ctx.createBufferSource();
+      rumbleSource.buffer = rumbleBuf;
+
+      const rumbleFilter = ctx.createBiquadFilter();
+      rumbleFilter.type = 'lowpass';
+      const initialFreq = 290 + (index % 6) * 25;
+      rumbleFilter.frequency.setValueAtTime(initialFreq, t);
+      rumbleFilter.frequency.exponentialRampToValueAtTime(22, t + 3.1);
+      rumbleFilter.Q.setValueAtTime(5.2, t);
+
+      const rumbleGain = ctx.createGain();
+      rumbleGain.gain.setValueAtTime(0.001, t);
+      rumbleGain.gain.linearRampToValueAtTime(0.98, t + 0.04);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.65, t + 0.55);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.35, t + 1.35);
+      rumbleGain.gain.exponentialRampToValueAtTime(0.0001, t + 3.35);
+
+      rumbleSource.connect(rumbleFilter);
+      rumbleFilter.connect(rumbleGain);
+
+      // 3. Dual Sub-Bass Seismic Shockwave Thump (Deep physical canyon vibration)
+      const subOsc1 = ctx.createOscillator();
+      subOsc1.type = 'sine';
+      subOsc1.frequency.setValueAtTime(50 + (index % 4) * 3, t);
+      subOsc1.frequency.exponentialRampToValueAtTime(18, t + 2.4);
+
+      const subGain1 = ctx.createGain();
+      subGain1.gain.setValueAtTime(0.001, t);
+      subGain1.gain.linearRampToValueAtTime(0.78, t + 0.04);
+      subGain1.gain.exponentialRampToValueAtTime(0.0001, t + 2.4);
+      subOsc1.connect(subGain1);
+
+      const subOsc2 = ctx.createOscillator();
+      subOsc2.type = 'triangle';
+      subOsc2.frequency.setValueAtTime(36, t);
+      subOsc2.frequency.exponentialRampToValueAtTime(14, t + 2.8);
+
+      const subGain2 = ctx.createGain();
+      subGain2.gain.setValueAtTime(0.001, t);
+      subGain2.gain.linearRampToValueAtTime(0.58, t + 0.06);
+      subGain2.gain.exponentialRampToValueAtTime(0.0001, t + 2.85);
+      subOsc2.connect(subGain2);
+
+      // 4. Stereo Panning based on letter position across screen (-0.85 to +0.85)
+      const panNode = ctx.createStereoPanner ? ctx.createStereoPanner() : null;
+      const panVal = Math.max(-0.85, Math.min(0.85, (index - 5.5) / 6.0));
+      if (panNode) {
+        panNode.pan.setValueAtTime(panVal, t);
+        crackGain.connect(panNode);
+        rumbleGain.connect(panNode);
+        subGain1.connect(panNode);
+        subGain2.connect(panNode);
+        panNode.connect(ctx.destination);
+      } else {
+        crackGain.connect(ctx.destination);
+        rumbleGain.connect(ctx.destination);
+        subGain1.connect(ctx.destination);
+        subGain2.connect(ctx.destination);
+      }
+
+      crackSource.start(t);
+      rumbleSource.start(t);
+      subOsc1.start(t);
+      subOsc2.start(t);
+
+      crackSource.stop(t + 0.08);
+      rumbleSource.stop(t + 3.4);
+      subOsc1.stop(t + 2.45);
+      subOsc2.stop(t + 2.9);
     } catch {
-      // fallback
+      // Audio fallback
     }
   }, []);
+
+  // Spectacular Multi-Bolt Branching Fractal Lightning Strike Generator
+  const triggerVisibleThunder = useCallback((index: number) => {
+    const container = showcaseContainerRef.current;
+    const canvas = lightningCanvasRef.current;
+    if (!container || !canvas) return;
+
+    const contRect = container.getBoundingClientRect();
+    const el = letterElementsRef.current[index];
+    const letterRect = el ? el.getBoundingClientRect() : null;
+
+    // Relative target coordinates on the canvas
+    const targetMidX = letterRect
+      ? (letterRect.left + letterRect.width / 2) - contRect.left
+      : contRect.width * (0.15 + (index / 12) * 0.7);
+    const targetMidY = letterRect
+      ? (letterRect.top + letterRect.height / 2) - contRect.top
+      : contRect.height * 0.22;
+
+    const startX = targetMidX + (Math.random() - 0.5) * 50;
+    const startY = 0; // Starts in storm clouds at top of viewport
+
+    // Dynamic water surface line based on waterLevelRatio (rises higher with water level)
+    const currentRatio = waterLevelRatioRef.current;
+    const waterSurfaceY = Math.max(contRect.height * 0.44, contRect.height * (0.86 - currentRatio * 0.38));
+    const groundX = targetMidX + (Math.random() - 0.5) * 120;
+    const groundY = waterSurfaceY; // Electricity falls straight into water surface!
+
+    const segments: LightningSegment[] = [];
+    const sparks: LightningSpark[] = [];
+
+    // Recursive fractal branch generation with high-voltage jitter
+    const buildBranch = (
+      x1: number,
+      y1: number,
+      x2: number,
+      y2: number,
+      depth: number,
+      roughness: number,
+      isBranch: boolean
+    ) => {
+      if (depth <= 0) {
+        segments.push({
+          x1,
+          y1,
+          x2,
+          y2,
+          width: isBranch ? 1.6 : 3.4,
+          isBranch,
+        });
+        if (Math.random() < 0.5) {
+          sparks.push({
+            x: x2,
+            y: y2,
+            vx: (Math.random() - 0.5) * 4.5,
+            vy: 2.0 + Math.random() * 5.0,
+            life: 0,
+            maxLife: 24 + Math.random() * 28,
+            color: Math.random() < 0.6 ? '#38bdf8' : '#e0e7ff',
+          });
+        }
+        return;
+      }
+
+      const midX = (x1 + x2) / 2;
+      const midY = (y1 + y2) / 2;
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const len = Math.hypot(dx, dy);
+      const normalX = -dy / (len || 1);
+      const normalY = dx / (len || 1);
+
+      const offset = (Math.random() - 0.5) * roughness;
+      const displacedX = midX + normalX * offset;
+      const displacedY = midY + normalY * offset;
+
+      buildBranch(x1, y1, displacedX, displacedY, depth - 1, roughness * 0.65, isBranch);
+      buildBranch(displacedX, displacedY, x2, y2, depth - 1, roughness * 0.65, isBranch);
+
+      // Fork off energetic side lightning branches
+      if (!isBranch && depth >= 3 && Math.random() < 0.72) {
+        const sideSign = Math.random() > 0.5 ? 1 : -1;
+        const branchAngle = sideSign * (0.40 + Math.random() * 0.40);
+        const branchLen = len * (0.35 + Math.random() * 0.38);
+        const cosA = Math.cos(branchAngle);
+        const sinA = Math.sin(branchAngle);
+        const dirX = (dx / len) * cosA - (dy / len) * sinA;
+        const dirY = (dx / len) * sinA + (dy / len) * cosA;
+        const bEndX = displacedX + dirX * branchLen;
+        const bEndY = displacedY + dirY * branchLen;
+
+        buildBranch(displacedX, displacedY, bEndX, bEndY, 3, roughness * 0.52, true);
+      }
+    };
+
+    // Upper trunk: clouds down to the letter
+    buildBranch(startX, startY, targetMidX, targetMidY, 4, 34, false);
+    // Lower trunk: letter plunging directly into the lake water surface
+    buildBranch(targetMidX, targetMidY, groundX, groundY, 5, 45, false);
+
+    // Fork 2: Secondary lightning bolt striking adjacent mountain ridge
+    const ridgeX = targetMidX + (index % 2 === 0 ? -1 : 1) * (90 + Math.random() * 70);
+    const ridgeY = waterSurfaceY * 0.72;
+    buildBranch(targetMidX, targetMidY, ridgeX, ridgeY, 4, 30, true);
+
+    // ELECTRIC WATER DILUTION: Generate horizontal dendritic surface filaments spreading through water
+    const waterFilaments: LightningSegment[] = [];
+    const buildWaterFilament = (x1: number, y1: number, x2: number, y2: number, depth: number) => {
+      if (depth <= 0) {
+        waterFilaments.push({ x1, y1, x2, y2, width: 2.0, isBranch: true });
+        return;
+      }
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2 + (Math.random() - 0.5) * 8;
+      buildWaterFilament(x1, y1, mx, my, depth - 1);
+      buildWaterFilament(mx, my, x2, y2, depth - 1);
+    };
+
+    // Spread left and right across water surface
+    const spreadSpan = 110 + Math.random() * 110;
+    buildWaterFilament(groundX, groundY, groundX - spreadSpan, groundY + (Math.random() - 0.5) * 10, 3);
+    buildWaterFilament(groundX, groundY, groundX + spreadSpan, groundY + (Math.random() - 0.5) * 10, 3);
+    buildWaterFilament(groundX, groundY, groundX - spreadSpan * 0.6, groundY + 8 + Math.random() * 14, 2);
+    buildWaterFilament(groundX, groundY, groundX + spreadSpan * 0.6, groundY + 8 + Math.random() * 14, 2);
+
+    // Water surface electrified bubbles & steam sparks rising after strike
+    const waterSparks: LightningSpark[] = [];
+    for (let sp = 0; sp < 24; sp++) {
+      waterSparks.push({
+        x: groundX + (Math.random() - 0.5) * spreadSpan * 1.6,
+        y: groundY + (Math.random() - 0.5) * 8,
+        vx: (Math.random() - 0.5) * 3.8,
+        vy: -(1.0 + Math.random() * 3.5),
+        life: 0,
+        maxLife: 35 + Math.random() * 40,
+        color: Math.random() < 0.6 ? '#06b6d4' : '#67e8f9',
+      });
+    }
+
+    activeStrikesRef.current.push({
+      id: Date.now() + Math.random(),
+      segments,
+      sparks,
+      waterImpactX: groundX,
+      waterImpactY: groundY,
+      startTime: performance.now(),
+      duration: 420,
+    });
+
+    // Add active water dilution ripple wave on the water surface
+    waterDilutionsRef.current.push({
+      id: Date.now() + Math.random(),
+      cx: groundX,
+      cy: groundY,
+      radius: 8,
+      maxRadius: spreadSpan * 1.45,
+      alpha: 1.0,
+      filaments: waterFilaments,
+      sparks: waterSparks,
+    });
+
+    // Trigger 3D Water physical splash and electric wave in Three.js scene
+    const worldNormX = (groundX / contRect.width - 0.5) * 14;
+    triggerWaterSplashFnRef.current?.(worldNormX, 0, 3.2);
+
+    // Trigger Physical Camera Tremor / Screen Shake
+    cameraTremorRef.current = 1.3;
+
+    // Momentary screen illumination flash
+    setScreenFlash(0.68);
+
+    // 3D Scene Volumetric Flash (mountain peaks & lake water burst into luminous electric blue)
+    lightningFlashRef.current = 1.3;
+  }, []);
+
+  // Combined Letter Thunder Trigger (Rumble audio + visible lightning falling over screen & diluting into water)
+  const triggerThunderStrike = useCallback((index: number) => {
+    playThunderRumble(index);
+    triggerVisibleThunder(index);
+  }, [playThunderRumble, triggerVisibleThunder]);
 
   // Realistic Procedural Water Splash Sound Synthesizer
   const playWaterSplashTone = useCallback((strength: number = 1.0) => {
@@ -242,13 +596,13 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     setFloodDepth(0);
   }, []);
 
-  // Waterfall plunge & fog transition on Enter
-  const handleEnterWaterfall = useCallback(() => {
+    // Atmospheric Cloud Freefall & Grid Descent transition on Enter (Paced for full visibility)
+    const handleEnterWaterfall = useCallback(() => {
     if (isPlungingRef.current) return;
     isPlungingRef.current = true;
     setIsPlunging(true);
 
-    // Dynamic waterfall audio rush & deep sub-bass cinematic plunge
+    // High-altitude cloud piercing whoosh & atmospheric slipstream soundscape with auto fadeout
     if (audioCtxRef.current && !isMutedRef.current) {
       try {
         const ctx = audioCtxRef.current;
@@ -256,28 +610,62 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         if (waterGainRef.current) {
           waterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
           waterGainRef.current.gain.setValueAtTime(waterGainRef.current.gain.value, ctx.currentTime);
-          waterGainRef.current.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.6);
-          waterGainRef.current.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 2.0);
+          waterGainRef.current.gain.linearRampToValueAtTime(0.55, ctx.currentTime + 0.8);
+          waterGainRef.current.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.8);
         }
-        // Sub-bass cinematic impact & plunge whoosh
+        if (ambientGainRef.current) {
+          ambientGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
+          ambientGainRef.current.gain.setValueAtTime(ambientGainRef.current.gain.value, ctx.currentTime);
+          ambientGainRef.current.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.2);
+        }
+        // Atmospheric slipstream pitch drop & grid descent whoosh
         const osc = ctx.createOscillator();
         const oscGain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(160, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(28, ctx.currentTime + 1.25);
-        oscGain.gain.setValueAtTime(0.38, ctx.currentTime);
-        oscGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.4);
-        osc.connect(oscGain);
+        osc.type = 'sawtooth';
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(1000, ctx.currentTime);
+        filter.frequency.exponentialRampToValueAtTime(60, ctx.currentTime + 4.8);
+
+        osc.frequency.setValueAtTime(420, ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(28, ctx.currentTime + 4.8);
+        oscGain.gain.setValueAtTime(0.3, ctx.currentTime);
+        oscGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.8);
+
+        // Sub-bass touchdown impact oscillator
+        const subOsc = ctx.createOscillator();
+        const subGain = ctx.createGain();
+        subOsc.type = 'sine';
+        subOsc.frequency.setValueAtTime(90, ctx.currentTime + 3.8);
+        subOsc.frequency.exponentialRampToValueAtTime(24, ctx.currentTime + 4.9);
+        subGain.gain.setValueAtTime(0.001, ctx.currentTime + 3.8);
+        subGain.gain.linearRampToValueAtTime(0.32, ctx.currentTime + 4.2);
+        subGain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 4.95);
+
+        osc.connect(filter);
+        filter.connect(oscGain);
         oscGain.connect(ctx.destination);
+        subOsc.connect(subGain);
+        subGain.connect(ctx.destination);
+
         osc.start();
-        osc.stop(ctx.currentTime + 1.5);
+        subOsc.start(ctx.currentTime + 3.8);
+        osc.stop(ctx.currentTime + 4.9);
+        subOsc.stop(ctx.currentTime + 4.95);
       } catch {}
     }
 
-    // After camera plunges deep into the waterfall and thick fog envelops screen completely (1.35s), complete intro
+    // Extended freefall descent (5.0s) so volumetric clouds, vapor rings, and mist are clearly enjoyed
     setTimeout(() => {
+      if (audioCtxRef.current) {
+        try {
+          if (ambientGainRef.current) ambientGainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+          if (waterGainRef.current) waterGainRef.current.gain.setValueAtTime(0, audioCtxRef.current.currentTime);
+          audioCtxRef.current.suspend().catch(() => {});
+        } catch {}
+      }
       onComplete();
-    }, 1350);
+    }, 5000);
   }, [onComplete]);
 
   // Web Audio API procedural soundscape: cosmic ambient drone + mountain waterfall + crystalline harmonic chord
@@ -375,6 +763,35 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     }
   }, []);
 
+  const playCelestialChime = useCallback((ctx?: AudioContext) => {
+    const targetCtx = ctx || audioCtxRef.current;
+    if (!targetCtx || isMutedRef.current) return;
+    try {
+      if (targetCtx.state === 'suspended') {
+        targetCtx.resume().catch(() => {});
+      }
+      const t = targetCtx.currentTime;
+      // Majestic modern chords: F# - A# - C# - E# - G# (Luxury ethereal voicing)
+      const freqs = [369.99, 466.16, 554.37, 739.99, 932.33, 1108.73];
+      freqs.forEach((freq, idx) => {
+        const osc = targetCtx.createOscillator();
+        const gain = targetCtx.createGain();
+        osc.type = 'sine';
+        const start = t + idx * 0.07;
+        osc.frequency.setValueAtTime(freq, start);
+
+        gain.gain.setValueAtTime(0.001, start);
+        gain.gain.linearRampToValueAtTime(0.18 / (idx + 1), start + 0.03);
+        gain.gain.exponentialRampToValueAtTime(0.0001, start + 3.5);
+
+        osc.connect(gain);
+        gain.connect(targetCtx.destination);
+        osc.start(start);
+        osc.stop(start + 3.6);
+      });
+    } catch {}
+  }, []);
+
   const toggleSound = (e?: React.MouseEvent) => {
     e?.stopPropagation();
     if (!audioCtxRef.current) {
@@ -384,21 +801,24 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     setIsMuted(nextMuted);
     isMutedRef.current = nextMuted;
     setHasInteracted(true);
+    onToggleAudio?.();
 
     if (audioCtxRef.current) {
       const ctx = audioCtxRef.current;
       if (!nextMuted) {
         if (ctx.state === 'suspended') {
-          ctx.resume();
+          ctx.resume().catch(() => {});
         }
         if (ambientGainRef.current) {
           ambientGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
-          ambientGainRef.current.gain.setTargetAtTime(0.26, ctx.currentTime, 0.08);
+          ambientGainRef.current.gain.setValueAtTime(0.34, ctx.currentTime);
         }
         if (waterGainRef.current) {
           waterGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
-          waterGainRef.current.gain.setTargetAtTime(0.20, ctx.currentTime, 0.08);
+          waterGainRef.current.gain.setValueAtTime(0.26, ctx.currentTime);
         }
+        // Play instant glorious celestial chime
+        playCelestialChime(ctx);
       } else {
         if (ambientGainRef.current) {
           ambientGainRef.current.gain.cancelScheduledValues(ctx.currentTime);
@@ -434,6 +854,196 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       }
     }
   }, [isMuted]);
+
+  // Screen flash decay effect
+  useEffect(() => {
+    if (screenFlash <= 0.01) return;
+    const timer = setTimeout(() => {
+      setScreenFlash(prev => Math.max(0, prev * 0.72 - 0.04));
+    }, 35);
+    return () => clearTimeout(timer);
+  }, [screenFlash]);
+
+  // =========================================================================
+  // LIGHTNING OVERLAY CANVAS: Dynamic Branching Thunder Arcs & Falling Sparks
+  // =========================================================================
+  useEffect(() => {
+    const canvas = lightningCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animId: number;
+    const handleResize = () => {
+      if (!canvas || !canvas.parentElement) return;
+      const rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width;
+      canvas.height = rect.height;
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const now = performance.now();
+
+      // Render Active Lightning Strikes
+      for (let i = activeStrikesRef.current.length - 1; i >= 0; i--) {
+        const strike = activeStrikesRef.current[i];
+        const age = now - strike.startTime;
+        const progress = age / strike.duration;
+        if (progress >= 1.0) {
+          activeStrikesRef.current.splice(i, 1);
+          continue;
+        }
+
+        // Violent electrical flicker
+        const flicker = Math.sin(progress * Math.PI * 12) > -0.25 ? 1.0 : 0.45;
+        const alpha = Math.max(0, 1 - Math.pow(progress, 0.7)) * flicker;
+
+        // Pass 1: Broad electric-blue outer atmospheric glow
+        ctx.save();
+        ctx.shadowColor = '#38bdf8';
+        ctx.shadowBlur = 24;
+        ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.75})`;
+        ctx.lineWidth = 10;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const seg of strike.segments) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Pass 2: Violet/Cyan ionization channel
+        ctx.save();
+        ctx.shadowColor = '#c084fc';
+        ctx.shadowBlur = 12;
+        ctx.strokeStyle = `rgba(216, 180, 254, ${alpha * 0.95})`;
+        ctx.lineWidth = 4;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const seg of strike.segments) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Pass 3: Blinding pure white core discharge
+        ctx.save();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.98})`;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const seg of strike.segments) {
+          ctx.moveTo(seg.x1, seg.y1);
+          ctx.lineTo(seg.x2, seg.y2);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // Falling electric spark embers showering downwards
+        for (let sIdx = strike.sparks.length - 1; sIdx >= 0; sIdx--) {
+          const sp = strike.sparks[sIdx];
+          sp.x += sp.vx;
+          sp.y += sp.vy;
+          sp.vy += 0.12;
+          sp.life++;
+          const spAlpha = Math.max(0, 1 - sp.life / sp.maxLife);
+          if (sp.life >= sp.maxLife) {
+            strike.sparks.splice(sIdx, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.fillStyle = sp.color;
+          ctx.globalAlpha = spAlpha;
+          ctx.beginPath();
+          ctx.arc(sp.x, sp.y, 1.4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      // =========================================================================
+      // WATER ELECTRIC DILUTION RENDERING: Electricity spreading & dissolving in water
+      // =========================================================================
+      for (let dIdx = waterDilutionsRef.current.length - 1; dIdx >= 0; dIdx--) {
+        const wave = waterDilutionsRef.current[dIdx];
+        wave.radius += 2.8;
+        wave.alpha -= 0.024; // Smoothly fades out as electricity dilutes in water
+
+        if (wave.alpha <= 0 || wave.radius >= wave.maxRadius) {
+          waterDilutionsRef.current.splice(dIdx, 1);
+          continue;
+        }
+
+        // 1. Diluted Water Glow Halo & Expanding Radial Shockwave
+        ctx.save();
+        const grad = ctx.createRadialGradient(
+          wave.cx, wave.cy, 0,
+          wave.cx, wave.cy, wave.radius
+        );
+        grad.addColorStop(0, `rgba(103, 232, 249, ${wave.alpha * 0.65})`);
+        grad.addColorStop(0.4, `rgba(6, 182, 212, ${wave.alpha * 0.45})`);
+        grad.addColorStop(0.85, `rgba(14, 165, 233, ${wave.alpha * 0.2})`);
+        grad.addColorStop(1, 'rgba(14, 165, 233, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(wave.cx, wave.cy, wave.radius * 1.6, wave.radius * 0.45, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 2. Horizontal Dendritic Electric Filaments dissolving along water surface
+        ctx.save();
+        ctx.shadowColor = '#22d3ee';
+        ctx.shadowBlur = 16;
+        ctx.strokeStyle = `rgba(165, 243, 252, ${wave.alpha * 0.88})`;
+        ctx.lineWidth = 2.2 * wave.alpha;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (const fil of wave.filaments) {
+          ctx.moveTo(fil.x1, fil.y1);
+          ctx.lineTo(fil.x2, fil.y2);
+        }
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. Electric surface steam & ionized droplet sparks
+        for (let spIdx = wave.sparks.length - 1; spIdx >= 0; spIdx--) {
+          const wsp = wave.sparks[spIdx];
+          wsp.x += wsp.vx;
+          wsp.y += wsp.vy;
+          wsp.vx *= 0.98;
+          wsp.vy *= 0.96;
+          wsp.life++;
+          const spAlpha = Math.max(0, 1 - wsp.life / wsp.maxLife) * wave.alpha;
+          if (wsp.life >= wsp.maxLife) {
+            wave.sparks.splice(spIdx, 1);
+            continue;
+          }
+          ctx.save();
+          ctx.shadowColor = wsp.color;
+          ctx.shadowBlur = 8;
+          ctx.fillStyle = wsp.color;
+          ctx.globalAlpha = spAlpha;
+          ctx.beginPath();
+          ctx.arc(wsp.x, wsp.y, 1.8 * (1 - wsp.life / wsp.maxLife), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        }
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   // =========================================================================
   // 1. BACKGROUND CANVAS: Luminous Liquid Silk Waves & 3D Floating Rocks
@@ -510,12 +1120,28 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       createFacetedRock(width * 0.78, height * 0.88, 100, 42), // bottom right
     ];
 
+    let targetBgMouseX = 0;
+    let targetBgMouseY = 0;
+    let smoothBgMouseX = 0;
+    let smoothBgMouseY = 0;
+
+    const handleBgMouseMove = (e: MouseEvent) => {
+      targetBgMouseX = (e.clientX / window.innerWidth) * 2 - 1;
+      targetBgMouseY = (e.clientY / window.innerHeight) * 2 - 1;
+    };
+    window.addEventListener('mousemove', handleBgMouseMove);
+
     let animId: number;
 
     const render = (now: number) => {
       animId = requestAnimationFrame(render);
       const elapsed = (now - startTimeRef.current) / 1000;
       setCurrentTime(elapsed);
+
+      smoothBgMouseX += (targetBgMouseX - smoothBgMouseX) * 0.05;
+      smoothBgMouseY += (targetBgMouseY - smoothBgMouseY) * 0.05;
+
+      const tod = timeOfDayRef.current;
 
       // Determine active phase
       if (elapsed >= PEAKS_RISE_DURATION + WATERFALL_SURGE_DURATION) {
@@ -534,28 +1160,42 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       }
 
       // ========================================================
-      // A. DEEP OBSIDIAN & PURPLE LIQUID SILK BACKGROUND
+      // A. DYNAMIC LIQUID SILK BACKGROUND (Based on Time of Day)
       // ========================================================
-      // Base background: Obsidian deep purple/violet
       const bgGrad = ctx.createRadialGradient(
-        width * 0.5, height * 0.45, 50,
+        width * (0.5 + smoothBgMouseX * 0.05), height * (0.45 + smoothBgMouseY * 0.05), 50,
         width * 0.5, height * 0.5, Math.max(width, height) * 0.8
       );
-      bgGrad.addColorStop(0, '#130924'); // deep mystical violet center
-      bgGrad.addColorStop(0.45, '#0c0517'); // obsidian indigo
-      bgGrad.addColorStop(1, '#030108'); // pitch black rim
+
+      if (tod === 'dawn') {
+        // 🌅 Golden Hour Dawn: Warm amber/rose gold cosmic gorge
+        bgGrad.addColorStop(0, '#2d140b'); // warm amber core
+        bgGrad.addColorStop(0.45, '#160804'); // deep mahogany
+        bgGrad.addColorStop(1, '#060201'); // obsidian rim
+      } else if (tod === 'night') {
+        // 🌌 Night Ridge: Deep celestial midnight
+        bgGrad.addColorStop(0, '#060e26'); // mystical deep blue
+        bgGrad.addColorStop(0.45, '#020614'); // obsidian slate
+        bgGrad.addColorStop(1, '#000105'); // pitch black rim
+      } else {
+        // ⛈️ High Monsoon: Deep obsidian purple/violet
+        bgGrad.addColorStop(0, '#130924'); // deep mystical violet center
+        bgGrad.addColorStop(0.45, '#0c0517'); // obsidian indigo
+        bgGrad.addColorStop(1, '#030108'); // pitch black rim
+      }
+
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Luminous Liquid Silk Waves (swirling purple/violet fluid ribbons from video)
+      // Luminous Liquid Silk Waves (swirling fluid ribbons with dynamic perspective tilt)
       ctx.save();
       const waveCount = 5;
       for (let w = 0; w < waveCount; w++) {
         ctx.beginPath();
-        const yBase = height * (0.15 + w * 0.2);
+        const yBase = height * (0.15 + w * 0.2) + smoothBgMouseY * 25 * (w + 1);
         const amp = 65 + w * 18;
         const freq = 0.0018 + w * 0.0004;
-        const speed = elapsed * (0.6 + w * 0.2);
+        const speed = elapsed * (0.6 + w * 0.2) + smoothBgMouseX * 0.8;
 
         ctx.moveTo(0, height);
         for (let x = 0; x <= width; x += 15) {
@@ -566,14 +1206,36 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         ctx.closePath();
 
         const silkGrad = ctx.createLinearGradient(0, yBase - amp, width, yBase + amp);
-        if (w % 2 === 0) {
-          silkGrad.addColorStop(0, 'rgba(168, 85, 247, 0.12)'); // luminous purple
-          silkGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.06)');
-          silkGrad.addColorStop(1, 'rgba(126, 34, 206, 0.14)');
+        if (tod === 'dawn') {
+          if (w % 2 === 0) {
+            silkGrad.addColorStop(0, 'rgba(245, 158, 11, 0.14)');
+            silkGrad.addColorStop(0.5, 'rgba(251, 191, 36, 0.08)');
+            silkGrad.addColorStop(1, 'rgba(217, 119, 6, 0.16)');
+          } else {
+            silkGrad.addColorStop(0, 'rgba(244, 63, 94, 0.10)');
+            silkGrad.addColorStop(0.5, 'rgba(253, 186, 116, 0.06)');
+            silkGrad.addColorStop(1, 'rgba(234, 88, 12, 0.12)');
+          }
+        } else if (tod === 'night') {
+          if (w % 2 === 0) {
+            silkGrad.addColorStop(0, 'rgba(6, 182, 212, 0.15)');
+            silkGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.08)');
+            silkGrad.addColorStop(1, 'rgba(14, 116, 144, 0.16)');
+          } else {
+            silkGrad.addColorStop(0, 'rgba(168, 85, 247, 0.11)');
+            silkGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.05)');
+            silkGrad.addColorStop(1, 'rgba(99, 102, 241, 0.10)');
+          }
         } else {
-          silkGrad.addColorStop(0, 'rgba(99, 102, 241, 0.09)'); // soft indigo
-          silkGrad.addColorStop(0.5, 'rgba(236, 72, 153, 0.04)');
-          silkGrad.addColorStop(1, 'rgba(59, 130, 246, 0.08)');
+          if (w % 2 === 0) {
+            silkGrad.addColorStop(0, 'rgba(168, 85, 247, 0.12)'); // luminous purple
+            silkGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.06)');
+            silkGrad.addColorStop(1, 'rgba(126, 34, 206, 0.14)');
+          } else {
+            silkGrad.addColorStop(0, 'rgba(99, 102, 241, 0.09)'); // soft indigo
+            silkGrad.addColorStop(0.5, 'rgba(236, 72, 153, 0.04)');
+            silkGrad.addColorStop(1, 'rgba(59, 130, 246, 0.08)');
+          }
         }
         ctx.fillStyle = silkGrad;
         ctx.fill();
@@ -582,24 +1244,39 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
       // Ambient Glowing Nebulae / Light Orbs
       ctx.save();
-      const glowOrb = ctx.createRadialGradient(width * 0.5, height * 0.38, 0, width * 0.5, height * 0.38, 380);
-      glowOrb.addColorStop(0, 'rgba(192, 132, 252, 0.18)');
-      glowOrb.addColorStop(0.5, 'rgba(147, 51, 234, 0.06)');
+      const glowOrb = ctx.createRadialGradient(
+        width * (0.5 + smoothBgMouseX * 0.08), height * (0.38 + smoothBgMouseY * 0.08), 0, 
+        width * 0.5, height * 0.38, 380
+      );
+      if (tod === 'dawn') {
+        glowOrb.addColorStop(0, 'rgba(251, 191, 36, 0.22)');
+        glowOrb.addColorStop(0.5, 'rgba(245, 158, 11, 0.08)');
+      } else if (tod === 'night') {
+        glowOrb.addColorStop(0, 'rgba(56, 189, 248, 0.18)');
+        glowOrb.addColorStop(0.5, 'rgba(6, 182, 212, 0.06)');
+      } else {
+        glowOrb.addColorStop(0, 'rgba(192, 132, 252, 0.18)');
+        glowOrb.addColorStop(0.5, 'rgba(147, 51, 234, 0.06)');
+      }
       glowOrb.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.fillStyle = glowOrb;
       ctx.fillRect(0, 0, width, height);
       ctx.restore();
 
       // ========================================================
-      // B. 3D FLOATING FACETED OBSIDIAN ROCKS (Video 00:06 - 00:14)
+      // B. 3D FLOATING FACETED ROCKS WITH MOUSE PARALLAX
       // ========================================================
       ctx.save();
       rocks.forEach((rock) => {
-        rock.rotX += rock.rotSpeedX;
-        rock.rotY += rock.rotSpeedY;
+        rock.rotX += rock.rotSpeedX + smoothBgMouseX * 0.002;
+        rock.rotY += rock.rotSpeedY + smoothBgMouseY * 0.002;
         rock.rotZ += rock.rotSpeedZ;
         rock.x += rock.driftVx;
         rock.y += rock.driftVy;
+
+        // Depth parallax offset from cursor
+        const depthParallaxX = smoothBgMouseX * (rock.z * 0.35);
+        const depthParallaxY = smoothBgMouseY * (rock.z * 0.25);
 
         // Wrap around boundaries
         if (rock.x < -100) rock.x = width + 80;
@@ -612,7 +1289,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         const cosY = Math.cos(rock.rotY), sinY = Math.sin(rock.rotY);
         const cosZ = Math.cos(rock.rotZ), sinZ = Math.sin(rock.rotZ);
 
-        // Project vertices
+        // Project vertices with depth parallax
         const projected = rock.vertices.map((v) => {
           // Rot X
           let y1 = v.y * cosX - v.z * sinX;
@@ -625,8 +1302,8 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           let y3 = x2 * sinZ + y1 * cosZ;
 
           return {
-            x: rock.x + x3,
-            y: rock.y + y3,
+            x: rock.x + depthParallaxX + x3,
+            y: rock.y + depthParallaxY + y3,
             z: rock.z + z2,
           };
         });
@@ -638,7 +1315,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         });
         faceDepths.sort((a, b) => b.avgZ - a.avgZ);
 
-        // Render faces with realistic violet/obsidian metallic lighting
+        // Render faces with realistic lighting based on Time-of-Day preset
         faceDepths.forEach(({ idx }) => {
           const f = rock.faces[idx];
           const p0 = projected[f[0]];
@@ -657,7 +1334,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           // Backface culling
           if (normZ < 0) return;
 
-          // Lighting model: directional purple-white light from top-center
+          // Lighting model: directional light from top-center
           const lightIntensity = Math.max(0.12, (normZ * 0.7 + (ny / len) * -0.3));
 
           ctx.beginPath();
@@ -666,19 +1343,36 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           ctx.lineTo(p2.x, p2.y);
           ctx.closePath();
 
-          // Obsidian rock face gradient with purple specular sheen
           const rGrad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
-          const rVal = Math.floor(45 * lightIntensity);
-          const gVal = Math.floor(25 * lightIntensity);
-          const bVal = Math.floor(75 * lightIntensity);
-          rGrad.addColorStop(0, `rgb(${rVal + 30}, ${gVal + 15}, ${bVal + 60})`);
-          rGrad.addColorStop(1, `rgb(${rVal}, ${gVal}, ${bVal})`);
+          if (tod === 'dawn') {
+            const rVal = Math.floor(75 * lightIntensity);
+            const gVal = Math.floor(45 * lightIntensity);
+            const bVal = Math.floor(25 * lightIntensity);
+            rGrad.addColorStop(0, `rgb(${rVal + 55}, ${gVal + 30}, ${bVal + 15})`);
+            rGrad.addColorStop(1, `rgb(${rVal}, ${gVal}, ${bVal})`);
+            ctx.fillStyle = rGrad;
+            ctx.fill();
+            ctx.strokeStyle = `rgba(251, 191, 36, ${lightIntensity * 0.5})`;
+          } else if (tod === 'night') {
+            const rVal = Math.floor(15 * lightIntensity);
+            const gVal = Math.floor(45 * lightIntensity);
+            const bVal = Math.floor(85 * lightIntensity);
+            rGrad.addColorStop(0, `rgb(${rVal + 15}, ${gVal + 40}, ${bVal + 60})`);
+            rGrad.addColorStop(1, `rgb(${rVal}, ${gVal}, ${bVal})`);
+            ctx.fillStyle = rGrad;
+            ctx.fill();
+            ctx.strokeStyle = `rgba(6, 182, 212, ${lightIntensity * 0.55})`;
+          } else {
+            const rVal = Math.floor(45 * lightIntensity);
+            const gVal = Math.floor(25 * lightIntensity);
+            const bVal = Math.floor(75 * lightIntensity);
+            rGrad.addColorStop(0, `rgb(${rVal + 30}, ${gVal + 15}, ${bVal + 60})`);
+            rGrad.addColorStop(1, `rgb(${rVal}, ${gVal}, ${bVal})`);
+            ctx.fillStyle = rGrad;
+            ctx.fill();
+            ctx.strokeStyle = `rgba(192, 132, 252, ${lightIntensity * 0.45})`;
+          }
 
-          ctx.fillStyle = rGrad;
-          ctx.fill();
-
-          // Facet edge highlight
-          ctx.strokeStyle = `rgba(192, 132, 252, ${lightIntensity * 0.45})`;
           ctx.lineWidth = 1.0;
           ctx.stroke();
         });
@@ -689,6 +1383,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     animId = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(animId);
+      window.removeEventListener('mousemove', handleBgMouseMove);
       window.removeEventListener('resize', handleResize);
     };
   }, [playTitleChime]);
@@ -717,17 +1412,23 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 500);
     camera.position.set(0, 3.2, 34);
 
-    // 2. WEBGL RENDERER
-    const renderer = new THREE.WebGLRenderer({
-      canvas,
-      alpha: false,
-      antialias: true,
-      powerPreference: 'high-performance',
-    });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(width, height);
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.2;
+    // 2. WEBGL RENDERER WITH RESILIENT FALLBACK
+    let renderer: THREE.WebGLRenderer;
+    try {
+      renderer = new THREE.WebGLRenderer({
+        canvas,
+        alpha: false,
+        antialias: true,
+        powerPreference: 'high-performance',
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(width, height);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.2;
+    } catch (e) {
+      console.warn("WebGL initialization skipped in CinematicIntro:", e);
+      return;
+    }
 
     // 3. REALISTIC OVERCAST DAYLIGHT & CANYON SHADOWS
     const ambientLight = new THREE.AmbientLight(0x768896, 1.4);
@@ -1109,19 +1810,62 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     });
 
     // J. 3D DRAMATIC RISING FLOOD BASIN ("when showing flood make the water level rise more")
-    // Submerges the entire lower canyon, rising from deep floor -8.2 up to +4.5!
+    // Submerges the entire lower canyon, rising from deep riverbed -5.2 up to +2.8!
+    const baseLakeY = -5.2;
+    const maxLakeY = 2.8;
+
     const lakeGeo = new THREE.PlaneGeometry(64, 46, 48, 48);
     const lakeMat = new THREE.MeshStandardMaterial({
-      color: 0x112838, // realistic deep dark mountain alpine water
+      color: 0x0284c7, // Vibrant alpine azure / glacial cyan
+      emissive: 0x03496b, // Aquatic luminescence
+      emissiveIntensity: 0.32,
       roughness: 0.12,
-      metalness: 0.85,
+      metalness: 0.15,
       transparent: true,
-      opacity: 0.92,
+      opacity: 0.88,
     });
     const lakeMesh = new THREE.Mesh(lakeGeo, lakeMat);
     lakeMesh.rotation.x = -Math.PI / 2;
-    lakeMesh.position.set(0, -8.2, 4);
+    lakeMesh.position.set(0, baseLakeY + waterLevelRatioRef.current * (maxLakeY - baseLakeY), 4);
     mountainGroup.add(lakeMesh);
+
+    // Dynamic glowing shoreline foam rim ring outlining the rising waterline against cliff walls
+    const foamRimGeo = new THREE.RingGeometry(3.5, 8.2, 36);
+    const foamRimMat = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.55,
+      side: THREE.DoubleSide,
+    });
+    const foamRimMesh = new THREE.Mesh(foamRimGeo, foamRimMat);
+    foamRimMesh.rotation.x = -Math.PI / 2;
+    foamRimMesh.position.set(0, lakeMesh.position.y + 0.05, -1.8);
+    mountainGroup.add(foamRimMesh);
+
+    // 3D Telemetry Staff / Flood Gauge Marker Post (Submerges as water rises)
+    const staffGroup = new THREE.Group();
+    staffGroup.position.set(-3.2, 0, 0.5);
+    const staffPoleGeo = new THREE.CylinderGeometry(0.12, 0.12, 8.5, 8);
+    const staffPoleMat = new THREE.MeshStandardMaterial({
+      color: 0x0f172a,
+      roughness: 0.3,
+      metalness: 0.8,
+    });
+    const staffPole = new THREE.Mesh(staffPoleGeo, staffPoleMat);
+    staffPole.position.y = -1.2;
+    staffGroup.add(staffPole);
+
+    for (let mark = 0; mark < 5; mark++) {
+      const ringY = -5.0 + mark * 1.5;
+      const ringGeo = new THREE.CylinderGeometry(0.16, 0.16, 0.15, 8);
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: mark >= 3 ? 0xef4444 : (mark >= 2 ? 0xf59e0b : 0x06b6d4),
+      });
+      const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+      ringMesh.position.y = ringY;
+      staffGroup.add(ringMesh);
+    }
+    mountainGroup.add(staffGroup);
 
     // K. INTERACTIVE WATER PHYSICS: RIPPLE PROPAGATION & BURST SPLASH PARTICLES
     interface WaterRipple {
@@ -1255,6 +1999,56 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     };
     dropFloatingObjectFnRef.current = spawnFloatingObject;
 
+    // K. FLOATING 3D CANYON CRYSTAL ROCKS (Hovering in the gorge with mouse parallax)
+    const crystalGeo = new THREE.OctahedronGeometry(0.85, 0);
+    const crystalMat = new THREE.MeshStandardMaterial({
+      color: 0x9333ea,
+      emissive: 0x581c87,
+      emissiveIntensity: 0.6,
+      roughness: 0.15,
+      metalness: 0.85,
+      flatShading: true,
+    });
+    const canyonCrystals: { mesh: THREE.Mesh; baseX: number; baseY: number; baseZ: number; rotSpeed: number; bobSeed: number }[] = [];
+    [
+      [-7.5, 8.5, 4.0, 1.2],
+      [-5.2, 4.2, 10.0, 0.85],
+      [7.8, 9.2, 5.0, 1.3],
+      [5.5, 5.0, 11.0, 0.9],
+      [-8.8, 12.0, -2.0, 1.5],
+      [8.5, 12.5, -3.0, 1.4],
+    ].forEach(([cx, cy, cz, scale]) => {
+      const mesh = new THREE.Mesh(crystalGeo, crystalMat);
+      mesh.scale.set(scale, scale * 1.3, scale);
+      mesh.position.set(cx, cy, cz);
+      mountainGroup.add(mesh);
+      canyonCrystals.push({
+        mesh,
+        baseX: cx,
+        baseY: cy,
+        baseZ: cz,
+        rotSpeed: (Math.random() - 0.5) * 0.025,
+        bobSeed: Math.random() * 10,
+      });
+    });
+
+    // L. MOUNTAIN OBSERVATORY BEACON LIGHTS (Blinking summit telemetry markers)
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const beaconGeo = new THREE.SphereGeometry(0.22, 8, 8);
+    const beaconMeshes: THREE.Mesh[] = [];
+    [
+      [-16.0, 19.5, 1.0],
+      [16.5, 20.0, 1.0],
+      [-4.8, 18.0, -12.0],
+      [4.8, 18.0, -12.0],
+      [-18.0, 27.5, -32.0],
+    ].forEach(([bx, by, bz]) => {
+      const bMesh = new THREE.Mesh(beaconGeo, beaconMat);
+      bMesh.position.set(bx, by, bz);
+      mountainGroup.add(bMesh);
+      beaconMeshes.push(bMesh);
+    });
+
     // Raycasting & Pointer Interaction on Flood Water Surface
     const raycaster = new THREE.Raycaster();
     const pointer2D = new THREE.Vector2();
@@ -1357,9 +2151,6 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
     // N. ANIMATION LOOP
     let animId: number;
     let lastReportedFlood = 0;
-    const baseLakeY = -8.2;
-    // Dramatically higher flood elevation (up to +4.5), submerging lower cliffs & trees!
-    const maxLakeY = 4.5;
 
     const render = () => {
       animId = requestAnimationFrame(render);
@@ -1376,31 +2167,21 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       const waterfallProgress = Math.min(1.0, waterfallElapsed / WATERFALL_SURGE_DURATION);
       const waterfallIntensity = waterfallProgress;
 
-      // DRAMATIC RISING FLOODWATER: Supports user manual control OR automated monsoon surge
-      let floodHeightPx = 0;
-      let currentLakeY = baseLakeY;
-
-      if (manualWaterLevelRef.current !== null) {
-        // Direct interactive user control over the flood height
-        const floodRatio = Math.max(0, Math.min(1.0, manualWaterLevelRef.current));
-        currentLakeY = baseLakeY + floodRatio * (maxLakeY - baseLakeY);
-        floodHeightPx = Math.round(floodRatio * height * 0.92);
-      } else if (waterfallElapsed > 0.2 || isFloodSurgingRef.current) {
-        const poolTime = isFloodSurgingRef.current 
-          ? Math.min(22, (waterfallElapsed + 12)) 
-          : waterfallElapsed - 0.2;
-        // Allows the flood water to surge all the way to 92%+ of container height
-        const floodRatio = isFloodSurgingRef.current 
-          ? Math.min(1.0, 0.35 + poolTime * 0.12)
-          : Math.min(1.0, poolTime / 22);
-        
-        currentLakeY = baseLakeY + floodRatio * (maxLakeY - baseLakeY);
-        floodHeightPx = Math.round(floodRatio * height * 0.92); // Up to 92% screen height!
+      // DRAMATIC RISING FLOODWATER: Synchronized with interactive waterLevelRatio
+      if (isAutoSurgingRef.current) {
+        const surgeVal = 0.35 + Math.sin(elapsed * 0.4) * 0.35;
+        waterLevelRatioRef.current = Math.max(0, Math.min(1.0, surgeVal));
       }
-      lakeMesh.position.y = currentLakeY;
 
-      // Report flood depth to parent state
-      if (Math.abs(floodHeightPx - lastReportedFlood) > 2) {
+      const targetLakeY = baseLakeY + waterLevelRatioRef.current * (maxLakeY - baseLakeY);
+      // Fluid physics smoothing
+      lakeMesh.position.y += (targetLakeY - lakeMesh.position.y) * 0.15;
+      const currentLakeY = lakeMesh.position.y;
+      foamRimMesh.position.y = currentLakeY + 0.05;
+      foamRimMesh.rotation.z += 0.004;
+
+      const floodHeightPx = Math.round(waterLevelRatioRef.current * height * 0.92);
+      if (Math.abs(floodHeightPx - lastReportedFlood) > 4) {
         lastReportedFlood = floodHeightPx;
         setFloodDepth(floodHeightPx);
       }
@@ -1416,10 +2197,14 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       }
 
       // Animate low-hanging mountain clouds / fog puffs slowly drifting through the gorge
+      const isUltra = isUltraClarityRef.current;
       fogPuffs.forEach((puff, pIdx) => {
-        puff.position.x += Math.sin(elapsed * 0.3 + pIdx) * 0.005;
-        puff.position.y += Math.cos(elapsed * 0.25 + pIdx * 0.8) * 0.004;
-        puff.rotation.y += 0.0015;
+        puff.visible = !isUltra;
+        if (!isUltra) {
+          puff.position.x += Math.sin(elapsed * 0.3 + pIdx) * 0.005;
+          puff.position.y += Math.cos(elapsed * 0.25 + pIdx * 0.8) * 0.004;
+          puff.rotation.y += 0.0015;
+        }
       });
 
       // Animate Waterfall Torrent & Rapids
@@ -1566,18 +2351,123 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
         obj.mesh.rotation.x = Math.sin(elapsed * 1.8 + obj.bobSeed) * 0.12;
       });
 
-      // Camera Parallax & Interactive 3D Orbit
-      if (isPlungingRef.current) {
-        // Exhilarating 3D plunge directly into the waterfall torrent!
-        camera.position.z = THREE.MathUtils.lerp(camera.position.z, -3.8, 0.075);
-        camera.position.y = THREE.MathUtils.lerp(camera.position.y, 1.6, 0.075);
-        camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.08);
-        camera.lookAt(0, 1.2, -4.5);
+      // Animate Floating Canyon Crystals with Parallax & Bob
+      canyonCrystals.forEach((c) => {
+        c.mesh.rotation.y += c.rotSpeed;
+        c.mesh.rotation.x = Math.sin(elapsed * 1.5 + c.bobSeed) * 0.2;
+        c.mesh.position.y = c.baseY + Math.sin(elapsed * 2.0 + c.bobSeed) * 0.35;
+      });
+
+      // Animate Mountain Observatory Beacons
+      const beaconStrobe = Math.sin(elapsed * 6.0) > 0.3 ? 1.0 : 0.1;
+      beaconMeshes.forEach((b, bIdx) => {
+        const offsetStrobe = Math.sin(elapsed * 5.0 + bIdx * 1.2) > 0.2 ? 1.0 : 0.05;
+        (b.material as THREE.MeshBasicMaterial).opacity = offsetStrobe;
+      });
+
+      // ========================================================
+      // TIME-OF-DAY ATMOSPHERIC LIGHTING & MIST SHADERS
+      // ========================================================
+      const tod = timeOfDayRef.current;
+      const isUltraMode = isUltraClarityRef.current;
+
+      if (tod === 'dawn') {
+        // 🌅 Golden Hour Dawn: Warm amber sunlight, glowing lake, golden mist
+        scene.background = isUltraMode 
+          ? new THREE.Color(0xfef08a).lerp(new THREE.Color(0xf59e0b), 0.4)
+          : new THREE.Color(0xf59e0b).lerp(new THREE.Color(0x78350f), 0.55);
+        if (scene.fog instanceof THREE.FogExp2) {
+          scene.fog.color.setHex(0xd97706);
+          scene.fog.density = isUltraMode ? 0.0001 : 0.012;
+        }
+        ambientLight.color.setHex(0xfde68a);
+        ambientLight.intensity = isUltraMode ? 1.6 : 1.35;
+        sunLight.color.setHex(0xfef08a);
+        sunLight.intensity = isUltraMode ? 3.4 : 2.8;
+        backLight.color.setHex(0xf97316);
+        backLight.intensity = isUltraMode ? 2.8 : 2.4;
+        lakeMat.color.setHex(0x1e293b);
+        crystalMat.color.setHex(0xf59e0b);
+        crystalMat.emissive.setHex(0xb45309);
+        beaconMat.color.setHex(0xfacc15);
+      } else if (tod === 'night') {
+        // 🌌 Night Ridge: Deep celestial twilight with bioluminescent glow
+        scene.background = isUltraMode ? new THREE.Color(0x060919) : new THREE.Color(0x030712);
+        if (scene.fog instanceof THREE.FogExp2) {
+          scene.fog.color.setHex(0x020617);
+          scene.fog.density = isUltraMode ? 0.0001 : 0.016;
+        }
+        ambientLight.color.setHex(0x1e1b4b);
+        ambientLight.intensity = isUltraMode ? 1.1 : 0.85;
+        sunLight.color.setHex(0x38bdf8);
+        sunLight.intensity = isUltraMode ? 1.5 : 1.2;
+        backLight.color.setHex(0x06b6d4);
+        backLight.intensity = isUltraMode ? 2.6 : 2.2;
+        lakeMat.color.setHex(0x020617);
+        crystalMat.color.setHex(0x06b6d4);
+        crystalMat.emissive.setHex(0x0891b2);
+        beaconMat.color.setHex(0x22d3ee);
       } else {
-        const targetCamX = mouseX * 3.6;
-        const targetCamY = 3.2 + mouseY * 2.0;
-        camera.position.x += (targetCamX - camera.position.x) * 0.05;
-        camera.position.y += (targetCamY - camera.position.y) * 0.05;
+        // ⛈️ High Monsoon: Moody indigo-slate storm clouds with ambient volumetric lightning
+        const hasScreenLightning = lightningFlashRef.current > 0.04;
+        const isLightning = Math.random() < 0.012 || hasScreenLightning;
+        const flashIntensity = hasScreenLightning ? lightningFlashRef.current * 4.5 : (isLightning ? 3.8 : 0);
+
+        scene.background = isLightning 
+          ? new THREE.Color(0xe0f2fe) 
+          : (isUltraMode ? new THREE.Color(0x1e293b).lerp(new THREE.Color(0x0f172a), 0.3) : new THREE.Color(0x0f172a));
+        if (scene.fog instanceof THREE.FogExp2) {
+          scene.fog.color.setHex(isLightning ? 0xc7d2fe : 0x1e1b4b);
+          scene.fog.density = isUltraMode ? 0.0001 : 0.018;
+        }
+        ambientLight.color.setHex(isLightning ? 0xffffff : 0x64748b);
+        ambientLight.intensity = (isLightning ? 2.8 : (isUltraMode ? 1.55 : 1.25)) + flashIntensity;
+        sunLight.color.setHex(isLightning ? 0xffffff : 0x94a3b8);
+        sunLight.intensity = (isLightning ? 3.6 : (isUltraMode ? 2.3 : 1.8)) + flashIntensity * 1.3;
+        backLight.color.setHex(0x6366f1);
+        backLight.intensity = isUltraMode ? 2.3 : 1.9;
+        lakeMat.color.setHex(isLightning ? 0x38bdf8 : (isUltraMode ? 0x0369a1 : 0x0284c7));
+        crystalMat.color.setHex(0xa855f7);
+        crystalMat.emissive.setHex(0x7e22ce);
+        beaconMat.color.setHex(0xef4444);
+
+        if (hasScreenLightning) {
+          lightningFlashRef.current *= 0.80; // rapid atmospheric decay
+        }
+      }
+
+      // ========================================================
+      // 3D MOUSE PARALLAX, DYNAMIC PERSPECTIVE TILT & SEISMIC CAMERA TREMOR
+      // ========================================================
+      if (isPlungingRef.current) {
+        // High-altitude camera freefall down through the waterfall notch and deep into the cloud bank
+        camera.position.z = THREE.MathUtils.lerp(camera.position.z, -36.0, 0.12);
+        camera.position.y = THREE.MathUtils.lerp(camera.position.y, -32.0, 0.14);
+        camera.position.x = THREE.MathUtils.lerp(camera.position.x, 0, 0.12);
+        camera.fov = THREE.MathUtils.lerp(camera.fov, 115, 0.10);
+        camera.rotation.x = THREE.MathUtils.lerp(camera.rotation.x, -1.25, 0.12); // camera dives downwards into clouds
+        camera.updateProjectionMatrix();
+        camera.lookAt(0, -45.0, -40.0);
+      } else {
+        // Perspective tilt on mountain diorama group
+        mountainGroup.rotation.y = THREE.MathUtils.lerp(mountainGroup.rotation.y, mouseX * 0.12, 0.06);
+        mountainGroup.rotation.x = THREE.MathUtils.lerp(mountainGroup.rotation.x, -mouseY * 0.07, 0.06);
+
+        // Smooth camera positional parallax
+        const targetCamX = mouseX * 4.2;
+        const targetCamY = 3.2 + mouseY * 2.4;
+        camera.position.x += (targetCamX - camera.position.x) * 0.06;
+        camera.position.y += (targetCamY - camera.position.y) * 0.06;
+
+        // Apply Physical Camera Tremor on thunder strike
+        if (cameraTremorRef.current > 0.01) {
+          const tremor = cameraTremorRef.current;
+          camera.position.x += (Math.random() - 0.5) * tremor * 0.42;
+          camera.position.y += (Math.random() - 0.5) * tremor * 0.42;
+          cameraTremorRef.current *= 0.86;
+        }
+
+        camera.rotation.z = THREE.MathUtils.lerp(camera.rotation.z, -mouseX * 0.025, 0.06);
         camera.lookAt(0, 1.0, -3.0);
       }
 
@@ -1602,9 +2492,117 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
   const progressPercent = Math.min(100, (currentTime / TOTAL_DURATION) * 100);
 
+  // Hydro Water Ratio & Depth Meter Calculations
+  const currentWaterRatio = waterLevelRatio;
+  const currentDepthM = (currentWaterRatio * 3.8 + 1.25).toFixed(2);
+
+  // Dynamic Theme for Enter Grid button - Changes color & glow with increasing water level
+  const enterGridTheme = (() => {
+    if (currentWaterRatio >= 0.75) {
+      return {
+        gradient: 'bg-gradient-to-r from-red-600 via-rose-600 to-purple-600 hover:from-red-500 hover:to-rose-500',
+        border: 'border-rose-400/90',
+        shadow: 'shadow-[0_0_40px_rgba(244,63,94,0.9),0_0_15px_rgba(255,255,255,0.7)]',
+        pulse: 'animate-pulse',
+        textColor: 'text-white',
+        tagBg: 'bg-rose-950/80 text-rose-200 border-rose-300/60',
+        label: 'Red Alert Surge',
+        glowAura: 'ring-2 ring-rose-400/80',
+        waterLevelColor: 'text-rose-300',
+      };
+    }
+    if (currentWaterRatio >= 0.50) {
+      return {
+        gradient: 'bg-gradient-to-r from-amber-600 via-orange-600 to-rose-600 hover:from-amber-500 hover:to-orange-500',
+        border: 'border-amber-300/80',
+        shadow: 'shadow-[0_0_32px_rgba(245,158,11,0.8),0_0_12px_rgba(251,146,60,0.5)]',
+        pulse: 'animate-pulse',
+        textColor: 'text-amber-50',
+        tagBg: 'bg-amber-950/80 text-amber-200 border-amber-300/60',
+        label: 'Orange Flood Warning',
+        glowAura: 'ring-2 ring-amber-400/60',
+        waterLevelColor: 'text-amber-300',
+      };
+    }
+    if (currentWaterRatio >= 0.25) {
+      return {
+        gradient: 'bg-gradient-to-r from-teal-600 via-emerald-600 to-cyan-600 hover:from-teal-500 hover:to-emerald-500',
+        border: 'border-emerald-300/70',
+        shadow: 'shadow-[0_0_26px_rgba(16,185,129,0.65),0_0_10px_rgba(6,182,212,0.4)]',
+        pulse: '',
+        textColor: 'text-emerald-50',
+        tagBg: 'bg-emerald-950/80 text-emerald-200 border-emerald-300/50',
+        label: 'Inundation Watch',
+        glowAura: 'ring-1 ring-emerald-400/40',
+        waterLevelColor: 'text-emerald-300',
+      };
+    }
+    return {
+      gradient: 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 hover:from-sky-500 hover:to-cyan-500',
+      border: 'border-cyan-300/60',
+      shadow: 'shadow-[0_0_20px_rgba(6,182,212,0.5),0_0_8px_rgba(56,189,248,0.3)]',
+      pulse: '',
+      textColor: 'text-cyan-50',
+      tagBg: 'bg-cyan-950/80 text-cyan-200 border-cyan-300/50',
+      label: 'Normal Flow',
+      glowAura: '',
+      waterLevelColor: 'text-cyan-300',
+    };
+  })();
+
+  // Translucent Hydrological Alert Status
+  const hydroAlert = (() => {
+    if (currentWaterRatio >= 0.75) {
+      return {
+        code: 'RED ALERT',
+        stage: 'SURGE BREACH',
+        title: 'Flash Flood Red Alert',
+        summary: 'Critical crest elevation • Emergency evacuation protocol advised',
+        translucentBg: 'bg-rose-950/40 border-rose-500/50 shadow-[0_6px_28px_rgba(244,63,94,0.35)]',
+        textColor: 'text-rose-200',
+        badgeColor: 'bg-rose-500/25 text-rose-200 border-rose-400/70',
+        icon: <AlertOctagon size={14} className="text-rose-400 animate-ping" />,
+      };
+    }
+    if (currentWaterRatio >= 0.50) {
+      return {
+        code: 'ORANGE WARNING',
+        stage: 'HIGH INUNDATION',
+        title: 'Orange Flood Warning',
+        summary: 'Reservoir spillway surge active • Severe riverbank inundation',
+        translucentBg: 'bg-orange-950/40 border-orange-500/50 shadow-[0_6px_24px_rgba(249,115,22,0.3)]',
+        textColor: 'text-orange-200',
+        badgeColor: 'bg-orange-500/25 text-orange-200 border-orange-400/70',
+        icon: <AlertTriangle size={14} className="text-orange-400" />,
+      };
+    }
+    if (currentWaterRatio >= 0.25) {
+      return {
+        code: 'YELLOW WATCH',
+        stage: 'ELEVATED FLOW',
+        title: 'Yellow Inundation Watch',
+        summary: 'Mountain catchment runoff increasing • Spillway telemetry active',
+        translucentBg: 'bg-amber-950/40 border-amber-500/40 shadow-[0_6px_20px_rgba(245,158,11,0.25)]',
+        textColor: 'text-amber-200',
+        badgeColor: 'bg-amber-500/20 text-amber-200 border-amber-400/60',
+        icon: <Info size={14} className="text-amber-300" />,
+      };
+    }
+    return {
+      code: 'NORMAL DISCHARGE',
+      stage: 'STABLE BASIN',
+      title: 'Normal Stream Discharge',
+      summary: 'Channel capacity nominal • Regulated gorge runoff parameters',
+      translucentBg: 'bg-sky-950/35 border-sky-400/30 shadow-[0_6px_20px_rgba(56,189,248,0.2)]',
+      textColor: 'text-sky-200',
+      badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-400/50',
+      icon: <ShieldCheck size={14} className="text-sky-400" />,
+    };
+  })();
+
   return (
     <div 
-      className="fixed inset-0 z-[100] bg-black overflow-hidden font-sans select-none flex items-center justify-center p-3 sm:p-6 md:p-10"
+      className="fixed inset-0 z-[100] bg-black overflow-y-auto sm:overflow-hidden font-sans select-none flex flex-col justify-between items-center pt-14 pb-20 sm:pt-16 sm:pb-24 px-3 sm:px-6"
       onClick={() => {
         if (!hasInteracted && isMuted) {
           toggleSound();
@@ -1621,114 +2619,248 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
       <div className="absolute inset-0 pointer-events-none z-10 shadow-[inset_0_0_180px_rgba(3,1,8,0.96)]" />
 
       {/* Top Header Controls */}
-      <div className="absolute top-5 left-5 right-5 sm:top-7 sm:left-8 sm:right-8 z-30 flex items-center justify-between pointer-events-auto">
-        {/* Phase Pill Indicator */}
-        <div className="flex items-center gap-3 bg-slate-950/80 backdrop-blur-xl border border-purple-500/25 px-4 py-2 rounded-full shadow-2xl">
-          <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping" />
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] tracking-[0.25em] font-bold text-purple-400 uppercase">
-              {currentPhase === 'peaks' && '1/3 • TWIN PEAKS'}
-              {currentPhase === 'waterfall' && '2/3 • WATERFALL SURGE'}
-              {currentPhase === 'reveal' && '3/3 • SAMVARTKA AI'}
-            </span>
-            <span className="text-xs font-semibold text-slate-100 tracking-wide hidden sm:inline">
-              {currentPhase === 'peaks' && 'Mountain Peaks Expanding in Clouds'}
-              {currentPhase === 'waterfall' && 'Water Cascading from Between Peaks'}
-              {currentPhase === 'reveal' && 'Regime-Aware Intelligence'}
-            </span>
+      <div className="fixed top-3 left-3 right-3 sm:top-5 sm:left-6 sm:right-6 z-40 flex items-center justify-between pointer-events-auto">
+        {/* Phase Pill Indicator & Translucent Alert Pill */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="flex items-center gap-2.5 sm:gap-3 bg-slate-950/80 backdrop-blur-xl border border-purple-500/25 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-2xl">
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-400 animate-ping" />
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] tracking-[0.25em] font-bold text-purple-400 uppercase">
+                {currentPhase === 'peaks' && '1/3 • TWIN PEAKS'}
+                {currentPhase === 'waterfall' && '2/3 • WATERFALL SURGE'}
+                {currentPhase === 'reveal' && '3/3 • SAMVARTAKA AI'}
+              </span>
+              <span className="text-xs font-semibold text-slate-100 tracking-wide hidden md:inline">
+                {currentPhase === 'peaks' && 'Mountain Peaks Expanding in Clouds'}
+                {currentPhase === 'waterfall' && 'Water Cascading from Between Peaks'}
+                {currentPhase === 'reveal' && 'Regime-Aware Intelligence'}
+              </span>
+            </div>
           </div>
+
+          {/* Translucent Hydrological Alert Pill in Top Header (Interactive Water Meter Deck Toggle) */}
+          <button
+            type="button"
+            onClick={() => setShowWaterMeterDeck(prev => !prev)}
+            className={`hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-xl border transition-all duration-300 shadow-xl cursor-pointer hover:scale-105 active:scale-95 ${hydroAlert.translucentBg}`}
+            title="Click to toggle Hydrological Water Meter & Flow Control Deck"
+          >
+            <span 
+              className="w-2 h-2 rounded-full animate-ping" 
+              style={{ backgroundColor: currentWaterRatio >= 0.75 ? '#f43f5e' : currentWaterRatio >= 0.5 ? '#f97316' : currentWaterRatio >= 0.25 ? '#f59e0b' : '#38bdf8' }} 
+            />
+            <span className={`text-[10px] font-mono font-black uppercase tracking-wider ${hydroAlert.textColor}`}>
+              {hydroAlert.code} • +{currentDepthM}m (WATER METER)
+            </span>
+          </button>
         </div>
 
-        {/* Audio & Skip Controls */}
+        {/* Audio Soundwave Visualizer & Dynamic Glowing Enter Grid Controls */}
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Flood Surge Toggle Button */}
+          {/* Interactive Soundwave Equalizer Visualizer Button */}
           <button
-            onClick={() => setIsFloodSurging((prev) => !prev)}
-            className={`px-3 py-2 rounded-full border backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-1.5 text-xs font-semibold ${
-              isFloodSurging
-                ? 'bg-rose-950/90 hover:bg-rose-900 text-rose-200 border-rose-400/60 shadow-[0_0_20px_rgba(244,63,94,0.4)] animate-pulse'
-                : 'bg-slate-900/85 hover:bg-slate-800 text-cyan-300 border-cyan-500/30 shadow-[0_0_12px_rgba(6,182,212,0.2)]'
+            onClick={toggleSound}
+            className={`px-3 py-2 rounded-full border backdrop-blur-xl transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-2.5 ${
+              isMuted 
+                ? 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-purple-500/25' 
+                : 'bg-purple-950/85 hover:bg-purple-900 text-purple-200 border-purple-400/60 shadow-[0_0_20px_rgba(168,85,247,0.4)]'
             }`}
-            title={isFloodSurging ? 'Reset Flood Surge' : 'Simulate Extreme Canyon Flood Surge'}
+            title={isMuted ? 'Click to Enable Procedural Soundscape' : 'Click to Mute Audio'}
           >
-            <Droplets size={14} className={isFloodSurging ? 'text-rose-300 animate-bounce' : 'text-cyan-400'} />
-            <span className="text-[11px] font-mono">
-              {isFloodSurging ? 'MAX FLOOD: SURGING' : 'SURGE FLOOD +'}
+            {/* Animated 5-Bar Frequency Soundwave Equalizer */}
+            <div className="flex items-end gap-[3px] h-4 w-6 justify-center">
+              {[0.4, 0.85, 1.0, 0.65, 0.9].map((scale, barIdx) => (
+                <span
+                  key={`eq-bar-${barIdx}`}
+                  className={`w-[3px] rounded-full transition-all duration-150 ${
+                    isMuted
+                      ? 'h-1 bg-slate-600'
+                      : 'bg-gradient-to-t from-purple-500 via-fuchsia-400 to-cyan-300 animate-pulse'
+                  }`}
+                  style={{
+                    height: isMuted 
+                      ? '3px' 
+                      : `${Math.max(4, Math.round(scale * 16 * (0.6 + 0.4 * Math.sin(currentTime * 8 + barIdx * 1.5))))}px`,
+                    animationDelay: `${barIdx * 120}ms`,
+                  }}
+                />
+              ))}
+            </div>
+
+            <span className="text-[11px] font-mono font-semibold">
+              {isMuted ? 'AUDIO: MUTED' : 'LIVE SOUNDWAVE'}
             </span>
           </button>
 
-          <button
-            onClick={toggleSound}
-            className={`p-2.5 rounded-full border backdrop-blur-md transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-2 px-3 ${
-              isMuted 
-                ? 'bg-slate-900/90 hover:bg-slate-800 text-slate-300 border-purple-500/25' 
-                : 'bg-purple-950/80 hover:bg-purple-900 text-purple-200 border-purple-400/50 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-            }`}
-            title={isMuted ? 'Enable Ambient Sound' : 'Mute Sound'}
-          >
-            {isMuted ? (
-              <>
-                <VolumeX size={16} className="text-slate-400" />
-                <span className="text-[11px] font-medium hidden sm:inline">Sound Off</span>
-              </>
-            ) : (
-              <>
-                <Volume2 size={16} className="text-purple-300 animate-pulse" />
-                <span className="text-[11px] font-medium text-purple-300 hidden sm:inline">Sound On</span>
-              </>
-            )}
-          </button>
+          {/* Time-of-Day Quick Illumination Presets in Top Header */}
+          <div className="hidden md:flex items-center bg-slate-950/80 backdrop-blur-xl border border-purple-500/25 p-1 rounded-full gap-1 shadow-xl">
+            <button
+              onClick={() => {
+                setTimeOfDay('dawn');
+                setActiveWeatherPreset('clear');
+              }}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                timeOfDay === 'dawn'
+                  ? 'bg-amber-500/30 text-amber-200 border border-amber-400/50 shadow-[0_0_12px_rgba(245,158,11,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>🌅</span>
+              <span>Dawn</span>
+            </button>
 
+            <button
+              onClick={() => {
+                setTimeOfDay('monsoon');
+                setActiveWeatherPreset('monsoon');
+              }}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                timeOfDay === 'monsoon'
+                  ? 'bg-purple-500/30 text-purple-200 border border-purple-400/50 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>⛈️</span>
+              <span>Monsoon</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setTimeOfDay('night');
+                setActiveWeatherPreset('surge');
+              }}
+              className={`px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                timeOfDay === 'night'
+                  ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/50 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <span>🌌</span>
+              <span>Night</span>
+            </button>
+          </div>
+
+          {/* Dynamic Enter Grid CTA with dynamic water-level color shifts and glowing radiance */}
           <button
             onClick={handleEnterWaterfall}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-widest px-4 py-2.5 rounded-full shadow-[0_0_30px_rgba(168,85,247,0.45)] border border-purple-400/40 backdrop-blur-md transition-all active:scale-95 cursor-pointer"
+            className={`group relative flex items-center gap-2 text-white text-xs font-bold uppercase tracking-wider px-4 sm:px-5 py-2 sm:py-2.5 rounded-full border backdrop-blur-xl transition-all duration-500 active:scale-95 cursor-pointer shadow-2xl select-none ${enterGridTheme.gradient} ${enterGridTheme.border} ${enterGridTheme.shadow} ${enterGridTheme.pulse} ${enterGridTheme.glowAura}`}
+            title={`Enter Grid • Current Water Level: +${currentDepthM}m (${enterGridTheme.label})`}
           >
-            <span>Enter App</span>
-            <SkipForward size={14} />
+            <span className="relative z-10 flex items-center gap-1.5">
+              <span>Enter Grid</span>
+              <span className={`text-[8.5px] font-mono font-black px-1.5 py-0.2 rounded-full border hidden sm:inline-block ${enterGridTheme.tagBg}`}>
+                +{currentDepthM}m
+              </span>
+            </span>
+            <SkipForward size={14} className="relative z-10 transition-transform group-hover:translate-x-1" />
           </button>
         </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* THE HERO SHOWCASE CARD (Exact Luxury UI Mockup from Reference Video)     */}
+      {/* THE HERO SHOWCASE CARD (Luxury UI Diorama Frame)                          */}
       {/* ========================================================================= */}
       <motion.div
         initial={{ opacity: 0, scale: 0.94, y: 20 }}
         animate={isPlunging ? {
-          scale: [1, 1.04, 2.6],
-          filter: 'brightness(1.5) blur(6px)',
-          opacity: [1, 0.95, 0],
+          y: [0, -200, -1600],
+          scale: [1, 1.06, 1.18],
+          filter: 'brightness(1.5) blur(10px)',
+          opacity: [1, 0.85, 0],
         } : {
           opacity: 1, 
           scale: 1, 
           y: 0,
           filter: 'brightness(1) blur(0px)',
         }}
-        transition={{ duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
+        transition={{ duration: 1.6, ease: [0.16, 1, 0.3, 1] }}
         style={{
           transformOrigin: '50% 42%',
         }}
-        className="relative z-20 w-full max-w-4xl min-h-[500px] sm:min-h-[540px] md:min-h-[570px] max-h-[88vh] rounded-3xl bg-slate-950/85 backdrop-blur-2xl border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden flex flex-col pointer-events-auto"
+        className="relative z-20 w-full max-w-5xl flex-1 min-h-[440px] max-h-[calc(100vh-160px)] rounded-3xl bg-slate-950/90 backdrop-blur-2xl border border-purple-500/30 shadow-[0_0_80px_rgba(168,85,247,0.25),inset_0_1px_1px_rgba(255,255,255,0.15)] overflow-hidden flex flex-col pointer-events-auto my-auto"
       >
-        {/* Showcase Card Top Navigation Bar (matching video's top bar) */}
-        <div className="h-12 border-b border-purple-500/20 bg-slate-900/40 backdrop-blur-md px-5 flex items-center justify-between z-20">
+        {/* Showcase Card Top Navigation Bar */}
+        <div className="h-10 sm:h-11 border-b border-purple-500/20 bg-slate-900/60 backdrop-blur-md px-3 sm:px-5 flex items-center justify-between z-20 shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-500/60" />
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-400/40" />
-            <span className="w-2.5 h-2.5 rounded-full bg-purple-300/20" />
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-500/80" />
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-400/50" />
+            <span className="w-2.5 h-2.5 rounded-full bg-purple-300/30" />
+            <span className="ml-2 text-[10px] font-mono tracking-widest text-purple-300 font-semibold uppercase hidden sm:inline">
+              SAMVARTAKA 3D ATMOSPHERIC SIMULATION
+            </span>
           </div>
 
-          <div className="px-3 py-1 rounded-full bg-purple-950/60 border border-purple-500/30 text-[11px] font-semibold tracking-wider text-purple-200">
-            SAMVARTKA AI
-          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-slate-950/70 border border-purple-500/30 text-[10px] font-mono text-purple-200">
+              <Sun size={11} className="text-amber-400" />
+              <span>
+                {timeOfDay === 'dawn' && '06:15 IST • Dawn Optics'}
+                {timeOfDay === 'monsoon' && '12:30 IST • High Monsoon'}
+                {timeOfDay === 'night' && '22:45 IST • Night Ridge'}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-2 text-[11px] text-purple-300/70 font-mono">
-            <Mountain size={12} className="text-purple-400" />
-            <span className="hidden sm:inline">NWP Post-Processing</span>
+            {/* Ultra Clarity Mode Switch */}
+            <button
+              type="button"
+              onClick={() => {
+                const next = !isUltraClarity;
+                setIsUltraClarity(next);
+                if (next) {
+                  setShowCondensation(false);
+                }
+              }}
+              className={`px-2.5 py-0.5 rounded-full border text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${
+                isUltraClarity
+                  ? 'bg-cyan-500/30 text-cyan-200 border-cyan-400/80 shadow-[0_0_12px_rgba(6,182,212,0.6)] font-bold'
+                  : 'bg-slate-900/80 hover:bg-slate-800 border-purple-500/25 text-slate-300'
+              }`}
+              title="Ultra Clarity Mode: Removes all lens blur and fog for crystal-clear HD view"
+            >
+              <Eye size={11} className={isUltraClarity ? "text-cyan-300" : "text-slate-400"} />
+              <span>{isUltraClarity ? 'Ultra Clear: ON' : 'Ultra Clarity'}</span>
+            </button>
+
+            {/* Water Meter Deck Dedicated Toggle */}
+            <button
+              type="button"
+              onClick={() => setShowWaterMeterDeck(prev => !prev)}
+              className={`px-2.5 py-0.5 rounded-full border text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${
+                showWaterMeterDeck
+                  ? 'bg-blue-500/30 text-blue-200 border-blue-400/80 shadow-[0_0_12px_rgba(59,130,246,0.6)] font-bold'
+                  : 'bg-slate-900/80 hover:bg-slate-800 border-purple-500/25 text-slate-300'
+              }`}
+              title="Toggle Hydrological Water Meter Deck"
+            >
+              <Activity size={11} className={showWaterMeterDeck ? "text-blue-300" : "text-cyan-400"} />
+              <span>{showWaterMeterDeck ? 'Water Meter: ON' : 'Water Meter'}</span>
+            </button>
+
+            {/* Defog / Fog Lens Switch in Upper Bar */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isUltraClarity) {
+                  setIsUltraClarity(false);
+                  setShowCondensation(true);
+                } else {
+                  setShowCondensation(!showCondensation);
+                }
+              }}
+              className={`px-2.5 py-0.5 rounded-full border text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${
+                showCondensation
+                  ? 'bg-sky-500/30 text-sky-200 border-sky-400/80 shadow-[0_0_12px_rgba(56,189,248,0.6)] font-bold'
+                  : 'bg-slate-900/80 hover:bg-slate-800 border-purple-500/25 text-purple-300'
+              }`}
+              title="Defog / Fog Camera Lens Glass"
+            >
+              <Droplets size={11} className={showCondensation ? "text-sky-300" : "text-cyan-400"} />
+              <span>{showCondensation ? 'Defog Lens' : 'Fog Lens'}</span>
+            </button>
           </div>
         </div>
 
-        {/* Viewport Canvas: Two Mountain Peaks Expanding in Clouds + Falling Water */}
+        {/* Viewport Canvas: 3D Mountain Gorge, Waterfall & Interactive Water Layer */}
         <motion.div 
           animate={isPlunging ? {
             scale: 1.45,
@@ -1739,11 +2871,20 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             scale: 1,
             originX: 0.5,
             originY: 0.5,
-            filter: 'brightness(1) blur(0px)',
+            filter: isUltraClarity ? 'brightness(1.05) contrast(1.04) blur(0px)' : 'brightness(1) blur(0px)',
           }}
           transition={{ duration: 1.35, ease: [0.22, 1, 0.36, 1] }}
-          className="relative flex-1 w-full h-full overflow-hidden"
+          ref={showcaseContainerRef}
+          className="relative flex-1 w-full h-full overflow-hidden flex flex-col justify-between p-3 sm:p-5"
         >
+          {!isPlunging && !isUltraClarity && (
+            <GlassCondensationOverlay 
+              isActive={showCondensation}
+              onWipe={() => setShowCondensation(false)}
+            />
+          )}
+
+          {/* Three.js 3D Mountain Canvas */}
           <canvas 
             ref={mountainCanvasRef} 
             className={`absolute inset-0 w-full h-full block z-10 transition-colors ${
@@ -1751,19 +2892,36 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             }`} 
           />
 
+          {/* Dynamic Thunder & Lightning Arcs Canvas (Falls across screen when hovering letters) */}
+          <canvas
+            ref={lightningCanvasRef}
+            className="absolute inset-0 w-full h-full pointer-events-none z-25 block"
+          />
+
+          {/* Whole Screen Lightning Atmospheric Illumination Flash */}
+          {screenFlash > 0.01 && (
+            <div
+              className="absolute inset-0 pointer-events-none z-26 transition-opacity duration-75"
+              style={{
+                backgroundColor: `rgba(219, 234, 254, ${screenFlash})`,
+                mixBlendMode: 'screen',
+              }}
+            />
+          )}
+
           {/* Dynamic Live Water Surface Sonar Probe Tooltip */}
           {waterHoverInfo && !isPlunging && (
             <div 
-              className="absolute z-25 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3"
+              className="absolute z-30 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3"
               style={{ left: waterHoverInfo.x, top: Math.max(30, waterHoverInfo.y - 10) }}
             >
-              <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-slate-950/95 border border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.6)] text-[11px] font-mono text-cyan-200 backdrop-blur-xl whitespace-nowrap animate-in fade-in zoom-in duration-150">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.6)] text-[11px] font-mono text-cyan-200 backdrop-blur-xl whitespace-nowrap animate-in fade-in zoom-in duration-150">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
                 <span className="font-bold text-white tracking-wider">DEPTH: {waterHoverInfo.depthM}m</span>
                 <span className="text-cyan-400/50">•</span>
                 <span>FLOW: {waterHoverInfo.currentMps} m/s</span>
                 <span className="text-cyan-400/50">•</span>
-                <span className="text-[10px] font-sans font-semibold text-cyan-300">Click/Drag to Splash 🌊</span>
+                <span className="text-[10px] font-sans font-semibold text-cyan-300">Click to Splash 🌊</span>
               </div>
               <div className="w-2 h-2 bg-cyan-400 rotate-45 mx-auto -mt-1 shadow-sm" />
             </div>
@@ -1773,23 +2931,23 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
           <div className="absolute inset-0 pointer-events-none z-15 shadow-[inset_0_0_90px_rgba(0,0,0,0.85)]" />
 
           {/* ========================================================================= */}
-          {/* SAMVARTKA AI TYPOGRAPHY & HERO INTERFACE (ZERO WIGGLING!)                 */}
+          {/* ZONE 1: UPPER HERO CENTERPIECE (Title, Subtitle, & Primary CTA)          */}
           {/* ========================================================================= */}
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center text-center p-6 pointer-events-none">
-            {/* 1. Pill Badge - ALWAYS VISIBLE */}
+          <div className="relative z-30 flex flex-col items-center text-center pointer-events-none pt-2 sm:pt-4">
+            {/* 1. Pill Badge */}
             <motion.div
-              initial={{ opacity: 0, y: -12 }}
+              initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: isPlunging ? 0 : 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-900/60 border border-purple-400/40 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.35)] mb-2 sm:mb-3 pointer-events-auto"
+              transition={{ delay: 0.15, duration: 0.4 }}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-900/60 border border-purple-400/40 backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.35)] mb-1 sm:mb-2 pointer-events-auto"
             >
-              <Sparkles size={13} className="text-purple-300 animate-pulse" />
-              <span className="text-[11px] sm:text-xs font-semibold tracking-[0.25em] text-purple-200 uppercase">
+              <Sparkles size={12} className="text-purple-300 animate-pulse" />
+              <span className="text-[10px] sm:text-[11px] font-semibold tracking-[0.25em] text-purple-200 uppercase">
                 Precision • Speed • Intelligence
               </span>
             </motion.div>
 
-            {/* 2. SAMVARTKA AI - INTERACTIVE GLOWING LETTERS (GLOWS BRIGHTER ON HOVER & CURSOR MOVEMENT) */}
+            {/* 2. SAMVARTAKA AI - INTERACTIVE GLOWING LETTERS */}
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ 
@@ -1799,17 +2957,15 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
               transition={{ duration: 0.8, ease: 'easeOut' }}
               onMouseMove={handleTitleMouseMove}
               onMouseLeave={handleTitleMouseLeave}
-              className="select-none flex flex-col items-center pointer-events-auto cursor-default py-1 sm:py-2"
+              className="select-none flex flex-col items-center pointer-events-auto cursor-default"
             >
               <h1 
-                className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-black tracking-[0.12em] sm:tracking-[0.14em] uppercase leading-tight flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-4"
-                style={{
-                  transform: 'none', // Strictly NO wiggling or rotation!
-                }}
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-[0.12em] sm:tracking-[0.15em] uppercase leading-none flex flex-wrap items-center justify-center gap-x-2 sm:gap-x-3"
+                style={{ transform: 'none' }}
               >
-                {/* Word 1: SAMVARTKA */}
+                {/* Word 1: SAMVARTAKA */}
                 <span className="inline-flex items-center">
-                  {['S', 'A', 'M', 'V', 'A', 'R', 'T', 'K', 'A'].map((char, charIdx) => {
+                  {['S', 'A', 'M', 'V', 'A', 'R', 'T', 'A', 'K', 'A'].map((char, charIdx) => {
                     const globalIdx = charIdx;
                     const isDirectlyHovered = hoveredLetterIndex === globalIdx;
                     const proximity = letterGlowStrengths[globalIdx] || 0;
@@ -1817,43 +2973,44 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
                     return (
                       <span
-                        key={`samvartka-${charIdx}`}
+                        key={`samvartaka-${charIdx}`}
                         ref={(el) => { letterElementsRef.current[globalIdx] = el; }}
                         onMouseEnter={() => {
                           setHoveredLetterIndex(globalIdx);
-                          playLetterHoverTone(globalIdx);
+                          triggerThunderStrike(globalIdx);
                         }}
                         onMouseLeave={() => {
                           if (hoveredLetterIndex === globalIdx) setHoveredLetterIndex(null);
                         }}
                         style={{
-                          textShadow: strength > 0.04
-                            ? `0 0 10px #ffffff, 0 0 24px rgba(255, 255, 255, ${0.85 + strength * 0.15}), 0 0 ${35 + strength * 45}px rgba(244, 114, 182, ${0.7 + strength * 0.3}), 0 0 ${60 + strength * 60}px rgba(168, 85, 247, ${0.65 + strength * 0.35}), 0 0 ${95 + strength * 80}px rgba(147, 51, 234, 0.75)`
-                            : '0 0 18px rgba(216, 180, 254, 0.65), 0 0 35px rgba(168, 85, 247, 0.45)',
                           transform: `translateY(-${strength * 6}px)`,
-                          filter: `brightness(${1.0 + strength * 1.1}) drop-shadow(0 ${strength * 4}px ${12 + strength * 28}px rgba(232, 121, 249, ${0.45 + strength * 0.55}))`,
-                          transition: 'transform 0.12s ease-out, filter 0.12s ease-out, text-shadow 0.12s ease-out',
+                          transition: 'transform 0.12s ease-out',
                         }}
-                        className="relative inline-block px-0.5 sm:px-1 py-1 font-black cursor-pointer group"
+                        className="relative inline-block px-1 py-0.5 font-black cursor-pointer group"
                       >
-                        {/* Radial aura expanding behind letter on cursor movement */}
+                        {/* Accretion Ring Halo (Glowing White/Purple/Cyan Ring around Black Core) */}
                         <span
-                          className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none -z-10 blur-xl transition-all duration-150"
+                          className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none -z-10 blur-md transition-all duration-150"
                           style={{
-                            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(244,114,182,0.85) 35%, rgba(168,85,247,0.55) 65%, transparent 80%)',
-                            opacity: Math.max(0.12, strength * 0.95),
-                            transform: `scale(${0.85 + strength * 0.45})`,
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(216,180,254,0.85) 30%, rgba(168,85,247,0.7) 60%, rgba(56,189,248,0.4) 85%, transparent 100%)',
+                            opacity: Math.max(0.4, strength * 0.95),
+                            transform: `scale(${0.9 + strength * 0.35})`,
                           }}
                         />
 
-                        {/* Letter Glyph */}
-                        <span className={`text-transparent bg-clip-text ${strength > 0.3 ? 'bg-gradient-to-b from-white via-pink-100 to-purple-200' : 'bg-gradient-to-b from-white via-slate-100 to-purple-300'}`}>
+                        {/* Sprinkled Starlight Dots around each Letter */}
+                        <span className="starlight-dot -top-1 -left-1" style={{ animationDelay: `${(charIdx * 0.2) % 2}s` }} />
+                        <span className="starlight-dot -top-1.5 right-0" style={{ animationDelay: `${(charIdx * 0.3 + 0.4) % 2}s` }} />
+                        <span className="starlight-dot -bottom-1 -left-0.5" style={{ animationDelay: `${(charIdx * 0.15 + 0.8) % 2}s` }} />
+                        <span className="starlight-dot -bottom-1.5 right-1" style={{ animationDelay: `${(charIdx * 0.25 + 1.2) % 2}s` }} />
+
+                        {/* Pitch Black Core Letter Glyph */}
+                        <span className="blackhole-letter font-black text-black select-none">
                           {char}
                         </span>
 
-                        {/* Direct hover pin-light sparkle */}
                         {isDirectlyHovered && (
-                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white animate-ping pointer-events-none" />
+                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_10px_#fff] animate-ping pointer-events-none" />
                         )}
                       </span>
                     );
@@ -1863,7 +3020,7 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                 {/* Word 2: AI */}
                 <span className="inline-flex items-center">
                   {['A', 'I'].map((char, charIdx) => {
-                    const globalIdx = 9 + charIdx;
+                    const globalIdx = 10 + charIdx;
                     const isDirectlyHovered = hoveredLetterIndex === globalIdx;
                     const proximity = letterGlowStrengths[globalIdx] || 0;
                     const strength = Math.max(proximity, isDirectlyHovered ? 1.0 : 0);
@@ -1874,36 +3031,37 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
                         ref={(el) => { letterElementsRef.current[globalIdx] = el; }}
                         onMouseEnter={() => {
                           setHoveredLetterIndex(globalIdx);
-                          playLetterHoverTone(globalIdx);
+                          triggerThunderStrike(globalIdx);
                         }}
                         onMouseLeave={() => {
                           if (hoveredLetterIndex === globalIdx) setHoveredLetterIndex(null);
                         }}
                         style={{
-                          textShadow: strength > 0.04
-                            ? `0 0 10px #ffffff, 0 0 24px rgba(255, 255, 255, ${0.85 + strength * 0.15}), 0 0 ${35 + strength * 45}px rgba(244, 114, 182, ${0.7 + strength * 0.3}), 0 0 ${60 + strength * 60}px rgba(168, 85, 247, ${0.65 + strength * 0.35}), 0 0 ${95 + strength * 80}px rgba(147, 51, 234, 0.75)`
-                            : '0 0 18px rgba(216, 180, 254, 0.65), 0 0 35px rgba(168, 85, 247, 0.45)',
                           transform: `translateY(-${strength * 6}px)`,
-                          filter: `brightness(${1.0 + strength * 1.1}) drop-shadow(0 ${strength * 4}px ${12 + strength * 28}px rgba(232, 121, 249, ${0.45 + strength * 0.55}))`,
-                          transition: 'transform 0.12s ease-out, filter 0.12s ease-out, text-shadow 0.12s ease-out',
+                          transition: 'transform 0.12s ease-out',
                         }}
-                        className="relative inline-block px-0.5 sm:px-1 py-1 font-black cursor-pointer group"
+                        className="relative inline-block px-1 py-0.5 font-black cursor-pointer group"
                       >
                         <span
-                          className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none -z-10 blur-xl transition-all duration-150"
+                          className="absolute -inset-3 sm:-inset-4 rounded-full pointer-events-none -z-10 blur-md transition-all duration-150"
                           style={{
-                            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(244,114,182,0.85) 35%, rgba(168,85,247,0.55) 65%, transparent 80%)',
-                            opacity: Math.max(0.12, strength * 0.95),
-                            transform: `scale(${0.85 + strength * 0.45})`,
+                            background: 'radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(216,180,254,0.85) 30%, rgba(168,85,247,0.7) 60%, rgba(56,189,248,0.4) 85%, transparent 100%)',
+                            opacity: Math.max(0.4, strength * 0.95),
+                            transform: `scale(${0.9 + strength * 0.35})`,
                           }}
                         />
 
-                        <span className={`text-transparent bg-clip-text ${strength > 0.3 ? 'bg-gradient-to-b from-white via-pink-100 to-purple-200' : 'bg-gradient-to-b from-white via-slate-100 to-purple-300'}`}>
+                        <span className="starlight-dot -top-1 -left-1" style={{ animationDelay: `${(charIdx * 0.2 + 0.5) % 2}s` }} />
+                        <span className="starlight-dot -top-1.5 right-0" style={{ animationDelay: `${(charIdx * 0.3 + 0.9) % 2}s` }} />
+                        <span className="starlight-dot -bottom-1 -left-0.5" style={{ animationDelay: `${(charIdx * 0.15 + 1.3) % 2}s` }} />
+                        <span className="starlight-dot -bottom-1.5 right-1" style={{ animationDelay: `${(charIdx * 0.25 + 1.7) % 2}s` }} />
+
+                        <span className="blackhole-letter font-black text-black select-none">
                           {char}
                         </span>
 
                         {isDirectlyHovered && (
-                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-white animate-ping pointer-events-none" />
+                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-white shadow-[0_0_10px_#fff] animate-ping pointer-events-none" />
                         )}
                       </span>
                     );
@@ -1913,10 +3071,10 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
 
               {/* 3. Subheading */}
               <motion.h2
-                initial={{ opacity: 0, y: 8 }}
+                initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: isPlunging ? 0 : 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.25 }}
-                className="text-xs sm:text-base md:text-lg font-bold tracking-[0.2em] text-slate-200 uppercase mt-1 drop-shadow-md"
+                transition={{ duration: 0.5, delay: 0.2 }}
+                className="text-xs sm:text-sm md:text-base font-bold tracking-[0.2em] text-slate-200 uppercase mt-1 drop-shadow-md"
               >
                 STOP GUESSING. START CALIBRATING.
               </motion.h2>
@@ -1925,181 +3083,364 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
               <motion.p
                 initial={{ opacity: 0 }}
                 animate={{ opacity: isPlunging ? 0 : 1 }}
-                transition={{ duration: 0.6, delay: 0.35 }}
-                className="text-[11px] sm:text-xs text-purple-200/90 font-medium tracking-wide max-w-lg mt-1.5 hidden sm:block drop-shadow"
+                transition={{ duration: 0.5, delay: 0.3 }}
+                className="text-[11px] sm:text-xs text-purple-200/80 font-medium tracking-wide max-w-md mt-0.5 hidden md:block drop-shadow"
               >
                 Physics-Informed Deep Neural Post-Processing of Monsoon Rainfall Forecasts
               </motion.p>
             </motion.div>
-
-            {/* 5. Dynamic Flood Telemetry Indicator (Shows extreme high flood levels & canyon submersion) */}
-            {floodDepth > 5 && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: isPlunging ? 0 : 1, scale: 1 }}
-                className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-mono font-semibold border backdrop-blur-xl transition-all duration-300 pointer-events-auto my-1 ${
-                  floodDepth >= 220
-                    ? 'bg-rose-950/95 text-rose-100 border-rose-400/80 shadow-[0_0_30px_rgba(244,63,94,0.7)] animate-pulse'
-                    : floodDepth >= 110
-                    ? 'bg-red-950/90 text-rose-200 border-rose-500/60 shadow-[0_0_25px_rgba(244,63,94,0.5)]'
-                    : floodDepth >= 45
-                    ? 'bg-amber-950/80 text-amber-200 border-amber-500/50 shadow-[0_0_20px_rgba(245,158,11,0.35)]'
-                    : 'bg-cyan-950/70 text-cyan-200 border-cyan-500/40 shadow-[0_0_15px_rgba(6,182,212,0.25)]'
-                }`}
-              >
-                <span className={`w-2.5 h-2.5 rounded-full ${
-                  floodDepth >= 220 ? 'bg-rose-300 animate-ping' : floodDepth >= 110 ? 'bg-rose-400 animate-pulse' : floodDepth >= 45 ? 'bg-amber-400' : 'bg-cyan-400'
-                }`} />
-                <span>
-                  {floodDepth >= 220
-                    ? `CATASTROPHIC FLOOD SURGE: Canyon Submerged (+95mm/s • Crest: ${(floodDepth * 0.022).toFixed(1)}m / 92% Gorge Capacity)`
-                    : floodDepth >= 110
-                    ? `SEVERE FLOOD WARNING: Water Level Rising (+55mm/s • Crest: ${(floodDepth * 0.022).toFixed(1)}m)`
-                    : floodDepth >= 45
-                    ? `Canyon Runoff Alert: Water Rapidly Rising (+28mm/s • Crest: ${(floodDepth * 0.02).toFixed(1)}m)`
-                    : `Canyon Floor: Flash Runoff Accumulating (+14mm/s)`}
-                </span>
-              </motion.div>
-            )}
-
-            {/* 6. Glowing Hero CTA Button - ALWAYS VISIBLE */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 10 }}
-              animate={{ opacity: isPlunging ? 0 : 1, scale: 1, y: 0 }}
-              transition={{ delay: 0.35, duration: 0.5 }}
-              className="mt-3.5 sm:mt-5 pointer-events-auto z-30 flex flex-col items-center gap-1.5"
-            >
-              <button
-                onClick={handleEnterWaterfall}
-                className={`group relative flex items-center gap-2.5 px-6 sm:px-8 py-3 rounded-full text-white font-bold text-xs sm:text-sm tracking-widest uppercase border transition-all duration-300 hover:scale-105 active:scale-95 cursor-pointer ${
-                  floodDepth >= 110
-                    ? 'bg-gradient-to-r from-red-600 via-rose-600 to-purple-600 shadow-[0_0_40px_rgba(239,68,68,0.85)] border-rose-300/60 animate-pulse'
-                    : floodDepth >= 45
-                    ? 'bg-gradient-to-r from-amber-600 via-purple-600 to-indigo-600 shadow-[0_0_35px_rgba(245,158,11,0.7)] border-amber-300/50'
-                    : 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-indigo-600 shadow-[0_0_35px_rgba(168,85,247,0.7)] border-purple-300/40'
-                }`}
-              >
-                <span>{floodDepth >= 110 ? 'Evacuate & Launch Forecast Engine' : 'Launch Forecast Engine'}</span>
-                <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-              </button>
-            </motion.div>
-
-            {/* 7. INTERACTIVE FLOOD WATER CONTROL DECK (User direct water interaction) */}
-            <motion.div
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: isPlunging ? 0 : 1, y: 0 }}
-              transition={{ delay: 0.45, duration: 0.5 }}
-              className="mt-3 sm:mt-4 pointer-events-auto z-30 w-full max-w-xl px-2"
-            >
-              <div className="bg-slate-950/80 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-2.5 sm:p-3 shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_20px_rgba(6,182,212,0.15)] flex flex-col gap-2">
-                {/* Top Row: Quick Interactive Action Buttons */}
-                <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    {/* Splash Water Button */}
-                    <button
-                      type="button"
-                      onClick={() => triggerWaterSplashFnRef.current?.(undefined, undefined, 1.35)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-[11px] font-semibold tracking-wide border border-cyan-400/40 shadow-[0_0_15px_rgba(6,182,212,0.35)] transition-all active:scale-95 cursor-pointer"
-                      title="Click to trigger ripples, physics droplets, and splash sound"
-                    >
-                      <Waves size={13} className="text-cyan-200" />
-                      <span>Splash Water</span>
-                    </button>
-
-                    {/* Drop Floating Log / Buoy */}
-                    <button
-                      type="button"
-                      onClick={() => dropFloatingObjectFnRef.current?.()}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-amber-200 text-[11px] font-semibold tracking-wide border border-amber-500/40 shadow-sm transition-all active:scale-95 cursor-pointer"
-                      title="Drop buoyant timber logs and rescue buoys into the flood current"
-                    >
-                      <span className="text-xs">🪵</span>
-                      <span>Drop Float</span>
-                      {floatingLogsCount > 0 && (
-                        <span className="ml-0.5 px-1.5 py-0.2 rounded-full bg-amber-500/20 text-[10px] text-amber-300 font-mono">
-                          {floatingLogsCount}
-                        </span>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Flood Level Quick Steppers */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const cur = manualWaterLevel ?? (floodDepth / 240);
-                        setManualWaterLevel(Math.min(1.0, Math.max(0, cur + 0.15)));
-                      }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-rose-950/70 hover:bg-rose-900/80 text-rose-200 text-[11px] font-semibold border border-rose-500/40 transition-all active:scale-95 cursor-pointer"
-                      title="Raise flood water level"
-                    >
-                      <Plus size={12} className="text-rose-400" />
-                      <span>Surge</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const cur = manualWaterLevel ?? (floodDepth / 240);
-                        setManualWaterLevel(Math.max(0.0, cur - 0.15));
-                      }}
-                      className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-300 text-[11px] font-semibold border border-slate-700 transition-all active:scale-95 cursor-pointer"
-                      title="Drain flood water down"
-                    >
-                      <Minus size={12} className="text-slate-400" />
-                      <span>Drain</span>
-                    </button>
-
-                    {manualWaterLevel !== null && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setManualWaterLevel(null);
-                          setIsFloodSurging(false);
-                        }}
-                        className="px-2 py-1 rounded-lg bg-purple-950/60 hover:bg-purple-900/70 text-purple-300 text-[10px] font-mono border border-purple-500/30 transition-all cursor-pointer"
-                        title="Reset to automatic monsoon simulation"
-                      >
-                        Auto
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Bottom Row: Interactive Slider & Telemetry Readout */}
-                <div className="flex items-center gap-3 pt-1 border-t border-cyan-500/15">
-                  <div className="flex items-center gap-1.5 text-[10px] font-mono text-cyan-300 whitespace-nowrap min-w-[75px]">
-                    <Activity size={11} className="text-cyan-400 animate-pulse" />
-                    <span>LEVEL: {(floodDepth * 0.022).toFixed(1)}m</span>
-                  </div>
-
-                  {/* Flood Level Scrubbing Slider */}
-                  <div className="flex-1 flex items-center gap-2">
-                    <input
-                      type="range"
-                      min={0}
-                      max={100}
-                      value={Math.round((manualWaterLevel !== null ? manualWaterLevel : Math.min(1.0, floodDepth / 240)) * 100)}
-                      onChange={(e) => {
-                        const val = parseFloat(e.target.value) / 100;
-                        setManualWaterLevel(val);
-                      }}
-                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-                    />
-                  </div>
-
-                  <span className="text-[10px] text-slate-400 font-mono hidden sm:inline whitespace-nowrap">
-                    {recentSplashCount > 0 ? `${recentSplashCount} Splashes` : 'Touch canvas to splash'}
-                  </span>
-                </div>
-              </div>
-            </motion.div>
           </div>
+
+          {/* ========================================================================= */}
+          {/* ZONE 2: CENTRAL CIRCULAR HYDRO PULSE CONTROLLER & DOCKED TOOLS DOCK       */}
+          {/* ========================================================================= */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: isPlunging ? 0 : 1, y: 0 }}
+            transition={{ delay: 0.35, duration: 0.5 }}
+            className="relative z-30 w-full max-w-xl mx-auto pointer-events-auto my-1 flex flex-col items-center select-none"
+          >
+            {/* HYDRO CONTROLLER & WATER SCALE ADJUSTMENT */}
+            {(() => {
+              const currentRatio = waterLevelRatio;
+              const depthM = (currentRatio * 3.8 + 1.25).toFixed(2);
+              const percent = Math.round(currentRatio * 100);
+
+              // Dynamic color scheme & glowing aura based on water level
+              let theme = {
+                gradient: 'from-cyan-500 via-teal-600 to-blue-700',
+                border: 'border-cyan-300',
+                glow: 'shadow-[0_0_35px_rgba(6,182,212,0.85),0_0_70px_rgba(6,182,212,0.4)]',
+                textColor: 'text-cyan-200',
+                fillColor: '#06b6d4',
+                label: 'LOW FLOW'
+              };
+
+              if (currentRatio >= 0.7) {
+                theme = {
+                  gradient: 'from-amber-500 via-orange-600 to-red-600',
+                  border: 'border-rose-300/90',
+                  glow: 'shadow-[0_0_55px_rgba(245,158,11,1),0_0_110px_rgba(239,68,68,0.7)] animate-pulse',
+                  textColor: 'text-rose-200',
+                  fillColor: '#ef4444',
+                  label: 'TORRENT SURGE'
+                };
+              } else if (currentRatio >= 0.32) {
+                theme = {
+                  gradient: 'from-blue-600 via-purple-600 to-indigo-700',
+                  border: 'border-purple-300/80',
+                  glow: 'shadow-[0_0_45px_rgba(168,85,247,0.9),0_0_90px_rgba(99,102,241,0.5)]',
+                  textColor: 'text-purple-200',
+                  fillColor: '#a855f7',
+                  label: 'MONSOON FLOW'
+                };
+              }
+
+              // Dock tools with clear layout
+              const dockHydroOptions = [
+                {
+                  id: 'splash',
+                  label: 'Splash Water Surface Ripples',
+                  shortLabel: 'Splash',
+                  icon: <Waves size={15} className="text-cyan-400" />,
+                  action: () => triggerWaterSplashFnRef.current?.(undefined, undefined, 1.8),
+                  colorClass: 'bg-cyan-950/90 border-cyan-400/80 text-cyan-200 hover:bg-cyan-900 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                },
+                {
+                  id: 'float',
+                  label: 'Drop Floating Timber Log',
+                  shortLabel: 'Float Log',
+                  icon: <span className="text-xs">🪵</span>,
+                  badge: floatingLogsCount,
+                  action: () => dropFloatingObjectFnRef.current?.(),
+                  colorClass: 'bg-amber-950/90 border-amber-400/80 text-amber-200 hover:bg-amber-900 shadow-[0_0_15px_rgba(245,158,11,0.5)]'
+                },
+                {
+                  id: 'autosurge',
+                  label: isAutoSurging ? 'Pause Flood Inundation' : 'Auto Monsoon Surge',
+                  shortLabel: isAutoSurging ? 'Surging' : 'Auto Surge',
+                  icon: <Zap size={15} className={isAutoSurging ? "text-rose-400 animate-bounce" : "text-purple-300"} />,
+                  action: () => {
+                    setIsAutoSurging(prev => !prev);
+                    isAutoSurgingRef.current = !isAutoSurgingRef.current;
+                  },
+                  colorClass: isAutoSurging
+                    ? 'bg-rose-950/90 border-rose-400 text-rose-200 shadow-[0_0_20px_rgba(239,68,68,0.8)] animate-pulse'
+                    : 'bg-purple-950/90 border-purple-400/80 text-purple-200 hover:bg-purple-900 shadow-[0_0_15px_rgba(168,85,247,0.5)]'
+                },
+                {
+                  id: 'reset',
+                  label: 'Reset Water Level (Normal 35%)',
+                  shortLabel: 'Reset',
+                  icon: <RefreshCw size={14} className="text-emerald-400" />,
+                  action: () => handleSetWaterLevel(0.35),
+                  colorClass: 'bg-emerald-950/90 border-emerald-400/80 text-emerald-200 hover:bg-emerald-900 shadow-[0_0_15px_rgba(16,185,129,0.5)]'
+                }
+              ];
+
+              return (
+                <div className="relative flex flex-col items-center justify-center w-full">
+                  {/* CENTRAL CONTAINER FOR HYDRO ORB */}
+                  <div className="relative flex flex-col items-center justify-center">
+                    {/* MAIN CENTRAL HYDRO ORB CIRCLE (100% UNIFIED TAP AREA) */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        setIsCircleHubOpen(prev => !prev);
+                      }}
+                      className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 ${theme.border} bg-slate-950/95 flex flex-col items-center justify-center p-1.5 cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${theme.glow} overflow-hidden group select-none z-30`}
+                      title="Tap anywhere on this circle to toggle interactive water tools menu"
+                    >
+                      {/* Outer Pulsing Dashed Target Ring Indicator */}
+                      <div className="absolute -inset-1 rounded-full border border-dashed border-cyan-400/80 animate-spin-slow pointer-events-none" />
+
+                      {/* Animated Hydro Water Level Liquid Fill inside Circle */}
+                      <div
+                        className="absolute bottom-0 left-0 right-0 transition-all duration-300 ease-out opacity-40 group-hover:opacity-60 pointer-events-none"
+                        style={{
+                          height: `${percent}%`,
+                          background: `linear-gradient(to top, ${theme.fillColor}, transparent)`
+                        }}
+                      />
+
+                      {/* Unified Inner Content with pointer-events-none */}
+                      <div className="relative z-10 flex flex-col items-center justify-center pointer-events-none text-center leading-tight">
+                        <Droplets size={14} className={`${theme.textColor} mb-0.5 animate-bounce shrink-0`} />
+                        <span className="font-mono font-black text-xs sm:text-sm text-white tracking-wide drop-shadow-md">
+                          +{depthM}m
+                        </span>
+                        <span className={`text-[7.5px] sm:text-[8px] font-mono font-bold tracking-wider ${theme.textColor} uppercase mt-0.5`}>
+                          {percent}% • {theme.label}
+                        </span>
+                        <span className="text-[7px] font-sans font-extrabold text-cyan-200 tracking-wider uppercase mt-1 px-1.5 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400/80 shadow-md">
+                          {isCircleHubOpen ? '▲ HIDE' : '✦ TOOLS'}
+                        </span>
+                      </div>
+                    </button>
+
+                    {/* DOCKED TOOLS TOOLBAR (Appears cleanly below orb - never overlaps titles!) */}
+                    <AnimatePresence>
+                      {isCircleHubOpen && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -6, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                          transition={{ duration: 0.18 }}
+                          className="flex items-center justify-center gap-1 sm:gap-1.5 mt-1.5 flex-wrap z-30 max-w-sm"
+                        >
+                          {dockHydroOptions.map((opt) => (
+                            <button
+                              key={opt.id}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                opt.action();
+                              }}
+                              className={`relative px-2 py-0.5 rounded-full flex items-center gap-1 border backdrop-blur-xl shadow-md transition-all duration-150 hover:scale-105 active:scale-95 cursor-pointer text-xs font-semibold ${opt.colorClass}`}
+                              title={opt.label}
+                            >
+                              {opt.icon}
+                              <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-white">
+                                {opt.shortLabel}
+                              </span>
+                              {opt.badge !== undefined && opt.badge > 0 && (
+                                <span className="px-1 py-0.1 rounded-full bg-amber-500 text-black text-[7.5px] font-mono font-bold">
+                                  {opt.badge}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              );
+            })()}
+          </motion.div>
         </motion.div>
       </motion.div>
 
-      {/* Volumetric Fog & Spray Overlay on Waterfall Plunge */}
+      {/* ========================================================================= */}
+      {/* HYDROLOGICAL WATER METER & FLOW CONTROL DECK MODAL                       */}
+      {/* ========================================================================= */}
+      <AnimatePresence>
+        {showWaterMeterDeck && !isPlunging && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md"
+            onClick={() => setShowWaterMeterDeck(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.92, y: 20 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="relative w-full max-w-lg bg-slate-950/95 border border-cyan-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_60px_rgba(6,182,212,0.3)] backdrop-blur-2xl text-slate-100 flex flex-col gap-4 overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header */}
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300">
+                    <Activity size={18} />
+                  </div>
+                  <div>
+                    <h3 className="font-mono font-bold text-sm text-cyan-200 tracking-wide uppercase">
+                      Hydrological Water Meter & Flow Control
+                    </h3>
+                    <p className="text-[11px] text-slate-400 font-mono">
+                      Real-time lake telemetry, flood stage & 3D water simulation
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowWaterMeterDeck(false)}
+                  className="p-1.5 rounded-full bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Gauge & Level Visualizer */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-cyan-500/30 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] font-mono text-cyan-300 font-semibold uppercase">Water Depth</span>
+                  <span className="text-2xl font-mono font-black text-white mt-1">+{currentDepthM}m</span>
+                  <span className="text-[9px] font-mono text-cyan-400">({Math.round(waterLevelRatio * 100)}% capacity)</span>
+                </div>
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] font-mono text-purple-300 font-semibold uppercase">Stage Regime</span>
+                  <span className="text-lg font-mono font-black text-purple-200 mt-1">{hydroAlert.code}</span>
+                  <span className="text-[9px] font-mono text-slate-400 truncate max-w-full">{hydroAlert.title}</span>
+                </div>
+                <div className="col-span-2 sm:col-span-1 p-3 rounded-2xl bg-slate-900/80 border border-emerald-500/30 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] font-mono text-emerald-300 font-semibold uppercase">Inflow Torrent</span>
+                  <span className="text-lg font-mono font-black text-emerald-200 mt-1">
+                    {Math.round(320 + waterLevelRatio * 420)} m³/s
+                  </span>
+                  <span className="text-[9px] font-mono text-emerald-400">Active Waterfall Inundation</span>
+                </div>
+              </div>
+
+              {/* Interactive Water Level Slider & Presets */}
+              <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-col gap-3">
+                <div className="flex items-center justify-between text-xs font-mono font-bold">
+                  <span className="text-slate-300 flex items-center gap-1.5">
+                    <Sliders size={14} className="text-cyan-400" />
+                    Water Depth Scale
+                  </span>
+                  <span className="text-cyan-300 font-mono text-sm">
+                    {Math.round(waterLevelRatio * 100)}% (+{currentDepthM}m)
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleSetWaterLevel(waterLevelRatio - 0.05)}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 cursor-pointer transition-all active:scale-90"
+                    title="Decrease 5%"
+                  >
+                    <Minus size={14} />
+                  </button>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={waterLevelRatio}
+                    onChange={(e) => handleSetWaterLevel(parseFloat(e.target.value))}
+                    className="flex-1 h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => handleSetWaterLevel(waterLevelRatio + 0.05)}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 cursor-pointer transition-all active:scale-90"
+                    title="Increase 5%"
+                  >
+                    <Plus size={14} />
+                  </button>
+                </div>
+
+                {/* Level Presets */}
+                <div className="grid grid-cols-4 gap-1.5 pt-1">
+                  {[
+                    { label: 'Drought', ratio: 0.05, depth: '1.4m' },
+                    { label: 'Normal', ratio: 0.35, depth: '2.6m' },
+                    { label: 'Monsoon', ratio: 0.65, depth: '3.7m' },
+                    { label: 'Torrent', ratio: 0.95, depth: '4.9m' },
+                  ].map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => handleSetWaterLevel(preset.ratio)}
+                      className={`py-1.5 px-2 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer border flex flex-col items-center justify-center ${
+                        Math.abs(waterLevelRatio - preset.ratio) < 0.15
+                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                          : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      <span>{preset.label}</span>
+                      <span className="text-[8px] opacity-75">{preset.depth}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Tools */}
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerWaterSplashFnRef.current?.(undefined, undefined, 2.2);
+                  }}
+                  className="p-2.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <Waves size={14} className="text-cyan-400" />
+                  <span>Splash Lake</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    dropFloatingObjectFnRef.current?.();
+                  }}
+                  className="p-2.5 rounded-xl bg-amber-950/80 hover:bg-amber-900 border border-amber-500/40 text-amber-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                >
+                  <span>🪵 Timber ({floatingLogsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAutoSurging(prev => !prev);
+                    isAutoSurgingRef.current = !isAutoSurgingRef.current;
+                  }}
+                  className={`p-2.5 rounded-xl border text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 ${
+                    isAutoSurging
+                      ? 'bg-rose-950/90 border-rose-400 text-rose-200 shadow-[0_0_15px_rgba(239,68,68,0.7)] animate-pulse'
+                      : 'bg-purple-950/80 hover:bg-purple-900 border-purple-500/40 text-purple-200'
+                  }`}
+                >
+                  <Zap size={14} className={isAutoSurging ? "text-rose-400 animate-bounce" : "text-purple-400"} />
+                  <span>{isAutoSurging ? 'Pause Surge' : 'Auto Surge'}</span>
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Volumetric Cloud Freefall & Piercing Overlay on Grid Entry */}
       <AnimatePresence>
         {isPlunging && (
           <motion.div
@@ -2107,60 +3448,76 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 1 }}
-            transition={{ duration: 1.18, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 5.0, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[150] pointer-events-none flex flex-col items-center justify-center overflow-hidden"
           >
-            {/* White & Pearlescent Cyan Volumetric Mist */}
-            <div className="absolute inset-0 bg-gradient-to-b from-white/98 via-slate-100/95 to-indigo-50/90 backdrop-blur-3xl" />
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0.5 }}
-              animate={{ scale: 1.5, opacity: 1 }}
-              transition={{ duration: 1.35, ease: 'easeOut' }}
-              className="absolute -inset-24 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,rgba(224,231,255,0.95)_45%,rgba(168,85,247,0.45)_80%)]" 
+            {/* 1. Atmospheric Sky & Base Cloud Blanket */}
+            <div className="absolute inset-0 bg-gradient-to-b from-sky-200/95 via-purple-100/90 to-white backdrop-blur-3xl" />
+
+            {/* 2. Real-Time 3D Volumetric Cloud & Atmospheric Freefall Canvas */}
+            <VolumetricFreefall3D />
+            
+            {/* 3. STAGE 1: Cascading Waterfall Spray & Water Curtain Breach */}
+            <motion.div
+              initial={{ y: '-100%', opacity: 1 }}
+              animate={{ y: ['-100%', '0%', '120%'], opacity: [1, 0.95, 0] }}
+              transition={{ duration: 2.0, ease: [0.25, 1, 0.5, 1] }}
+              className="absolute inset-0 bg-gradient-to-b from-cyan-400/80 via-sky-300/60 to-transparent backdrop-blur-md flex flex-col items-center justify-center pointer-events-none"
+            >
+              {/* Vertical rushing water streams */}
+              <div className="w-full h-full bg-[repeating-linear-gradient(to_bottom,transparent_0px,transparent_30px,rgba(255,255,255,0.85)_30px,rgba(255,255,255,0.95)_34px,transparent_36px)]" />
+              {/* Cyan refraction glow ring */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(6,182,212,0.6)_0%,rgba(56,189,248,0.4)_40%,transparent_75%)]" />
+            </motion.div>
+
+            {/* 4. Radial Wind Tunnel / Sky-Dive Freefall Vortex Expanding */}
+            <motion.div
+              initial={{ scale: 0.2, opacity: 0.9 }}
+              animate={{ scale: [0.2, 1.8, 5.0], opacity: [0.9, 1, 0.05] }}
+              transition={{ duration: 4.6, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-0 rounded-full border-[28px] border-white/70 shadow-[0_0_150px_rgba(255,255,255,1),inset_0_0_100px_rgba(168,85,247,0.4)]"
             />
 
-            {/* Flying Waterfall Spray Mist Particles */}
+            {/* 5. STAGE 3: Breaking Through Cloud Ceiling */}
             <motion.div
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1.4, opacity: 0.9 }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              className="absolute inset-0 bg-[radial-gradient(circle_at_50%_40%,rgba(255,255,255,0.95)_0%,rgba(186,230,253,0.7)_30%,transparent_70%)]"
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [0, 2.0, 4.0], opacity: [0, 0.95, 0] }}
+              transition={{ duration: 2.0, delay: 3.0, ease: 'easeOut' }}
+              className="absolute inset-0 rounded-full bg-gradient-to-r from-amber-200/50 via-white to-sky-200/50 blur-2xl"
             />
             
-            <div className="relative z-10 flex flex-col items-center gap-3">
+            {/* Freefall Telemetry Readout */}
+            <div className="relative z-10 flex flex-col items-center gap-2 text-center select-none">
               <motion.div 
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ delay: 0.15, duration: 0.5 }}
-                className="w-14 h-14 rounded-full bg-purple-500/20 border border-purple-400/40 flex items-center justify-center backdrop-blur-md shadow-[0_0_30px_rgba(168,85,247,0.35)]"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: [0, 1, 0.9], y: [20, 0, -5] }}
+                transition={{ delay: 0.2, duration: 1.0 }}
+                className="px-6 py-2.5 rounded-full bg-slate-950/70 backdrop-blur-xl border border-purple-400/40 shadow-[0_8px_32px_rgba(168,85,247,0.4)]"
               >
-                <CloudRain className="w-7 h-7 text-purple-600 animate-bounce" />
+                <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.35em] uppercase text-white drop-shadow-sm">
+                  Freefalling Through Cloud Layer
+                </span>
               </motion.div>
-              <motion.span 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25, duration: 0.5 }}
-                className="text-xs font-mono font-bold tracking-[0.3em] uppercase text-purple-950"
+              <motion.span
+                initial={{ opacity: 0 }}
+                animate={{ opacity: [0, 1, 0.85] }}
+                transition={{ delay: 0.6, duration: 1.0 }}
+                className="text-[10px] sm:text-xs font-mono text-purple-900/90 font-bold tracking-widest uppercase"
               >
-                Entering Samvartka Atmospheric Grid...
+                Altitude Descent • Atmospheric Drag • Touching Down
               </motion.span>
             </div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Bottom Status & Controls Bar (Loading Line Removed as Requested) */}
-      <div className="absolute bottom-4 left-5 right-5 sm:bottom-6 sm:left-8 sm:right-8 z-30 flex items-center justify-between text-[10px] text-slate-400 tracking-wider pointer-events-auto">
-        <div className="flex items-center gap-4">
-          <span className="font-mono text-purple-400 font-bold">
-            {currentTime.toFixed(1)}s / {TOTAL_DURATION.toFixed(1)}s
-          </span>
-          <span className="hidden sm:inline text-slate-400 font-medium">
-            Twin Mountain Peaks • Cascading Water • Zero-Wiggle Reveal
-          </span>
-        </div>
+      {/* Bottom Status & Controls Bar */}
+      <div className="fixed bottom-3 left-3 right-3 sm:bottom-4 sm:left-6 sm:right-6 z-40 flex items-center justify-between text-[10px] text-slate-400 tracking-wider pointer-events-auto">
+        {/* Left: Doppler Meteorological Weather Radar HUD Widget */}
+        <DopplerRadarWidget isAudioMuted={isMuted} />
 
-        <div className="flex items-center gap-3">
+        {/* Right: Sound, Assistant & Replay Controls */}
+        <div className="flex items-center gap-2 sm:gap-3 bg-slate-950/80 backdrop-blur-xl border border-purple-500/25 px-3 py-1.5 rounded-full shadow-2xl">
           {isMuted && (
             <button 
               onClick={toggleSound}
@@ -2168,21 +3525,21 @@ export function CinematicIntro({ onComplete }: CinematicIntroProps) {
               title="Click to activate procedural ambient soundscape"
             >
               <Volume2 size={13} className="text-purple-400" />
-              <span>Click to enable soundscape</span>
+              <span>Enable Soundscape</span>
             </button>
           )}
           <button
             id="intro-ask-ai-btn"
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
             className="hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-blue-900/60 to-purple-900/60 hover:from-blue-800/80 hover:to-purple-800/80 border border-purple-400/40 text-purple-200 transition-all cursor-pointer font-medium active:scale-95 shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs"
-            title="Open Samvartka AI Meteorological Assistant"
+            title="Open SAMVARTAKA AI Meteorological Assistant"
           >
             <Bot size={13} className="text-purple-300 animate-pulse" />
             <span>Ask AI Assistant</span>
           </button>
           <button
             onClick={handleReplay}
-            className="hover:text-white flex items-center gap-1 transition-colors cursor-pointer text-slate-300 font-medium active:scale-95 text-xs ml-1"
+            className="hover:text-white flex items-center gap-1 transition-colors cursor-pointer text-slate-300 font-medium active:scale-95 text-xs ml-0.5"
             title="Replay sequence"
           >
             <RotateCcw size={11} />

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { Briefcase, MapPin, Sparkles, Loader2, AlertCircle, CloudRain, Check } from 'lucide-react';
 import Markdown from 'react-markdown';
+import { fetchDailyForecastData } from '../utils/weatherApi';
 
 export const ActionPlanner: React.FC = () => {
   const [location, setLocation] = useState(MET_STATIONS[0].name);
@@ -25,14 +26,13 @@ export const ActionPlanner: React.FC = () => {
       if (useLiveWeather) {
         const station = MET_STATIONS.find(s => s.name === location) || MET_STATIONS[0];
         try {
-          const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${station.lat}&longitude=${station.lon}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max&timezone=auto`);
-          if (wRes.ok) {
-            const wData = await wRes.json();
+          const wData = await fetchDailyForecastData(station.lat, station.lon);
+          if (wData && wData.daily) {
             setForecastData(wData.daily);
             weatherContext = JSON.stringify({
               daily_forecast: wData.daily,
-              timezone: wData.timezone,
-              elevation: wData.elevation
+              timezone: wData.timezone || 'Asia/Kolkata',
+              elevation: wData.elevation || 25
             });
           }
         } catch (e) {
@@ -171,9 +171,18 @@ export const ActionPlanner: React.FC = () => {
       </div>
       
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 relative z-10">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <p className="text-sm">{error}</p>
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <p className="text-sm">{error}</p>
+          </div>
+          <button
+            onClick={handleGeneratePlan}
+            disabled={loading}
+            className="shrink-0 px-3 py-1.5 bg-red-100 hover:bg-red-200 text-red-800 text-xs font-semibold rounded-lg transition-colors self-end sm:self-auto"
+          >
+            Retry Now
+          </button>
         </div>
       )}
       

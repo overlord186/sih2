@@ -1,11 +1,12 @@
 import { AnimatedSection } from './components/AnimatedSection';
+import { ErrorBoundary } from './components/ErrorBoundary';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { Header } from './components/Header';
+import { Header, NavigationTab } from './components/Header';
 import { MetricCards } from './components/MetricCards';
 import { LiveMap } from './components/LiveMap';
 import { ForecastChart } from './components/ForecastChart';
@@ -18,11 +19,20 @@ import { ActionPlanner } from './components/ActionPlanner';
 import { MethodologyView } from './components/MethodologyView';
 import { HelpGuideView } from './components/HelpGuideView';
 import { StationOverview } from './components/StationOverview';
+import { LiveSynopticMarquee } from './components/LiveSynopticMarquee';
+import { ScenarioScrubberBar } from './components/ScenarioScrubberBar';
+import { WeatherRegimeClassifierView } from './components/WeatherRegimeClassifierView';
+import { HeavyRainfallProbabilityView } from './components/HeavyRainfallProbabilityView';
+import { DistrictRainfallProductView } from './components/DistrictRainfallProductView';
+import { VerificationReportView } from './components/VerificationReportView';
+import { WeatherBulletinModal } from './components/WeatherBulletinModal';
+import { CustomDataUploader } from './components/CustomDataUploader';
 import { MONSOON_DATASET, MET_STATIONS } from './data/monsoonDataset';
 import { calculateMetrics, calculateRegimeBreakdown } from './ml/postProcessor';
 import { ShieldCheck, CloudRain, Award, Activity } from 'lucide-react';
 import { CinematicIntro } from './components/CinematicIntro';
 import { ChatAssistant } from './components/ChatAssistant';
+import { AtmosphericEdgeSmog } from './components/AtmosphericEdgeSmog';
 
 import { AtmosphereWidget, AtmosphereMode } from './components/AtmosphereWidget';
 import { WeatherBackground3D } from './components/WeatherBackground3D';
@@ -38,7 +48,9 @@ export default function App() {
   const [selectedStationId, setSelectedStationId] = useState<string>('ALL');
   const [selectedLeadTime, setSelectedLeadTime] = useState<number>(1); // default to Day +1
   const [selectedYear, setSelectedYear] = useState<number>(2025); // default to 2025 Operational Season
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'predictor' | 'methodology' | 'help' | 'planner'>('dashboard');
+  const [selectedSeasonPhase, setSelectedSeasonPhase] = useState<number>(2); // 1 to 4: Peak Monsoon default
+  const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [isBulletinModalOpen, setIsBulletinModalOpen] = useState<boolean>(false);
   const [ambientRegime, setAmbientRegime] = useState<RainfallRegime | null>(null);
   const [hoverIntensity, setHoverIntensity] = useState<number>(0);
   const [atmosphereMode, setAtmosphereMode] = useState<AtmosphereMode>('auto');
@@ -49,6 +61,7 @@ export default function App() {
       case 'drizzle': return 25;
       case 'heavy': return 85;
       case 'cyclone': return 150;
+      case 'dark_mode': return 140;
       case 'auto':
       default:
         return hoverIntensity;
@@ -61,9 +74,21 @@ export default function App() {
       if (atmosphereMode === 'drizzle') return RainfallRegime.LIGHT;
       if (atmosphereMode === 'heavy') return RainfallRegime.HEAVY_EXTREME;
       if (atmosphereMode === 'cyclone') return RainfallRegime.HEAVY_EXTREME;
+      if (atmosphereMode === 'dark_mode') return RainfallRegime.HEAVY_EXTREME;
     }
     return ambientRegime;
   }, [atmosphereMode, ambientRegime]);
+
+  useEffect(() => {
+    if (atmosphereMode === 'dark_mode') {
+      document.body.classList.add('dark-black-font-mode');
+    } else {
+      document.body.classList.remove('dark-black-font-mode');
+    }
+    return () => {
+      document.body.classList.remove('dark-black-font-mode');
+    };
+  }, [atmosphereMode]);
 
   useEffect(() => {
     weatherSynth.setIntensity(effectiveIntensity);
@@ -78,6 +103,9 @@ export default function App() {
   const handleIntroComplete = () => {
     setShowIntro(false);
     setIsFogClearing(true);
+    // Automatically stop audio by itself when landing on the interactive screen
+    setIsAudioMuted(true);
+    weatherSynth.setMuted(true);
   };
 
   const handleReplayIntro = () => {
@@ -91,8 +119,10 @@ export default function App() {
   useEffect(() => {
     const handleAmbientUpdate = (e: Event) => {
       const customEvent = e as CustomEvent;
-      setAmbientRegime(customEvent.detail.regime);
-      setHoverIntensity(customEvent.detail.intensity || 0);
+      if (!customEvent.detail) return;
+      const { regime, intensity } = customEvent.detail;
+      setAmbientRegime(prev => (prev === regime ? prev : regime));
+      setHoverIntensity(prev => (prev === (intensity || 0) ? prev : (intensity || 0)));
     };
     window.addEventListener('app-ambient-update', handleAmbientUpdate);
     return () => window.removeEventListener('app-ambient-update', handleAmbientUpdate);
@@ -164,7 +194,7 @@ export default function App() {
   return (
     <>
       <RainOverlay intensity={effectiveIntensity} />
-      <LightningFlashOverlay intensity={effectiveIntensity} />
+      <LightningFlashOverlay intensity={effectiveIntensity} isDarkModeActive={atmosphereMode === 'dark_mode'} />
       <WeatherBackground3D mode={atmosphereMode} />
       <AtmosphereWidget mode={atmosphereMode} onChange={setAtmosphereMode} />
       <AnimatePresence>
@@ -175,60 +205,21 @@ export default function App() {
             transition={{ duration: 0.8, ease: 'easeInOut' }}
             className="fixed inset-0 z-[100]"
           >
-            <CinematicIntro onComplete={handleIntroComplete} />
+            <ErrorBoundary fallbackTitle="Cinematic Sequence Recovery">
+              <CinematicIntro 
+                onComplete={handleIntroComplete}
+                isAudioMuted={isAudioMuted}
+                onToggleAudio={toggleAudio}
+              />
+            </ErrorBoundary>
           </motion.div>
         )}
       </AnimatePresence>
 
-      {/* Waterfall Thick Fog Reveal Overlay: Webpage slowly emerges and becomes visible as fog clears */}
+      {/* Atmospheric Cloud Piercing & Grid Landing Smog Transition */}
       <AnimatePresence>
         {isFogClearing && (
-          <motion.div
-            key="waterfall-fog-reveal-overlay"
-            initial={{ opacity: 1 }}
-            animate={{ opacity: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 2.5, ease: [0.22, 1, 0.36, 1] }}
-            onAnimationComplete={() => setIsFogClearing(false)}
-            className="fixed inset-0 z-[95] pointer-events-none flex flex-col items-center justify-center overflow-hidden"
-          >
-            {/* Dense Backdrop Blur Dissolve */}
-            <motion.div 
-              initial={{ backdropFilter: 'blur(36px)' }}
-              animate={{ backdropFilter: 'blur(0px)' }}
-              transition={{ duration: 2.5, ease: 'easeOut' }}
-              className="absolute inset-0 bg-gradient-to-b from-white/98 via-slate-100/95 to-indigo-50/85"
-            />
-
-            {/* Billowing Mist Tendrils Parting Outwards */}
-            <motion.div
-              initial={{ scale: 1, opacity: 0.98 }}
-              animate={{ scale: 1.5, opacity: 0 }}
-              transition={{ duration: 2.4, ease: 'easeOut' }}
-              className="absolute -inset-24 bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,1)_0%,rgba(224,231,255,0.92)_45%,transparent_75%)]"
-            />
-            <motion.div
-              initial={{ scale: 1, opacity: 0.85 }}
-              animate={{ scale: 1.65, opacity: 0 }}
-              transition={{ duration: 2.6, ease: 'easeOut' }}
-              className="absolute -inset-24 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.95)_0%,rgba(192,132,252,0.45)_50%,transparent_80%)]"
-            />
-
-            {/* Calibrating tag emerging from clearing mist */}
-            <motion.div 
-              initial={{ opacity: 1, y: 0, scale: 1 }}
-              animate={{ opacity: 0, y: -25, scale: 0.95 }}
-              transition={{ duration: 1.8, delay: 0.35, ease: 'easeOut' }}
-              className="relative z-10 flex flex-col items-center gap-3"
-            >
-              <div className="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-full bg-white/85 border border-purple-300/70 shadow-[0_10px_35px_rgba(168,85,247,0.25)] backdrop-blur-md">
-                <CloudRain className="w-4 h-4 text-purple-600 animate-bounce" />
-                <span className="text-xs font-bold tracking-[0.25em] text-purple-950 uppercase">
-                  Entering Samvartka AI Atmospheric Grid
-                </span>
-              </div>
-            </motion.div>
-          </motion.div>
+          <AtmosphericEdgeSmog onComplete={() => setIsFogClearing(false)} />
         )}
       </AnimatePresence>
 
@@ -248,15 +239,16 @@ export default function App() {
       {!showIntro && (
         <motion.div
           key="main-app"
-          initial={{ opacity: 0, scale: 0.985, filter: 'blur(8px)' }}
-          animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
-          transition={{ duration: 2.2, ease: [0.16, 1, 0.3, 1] }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
           id="monsoon-ai-app-root"
           className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${effectiveRegime ? 'bg-transparent' : 'bg-slate-50 transition-colors duration-1000'}`}
         >
           {/* App Header & Navigation */}
           <Header
             onDownloadReport={handleDownloadReport}
+            onOpenBulletin={() => setIsBulletinModalOpen(true)}
             onReplayIntro={handleReplayIntro}
             selectedStationId={selectedStationId}
             onStationChange={setSelectedStationId}
@@ -271,17 +263,63 @@ export default function App() {
             onToggleAudio={toggleAudio}
           />
 
+          {/* Live Breaking Synoptic Radar Marquee Ticker */}
+          <LiveSynopticMarquee onSelectStation={setSelectedStationId} />
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
         {activeTab === 'dashboard' && (
           <div className="space-y-6" id="dashboard-content">
+            {/* Print-Only Official Report Header Banner */}
+            <div className="hidden print:block p-4 border-b-2 border-slate-900 bg-white mb-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h1 className="text-xl font-black text-slate-900 uppercase tracking-tight">
+                    SAMVARTAKA AI — Meteorological Forecast Evaluation Dossier
+                  </h1>
+                  <p className="text-xs text-slate-700 font-mono mt-0.5">
+                    Operational AI Post-Processing System • IMD Regime Analysis & Model Diagnostics
+                  </p>
+                </div>
+                <div className="text-right text-xs text-slate-800 font-mono">
+                  <div><strong>Observatory:</strong> {activeStationName}</div>
+                  <div><strong>Season Filter:</strong> {selectedYear === 0 ? 'All Seasons (2023-2025)' : `Season ${selectedYear}`}</div>
+                  <div><strong>Lead Time:</strong> {selectedLeadTime === 0 ? 'All Lead Times' : `Day +${selectedLeadTime}`}</div>
+                  <div><strong>Dossier Date:</strong> {new Date().toLocaleDateString()}</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Interactive Scenario Launchers & Seasonal Progression Scrubber */}
+            <AnimatedSection delay={0.05}>
+              <ScenarioScrubberBar
+                selectedStationId={selectedStationId}
+                onSelectStation={setSelectedStationId}
+                selectedYear={selectedYear}
+                onSelectYear={setSelectedYear}
+                selectedLeadTime={selectedLeadTime}
+                onSelectLeadTime={setSelectedLeadTime}
+                selectedSeasonPhase={selectedSeasonPhase}
+                onSeasonPhaseChange={(phase) => {
+                  setSelectedSeasonPhase(phase);
+                  // Update atmosphere intensity based on selected phase
+                  const intensityMap: Record<number, number> = { 1: 30, 2: 95, 3: 55, 4: 15 };
+                  setHoverIntensity(intensityMap[phase] || 45);
+                }}
+              />
+            </AnimatedSection>
+
             {/* Real-time Metric Overview Scorecards */}
             <AnimatedSection delay={0.1}>
               <MetricCards metrics={metrics} />
             </AnimatedSection>
 
             <AnimatedSection delay={0.2}>
-              <LiveMap selectedStationId={selectedStationId} data={filteredData} />
+              <LiveMap 
+                selectedStationId={selectedStationId} 
+                data={filteredData} 
+                onSelectStation={setSelectedStationId}
+              />
             </AnimatedSection>
             {/* Time Series Visualizer */}
             <AnimatedSection delay={0.3}>
@@ -313,6 +351,45 @@ export default function App() {
             />
             </AnimatedSection>
           </div>
+        )}
+
+        {activeTab === 'regimes' && (
+          <WeatherRegimeClassifierView
+            dataset={filteredData}
+            onSelectStation={(id) => {
+              setSelectedStationId(id);
+              setActiveTab('dashboard');
+            }}
+          />
+        )}
+
+        {activeTab === 'probabilities' && (
+          <HeavyRainfallProbabilityView
+            dataset={filteredData}
+            onSelectStation={(id) => {
+              setSelectedStationId(id);
+              setActiveTab('dashboard');
+            }}
+          />
+        )}
+
+        {activeTab === 'districts' && (
+          <DistrictRainfallProductView
+            dataset={filteredData}
+            selectedLeadTime={selectedLeadTime}
+            onSelectStation={(id) => {
+              setSelectedStationId(id);
+              setActiveTab('dashboard');
+            }}
+          />
+        )}
+
+        {activeTab === 'verification' && (
+          <VerificationReportView dataset={filteredData} />
+        )}
+
+        {activeTab === 'uploader' && (
+          <CustomDataUploader />
         )}
 
         {activeTab === 'predictor' && (
@@ -363,8 +440,15 @@ export default function App() {
         </motion.div>
       )}
 
+      {/* Weather Bulletin Modal */}
+      <WeatherBulletinModal
+        isOpen={isBulletinModalOpen}
+        onClose={() => setIsBulletinModalOpen(false)}
+        dataset={filteredData}
+      />
+
       {/* Global AI Meteorological Assistant (Available in both Intro and Dashboard) */}
-      <ChatAssistant />
+      <ChatAssistant isIntroActive={showIntro} />
     </>
   );
 }
