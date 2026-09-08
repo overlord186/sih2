@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CloudRain, Compass, Calendar, Gauge, Cpu, BookOpen, Layers, History, HelpCircle, Download, Briefcase, Sparkles, Volume2, VolumeX, ArrowUpRight, Bot, MessageSquare, Moon, Printer, FileText, Upload } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
+import { DashboardEngineControls } from './DashboardEngineControls';
 
 export type NavigationTab =
   | 'dashboard'
@@ -252,6 +253,10 @@ export const Header: React.FC<HeaderProps> = ({
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             </button>
           </div>
+
+          {/* Engine Runtime Options: Grain, WASD Scroll, Radar */}
+          <DashboardEngineControls className="hidden md:flex" />
+
           {onToggleAudio && (
             <button
                onClick={onToggleAudio}
@@ -281,6 +286,14 @@ export const Header: React.FC<HeaderProps> = ({
           >
              <Moon className={`w-3.5 h-3.5 ${isNightMode ? 'text-purple-300' : 'text-slate-400'}`} />
              <span className="hidden sm:inline">{isNightMode ? 'Night Active' : 'Night Mode'}</span>
+          </button>
+          <button
+             onClick={() => window.dispatchEvent(new CustomEvent('open-glassmorphic-guide'))}
+             className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-950/60 hover:bg-sky-900/80 border border-sky-500/40 text-sky-200 rounded-md text-xs font-semibold shadow-sm transition-all cursor-pointer"
+             title="Open SAMVARTAKA AI Glassmorphic UI Architecture Specification"
+          >
+             <Sparkles className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+             <span className="hidden sm:inline">UI Spec</span>
           </button>
           {onOpenBulletin && (
             <button

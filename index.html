@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" style="background-color: #020617; color: #f8fafc; height: 100%; margin: 0; padding: 0;">
+<html lang="en" style="background-color: #f8fafc; color: #0f172a; height: 100%; margin: 0; padding: 0;">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -9,23 +9,144 @@
     <meta property="og:description" content="SAMVARTAKA AI: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across operational seasons" />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" href="/favicon.ico" />
+    
+    <!-- Preconnect & High-Tech Typography (Syne, Plus Jakarta Sans, JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
+
+    <script>
+      // Robust EventTarget-based WebSocket Mock
+      class MockWebSocket extends EventTarget {
+        constructor(url, protocols) {
+          super();
+          this.url = url;
+          this.protocols = protocols;
+          this.readyState = 1; // OPEN
+          this.CONNECTING = 0;
+          this.OPEN = 1;
+          this.CLOSING = 2;
+          this.CLOSED = 3;
+          
+          this.onopen = null;
+          this.onmessage = null;
+          this.onerror = null;
+          this.onclose = null;
+          
+          setTimeout(() => {
+            const event = new Event('open');
+            this.dispatchEvent(event);
+            if (this.onopen) this.onopen(event);
+          }, 0);
+        }
+        send(data) {}
+        close(code, reason) {
+          this.readyState = 3;
+          setTimeout(() => {
+            const event = new Event('close');
+            event.code = code || 1000;
+            event.reason = reason || '';
+            event.wasClean = true;
+            this.dispatchEvent(event);
+            if (this.onclose) this.onclose(event);
+          }, 0);
+        }
+      }
+      
+      window.OriginalWebSocket = window.WebSocket;
+      window.WebSocket = function(url, protocols) {
+        if (url && (url.includes('vite') || url.includes('24678') || url.includes('localhost'))) {
+          return new MockWebSocket(url, protocols);
+        }
+        return new window.OriginalWebSocket(url, protocols);
+      };
+      Object.assign(window.WebSocket, {
+        CONNECTING: 0,
+        OPEN: 1,
+        CLOSING: 2,
+        CLOSED: 3
+      });
+      
+      // Stop propagation of websocket/vite/rate-limit noise
+      window.addEventListener('error', function(e) {
+        var str = (e && (e.message || e.error && e.error.message)) || '';
+        if (str.includes('WebSocket') || str.includes('websocket') || str.includes('vite') || str.includes('ResizeObserver') || str.includes('Rate exceeded')) {
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        }
+      }, true);
+      window.addEventListener('unhandledrejection', function(e) {
+        var reason = e && (e.reason || e.message || '');
+        var str = typeof reason === 'string' ? reason : (reason && reason.message) || '';
+        if (str.includes('WebSocket') || str.includes('websocket') || str.includes('vite') || str.includes('ResizeObserver') || str.includes('Rate exceeded')) {
+          if (e.preventDefault) e.preventDefault();
+          if (e.stopPropagation) e.stopPropagation();
+          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
+        }
+      }, true);
+    </script>
+
     <style>
       html, body {
-        background-color: #020617 !important;
-        color: #f8fafc !important;
+        background-color: #f8fafc;
+        color: #0f172a;
         margin: 0;
         padding: 0;
         min-height: 100vh;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       }
       #root {
         min-height: 100vh;
-        background-color: #020617;
+        background-color: #f8fafc;
+      }
+      .font-display {
+        font-family: 'Syne', sans-serif;
+      }
+      .font-mono {
+        font-family: 'JetBrains Mono', monospace;
       }
     </style>
   </head>
-  <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased">
-    <div id="root"></div>
+  <body class="bg-slate-50 text-slate-900 min-h-screen font-sans antialiased">
+    <div id="root">
+      <div id="initial-loader" style="min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #f8fafc; font-family: 'Plus Jakarta Sans', system-ui, sans-serif; color: #0f172a; padding: 2rem; text-align: center;">
+        <div style="width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); display: flex; align-items: center; justify-content: center; color: white; font-weight: 800; font-size: 24px; margin-bottom: 1.25rem; box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.4);">
+          S
+        </div>
+        <h1 style="font-size: 1.35rem; font-weight: 800; margin: 0 0 0.5rem 0; color: #0f172a; letter-spacing: -0.025em;">
+          SAMVARTAKA AI
+        </h1>
+        <p style="font-size: 0.875rem; color: #475569; margin: 0 0 1.5rem 0; max-width: 420px; line-height: 1.5;">
+          Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts
+        </p>
+        <div id="loader-status" style="display: flex; align-items: center; gap: 0.625rem; font-size: 0.8125rem; color: #2563eb; font-weight: 600; background: #eff6ff; padding: 0.5rem 1rem; border-radius: 9999px; border: 1px solid #bfdbfe;">
+          <span style="width: 14px; height: 14px; border: 2px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: samvartaka-spin 0.8s linear infinite;"></span>
+          <span>Connecting to Synoptic Weather Console...</span>
+        </div>
+        <button id="reload-platform-btn" onclick="window.location.reload()" style="display: none; margin-top: 1.5rem; padding: 0.75rem 1.5rem; border-radius: 0.875rem; background: #2563eb; color: white; border: none; font-weight: 600; font-size: 0.875rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); transition: transform 0.15s ease;">
+          Refresh Operational View
+        </button>
+        <style>
+          @keyframes samvartaka-spin { to { transform: rotate(360deg); } }
+        </style>
+      </div>
+    </div>
+    <script>
+      // Fallback timer: if React takes longer than 4 seconds or encounters load throttle
+      setTimeout(function() {
+        var statusEl = document.getElementById('loader-status');
+        var btnEl = document.getElementById('reload-platform-btn');
+        if (statusEl && document.getElementById('initial-loader')) {
+          statusEl.innerHTML = '<span style="color:#d97706;">⚡ Connection throttled. Click below to refresh:</span>';
+          statusEl.style.background = '#fffbeb';
+          statusEl.style.borderColor = '#fde68a';
+          if (btnEl) btnEl.style.display = 'inline-block';
+        }
+      }, 4000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

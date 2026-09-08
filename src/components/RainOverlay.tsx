@@ -102,7 +102,7 @@ export const RainOverlay: React.FC<{ intensity: number }> = ({ intensity }) => {
         startX,
         life: 1.0 
       });
-      flashOpacity = 0.85;
+      flashOpacity = 0.15; // Soft subtle atmospheric luminance rather than blinding whiteout
     };
 
     let animationId: number;
@@ -128,11 +128,11 @@ export const RainOverlay: React.FC<{ intensity: number }> = ({ intensity }) => {
            if (puddleHeight < 0) puddleHeight = 0;
         }
         
-        // 1. Lightning Flash Background
+        // 1. Subtle Ambient Luminance during lightning strike (Non-blinding)
         if (flashOpacity > 0) {
-          ctx.fillStyle = `rgba(230, 240, 255, ${flashOpacity})`;
+          ctx.fillStyle = `rgba(56, 189, 248, ${flashOpacity * 0.25})`;
           ctx.fillRect(0, 0, width, height);
-          flashOpacity -= 0.04;
+          flashOpacity -= 0.02;
         }
 
         // 2. Spawn Lightning Bolts

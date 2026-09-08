@@ -954,7 +954,9 @@ const CountryBoundaries = () => {
           })
           .catch(err => {
             console.warn('Country boundaries fetch error:', err);
-            geoJsonFetchPromise = null;
+            // Cache failure so we never spam the server in an infinite retry loop
+            cachedGeoJsonData = null;
+            geoJsonFetchPromise = Promise.resolve(null);
             return null;
           });
       }
@@ -1240,6 +1242,7 @@ const ClimateZoneMarkers = ({
 };
 
 // Meteorological Subdivision Node Component with Concentric Pulsing Beacons & Hover Details
+
 const SubdivisionNode = ({
   sub,
   stats,
@@ -1256,8 +1259,8 @@ const SubdivisionNode = ({
   onSelect: (sub: MetSubdivision) => void;
 }) => {
   const pulseRingRef = useRef<THREE.Mesh>(null!);
-  const pos = useMemo(() => latLonToVector3(sub.lat, sub.lon, 1.965), [sub.lat, sub.lon]);
-  const basePos = useMemo(() => latLonToVector3(sub.lat, sub.lon, 1.952), [sub.lat, sub.lon]);
+  const pos = useMemo(() => latLonToVector3(sub.lat, sub.lon, 1.975), [sub.lat, sub.lon]);
+  const basePos = useMemo(() => latLonToVector3(sub.lat, sub.lon, 1.962), [sub.lat, sub.lon]);
 
   // Compute live or benchmark values
   const safeAI = (stats && stats.count > 0) ? (stats.ai / stats.count) : sub.defaultAiForecastMm;
@@ -1299,13 +1302,13 @@ const SubdivisionNode = ({
           onSelect(sub);
         }}
       >
-        <sphereGeometry args={[isActive || isHovered ? 0.038 : 0.022, 16, 16]} />
+        <sphereGeometry args={[isActive || isHovered ? 0.08 : 0.055, 16, 16]} />
         <meshBasicMaterial color={themeColor} />
       </mesh>
 
       {/* Pulsing Concentric Radar Beacon Ring */}
       <mesh ref={pulseRingRef} rotation={[Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.024, 0.038, 24]} />
+        <ringGeometry args={[0.06, 0.09, 24]} />
         <meshBasicMaterial 
           color={themeColor} 
           transparent 
@@ -1319,7 +1322,7 @@ const SubdivisionNode = ({
       {/* Permanent Halo on Extreme / Active */}
       {(isDeluge || isActive || isHovered) && (
         <mesh>
-          <sphereGeometry args={[isActive || isHovered ? 0.058 : 0.034, 16, 16]} />
+          <sphereGeometry args={[isActive || isHovered ? 0.13 : 0.08, 16, 16]} />
           <meshBasicMaterial 
             color={themeColor} 
             transparent 
@@ -1331,7 +1334,7 @@ const SubdivisionNode = ({
 
       {/* Compact On-Node Code Tag (Standard 1:1 scale, perfectly sharp & non-intrusive) */}
       <Html center zIndexRange={[120, 0]} style={{ pointerEvents: 'none' }}>
-        <div className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-tight shadow-md whitespace-nowrap transform -translate-y-4 border transition-all select-none ${
+        <div className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-bold tracking-tight shadow-md whitespace-nowrap transform -translate-x-1/2 -translate-y-6 absolute left-1/2 bottom-full mb-1 border transition-all select-none ${
           isActive || isHovered 
             ? 'bg-slate-950/95 text-white border-sky-400 scale-105 shadow-[0_0_12px_rgba(56,189,248,0.5)]' 
             : 'bg-slate-950/85 text-slate-300 border-slate-700/70 scale-95 hover:border-slate-500'
@@ -1348,7 +1351,9 @@ const SubdivisionNode = ({
               e.stopPropagation();
               onSelect(sub);
             }}
-            className="w-64 sm:w-72 bg-slate-950/95 backdrop-blur-xl border border-sky-500/70 rounded-xl p-3 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(56,189,248,0.25)] text-white transform -translate-y-36 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer"
+            
+className="w-64 sm:w-72 bg-slate-950/95 backdrop-blur-xl border border-sky-500/70 rounded-xl p-3 shadow-[0_12px_40px_rgba(0,0,0,0.85),0_0_20px_rgba(56,189,248,0.25)] text-white absolute left-1/2 top-1/2 -translate-y-1/2 ml-4 animate-in fade-in zoom-in-95 duration-150 select-none cursor-pointer globe-tooltip-snap"
+
           >
             {/* Header with Title & Alert Badge */}
             <div className="flex items-start justify-between gap-2 pb-2 mb-2 border-b border-slate-800">

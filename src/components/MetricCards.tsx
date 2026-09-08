@@ -1,12 +1,27 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { MetricSummary } from '../types';
-import { TrendingDown, TrendingUp, CheckCircle, ShieldAlert, Info } from 'lucide-react';
+import { TrendingDown, TrendingUp, CheckCircle, Info, Zap, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface MetricCardsProps {
   metrics: MetricSummary;
 }
 
-const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; id?: string }> = ({ children, className = '', id }) => {
+interface SpotlightCardProps {
+  children: React.ReactNode;
+  className?: string;
+  id?: string;
+  updateTriggerKey?: string | number;
+  glowAccent?: 'blue' | 'emerald' | 'amber' | 'cyan';
+}
+
+const SpotlightCard: React.FC<SpotlightCardProps> = ({ 
+  children, 
+  className = '', 
+  id, 
+  updateTriggerKey,
+  glowAccent = 'blue' 
+}) => {
   const divRef = useRef<HTMLDivElement>(null);
   const [isFocused, setIsFocused] = useState(false);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -23,8 +38,21 @@ const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; i
   const handleMouseEnter = () => setOpacity(1);
   const handleMouseLeave = () => setOpacity(0);
 
+  const glowShadowColor = useMemo(() => {
+    switch (glowAccent) {
+      case 'emerald': return 'rgba(16, 185, 129, 0.45)';
+      case 'cyan': return 'rgba(6, 182, 212, 0.45)';
+      case 'amber': return 'rgba(245, 158, 11, 0.45)';
+      default: return 'rgba(59, 130, 246, 0.45)';
+    }
+  }, [glowAccent]);
+
   return (
-    <div
+    <motion.div
+      layout
+      transition={{
+        layout: { duration: 0.35, ease: [0.16, 1, 0.3, 1] },
+      }}
       ref={divRef}
       onMouseMove={handleMouseMove}
       onFocus={handleFocus}
@@ -34,6 +62,23 @@ const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; i
       className={`relative overflow-hidden bg-white rounded-xl border border-slate-200 shadow-xs transition-colors duration-300 ${className}`}
       id={id}
     >
+      {/* Real-time Data Update Subtle Glow-Pulse Halo */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={updateTriggerKey}
+          initial={{ opacity: 0.75, scale: 0.99 }}
+          animate={{ opacity: 0, scale: 1.015 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.85, ease: 'easeOut' }}
+          className="pointer-events-none absolute -inset-0.5 rounded-xl z-30"
+          style={{
+            boxShadow: `0 0 16px 2px ${glowShadowColor}, inset 0 0 8px 1px ${glowShadowColor}`,
+            border: `1px solid ${glowShadowColor}`,
+          }}
+        />
+      </AnimatePresence>
+
+      {/* Interactive Cursor Spotlight Refraction */}
       <div
         className="pointer-events-none absolute -inset-px opacity-0 transition duration-300 z-10 rounded-xl mix-blend-overlay"
         style={{
@@ -49,7 +94,7 @@ const SpotlightCard: React.FC<{ children: React.ReactNode; className?: string; i
         }}
       />
       <div className="relative z-20 h-full">{children}</div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -62,6 +107,11 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
   const rmseCorrected = safeNumber(metrics.rmseCorrected);
   const threatScoreRaw = safeNumber(metrics.threatScoreRaw);
   const threatScoreCorrected = safeNumber(metrics.threatScoreCorrected);
+
+  // Derive dynamic update key whenever underlying rainfall summary changes
+  const updateKey = useMemo(() => {
+    return `${metrics.sampleCount}-${metrics.maeCorrected}-${metrics.rmseCorrected}-${metrics.threatScoreCorrected}-${metrics.biasCorrected}`;
+  }, [metrics.sampleCount, metrics.maeCorrected, metrics.rmseCorrected, metrics.threatScoreCorrected, metrics.biasCorrected]);
 
   const maeReduction =
     maeRaw > 0
@@ -83,11 +133,17 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
       : 0;
 
   return (
-    <div id="metric-cards-container" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <motion.div 
+      layout
+      id="metric-cards-container" 
+      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+    >
       {/* MAE Card */}
       <SpotlightCard
         id="card-mae-metric"
         className="p-4.5 hover:border-blue-300"
+        updateTriggerKey={updateKey}
+        glowAccent="cyan"
       >
         <div className="flex items-center justify-between">
           <div className="group relative flex items-center gap-1 cursor-help">
@@ -106,9 +162,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         </div>
         <div className="mt-3 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900 font-mono tracking-tight">
-              {metrics.maeCorrected}
-            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span 
+                key={metrics.maeCorrected}
+                initial={{ opacity: 0.6, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0.6, y: 4 }}
+                transition={{ duration: 0.25 }}
+                className="text-3xl font-bold text-slate-900 font-mono tracking-tight"
+              >
+                {metrics.maeCorrected}
+              </motion.span>
+            </AnimatePresence>
             <span className="text-xs text-slate-500 font-medium">mm/day (AI)</span>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -136,6 +201,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
       <SpotlightCard
         id="card-rmse-metric"
         className="p-4.5 hover:border-blue-300"
+        updateTriggerKey={updateKey}
+        glowAccent="blue"
       >
         <div className="flex items-center justify-between">
           <div className="group relative flex items-center gap-1 cursor-help">
@@ -154,9 +221,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         </div>
         <div className="mt-3 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900 font-mono tracking-tight">
-              {metrics.rmseCorrected}
-            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span 
+                key={metrics.rmseCorrected}
+                initial={{ opacity: 0.6, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0.6, y: 4 }}
+                transition={{ duration: 0.25 }}
+                className="text-3xl font-bold text-slate-900 font-mono tracking-tight"
+              >
+                {metrics.rmseCorrected}
+              </motion.span>
+            </AnimatePresence>
             <span className="text-xs text-slate-500 font-medium">mm/day (AI)</span>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -184,6 +260,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
       <SpotlightCard
         id="card-bias-metric"
         className="p-4.5 hover:border-blue-300"
+        updateTriggerKey={updateKey}
+        glowAccent="emerald"
       >
         <div className="flex items-center justify-between">
           <div className="group relative flex items-center gap-1 cursor-help">
@@ -202,9 +280,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         </div>
         <div className="mt-3 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900 font-mono tracking-tight">
-              {metrics.biasCorrected > 0 ? `+${metrics.biasCorrected}` : metrics.biasCorrected}
-            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span 
+                key={metrics.biasCorrected}
+                initial={{ opacity: 0.6, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0.6, y: 4 }}
+                transition={{ duration: 0.25 }}
+                className="text-3xl font-bold text-slate-900 font-mono tracking-tight"
+              >
+                {metrics.biasCorrected > 0 ? `+${metrics.biasCorrected}` : metrics.biasCorrected}
+              </motion.span>
+            </AnimatePresence>
             <span className="text-xs text-slate-500 font-medium">mm/day</span>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -236,6 +323,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
       <SpotlightCard
         id="card-threat-metric"
         className="p-4.5 hover:border-blue-300"
+        updateTriggerKey={updateKey}
+        glowAccent="amber"
       >
         <div className="flex items-center justify-between">
           <div className="group relative flex items-center gap-1 cursor-help">
@@ -254,9 +343,18 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
         </div>
         <div className="mt-3 flex items-end justify-between">
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-blue-700 font-mono tracking-tight">
-              {metrics.threatScoreCorrected}
-            </span>
+            <AnimatePresence mode="popLayout">
+              <motion.span 
+                key={metrics.threatScoreCorrected}
+                initial={{ opacity: 0.6, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0.6, y: 4 }}
+                transition={{ duration: 0.25 }}
+                className="text-3xl font-bold text-blue-700 font-mono tracking-tight"
+              >
+                {metrics.threatScoreCorrected}
+              </motion.span>
+            </AnimatePresence>
             <span className="text-xs text-slate-500 font-medium">Critical Success Index</span>
           </div>
           <div className="flex flex-col items-end text-right">
@@ -279,6 +377,7 @@ export const MetricCards: React.FC<MetricCardsProps> = ({ metrics }) => {
           </div>
         </div>
       </SpotlightCard>
-    </div>
+    </motion.div>
   );
 };
+

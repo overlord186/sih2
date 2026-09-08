@@ -26,23 +26,38 @@ import { HeavyRainfallProbabilityView } from './components/HeavyRainfallProbabil
 import { DistrictRainfallProductView } from './components/DistrictRainfallProductView';
 import { VerificationReportView } from './components/VerificationReportView';
 import { WeatherBulletinModal } from './components/WeatherBulletinModal';
+import { GlassmorphicGuideModal } from './components/GlassmorphicGuideModal';
 import { CustomDataUploader } from './components/CustomDataUploader';
 import { MONSOON_DATASET, MET_STATIONS } from './data/monsoonDataset';
 import { calculateMetrics, calculateRegimeBreakdown } from './ml/postProcessor';
-import { ShieldCheck, CloudRain, Award, Activity } from 'lucide-react';
+import { ShieldCheck, CloudRain, Award, Activity, Sparkles } from 'lucide-react';
 import { CinematicIntro } from './components/CinematicIntro';
 import { ChatAssistant } from './components/ChatAssistant';
 import { AtmosphericEdgeSmog } from './components/AtmosphericEdgeSmog';
+import { AtmosphericEntranceTransition } from './components/AtmosphericEntranceTransition';
 
 import { AtmosphereWidget, AtmosphereMode } from './components/AtmosphereWidget';
 import { WeatherBackground3D } from './components/WeatherBackground3D';
+import { DashboardEngineControls } from './components/DashboardEngineControls';
 import { weatherSynth } from './utils/audio';
 
 import { motion, AnimatePresence } from 'motion/react';
 import { RainfallRegime } from './types';
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState<boolean>(true);
+  const [showIntro, setShowIntro] = useState<boolean>(() => {
+    try {
+      if (typeof window !== 'undefined' && window.location) {
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('intro') === '1' || params.get('playIntro') === 'true') {
+          return true;
+        }
+      }
+    } catch {
+      // Fallback
+    }
+    return false;
+  });
   const [isFogClearing, setIsFogClearing] = useState<boolean>(false);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true); // Default to muted until user opts in
   const [selectedStationId, setSelectedStationId] = useState<string>('ALL');
@@ -101,12 +116,38 @@ export default function App() {
   };
 
   const handleIntroComplete = () => {
-    setShowIntro(false);
-    setIsFogClearing(true);
     // Automatically stop audio by itself when landing on the interactive screen
     setIsAudioMuted(true);
     weatherSynth.setMuted(true);
+    
+    // Defer heavy DOM mounting to prevent synchronous thread lock
+    requestAnimationFrame(() => {
+      setIsFogClearing(true);
+      setTimeout(() => {
+        setShowIntro(false);
+      }, 50);
+    });
   };
+
+  // Fail-safe to ensure transition layer clears cleanly
+  useEffect(() => {
+    if (isFogClearing) {
+      const timer = setTimeout(() => {
+        setIsFogClearing(false);
+      }, 1100);
+      return () => clearTimeout(timer);
+    }
+  }, [isFogClearing]);
+
+  // Fail-safe to ensure cinematic intro never traps the application on a black screen
+  useEffect(() => {
+    if (showIntro) {
+      const timer = setTimeout(() => {
+        handleIntroComplete();
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [showIntro]);
 
   const handleReplayIntro = () => {
     setIsFogClearing(false);
@@ -115,6 +156,13 @@ export default function App() {
   
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [compareYear, setCompareYear] = useState<number>(2024);
+  const [isGlassGuideOpen, setIsGlassGuideOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleOpenGlassGuide = () => setIsGlassGuideOpen(true);
+    window.addEventListener('open-glassmorphic-guide', handleOpenGlassGuide);
+    return () => window.removeEventListener('open-glassmorphic-guide', handleOpenGlassGuide);
+  }, []);
 
   useEffect(() => {
     const handleAmbientUpdate = (e: Event) => {
@@ -128,7 +176,7 @@ export default function App() {
     return () => window.removeEventListener('app-ambient-update', handleAmbientUpdate);
   }, []);
 
-  // Filter dataset based on selected station, lead time, and season year
+  // Filter dataset based on selected station, lead time, and season year (for charts)
   const filteredData = useMemo(() => {
     return MONSOON_DATASET.filter((d) => {
       const matchYear = selectedYear === 0 || d.year === selectedYear;
@@ -137,6 +185,15 @@ export default function App() {
       return matchYear && matchStation && matchLead;
     });
   }, [selectedYear, selectedStationId, selectedLeadTime]);
+
+  // Filter dataset for the Map (needs all stations to maintain colors)
+  const mapData = useMemo(() => {
+    return MONSOON_DATASET.filter((d) => {
+      const matchYear = selectedYear === 0 || d.year === selectedYear;
+      const matchLead = selectedLeadTime === 0 || d.leadTimeDays === selectedLeadTime;
+      return matchYear && matchLead;
+    });
+  }, [selectedYear, selectedLeadTime]);
 
   // Compute compare data for overlay
   const compareData = useMemo(() => {
@@ -195,17 +252,31 @@ export default function App() {
     <>
       <RainOverlay intensity={effectiveIntensity} />
       <LightningFlashOverlay intensity={effectiveIntensity} isDarkModeActive={atmosphereMode === 'dark_mode'} />
-      <WeatherBackground3D mode={atmosphereMode} />
+      {/* 3D Real-time Ambient Weather Simulation Background */}
+      {(!showIntro || isFogClearing) && (
+        <div className={`transition-opacity duration-1000 ${showIntro ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+          <WeatherBackground3D mode={atmosphereMode} selectedSeasonPhase={selectedSeasonPhase} />
+        </div>
+      )}
+      {!showIntro && (
+        <div className="md:hidden fixed top-20 right-4 z-30 pointer-events-auto">
+          <DashboardEngineControls compact />
+        </div>
+      )}
       <AtmosphereWidget mode={atmosphereMode} onChange={setAtmosphereMode} />
       <AnimatePresence>
         {showIntro && (
           <motion.div
             key="intro-wrapper"
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.8, ease: 'easeInOut' }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
             className="fixed inset-0 z-[100]"
           >
-            <ErrorBoundary fallbackTitle="Cinematic Sequence Recovery">
+            <ErrorBoundary 
+              fallbackTitle="Cinematic Sequence Recovery"
+              onBypass={handleIntroComplete}
+              bypassLabel="Skip Directly to Dashboard"
+            >
               <CinematicIntro 
                 onComplete={handleIntroComplete}
                 isAudioMuted={isAudioMuted}
@@ -216,10 +287,12 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Atmospheric Cloud Piercing & Grid Landing Smog Transition */}
+      {/* Ultra-High-Fidelity Atmospheric Cloud Piercing & Interface Entry Transition */}
       <AnimatePresence>
         {isFogClearing && (
-          <AtmosphericEdgeSmog onComplete={() => setIsFogClearing(false)} />
+          <ErrorBoundary onBypass={() => setIsFogClearing(false)} fallbackTitle="Transition Layer Recovery">
+            <AtmosphericEntranceTransition onComplete={() => setIsFogClearing(false)} />
+          </ErrorBoundary>
         )}
       </AnimatePresence>
 
@@ -236,15 +309,19 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {!showIntro && (
-        <motion.div
-          key="main-app"
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35, ease: 'easeOut' }}
-          id="monsoon-ai-app-root"
-          className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${effectiveRegime ? 'bg-transparent' : 'bg-slate-50 transition-colors duration-1000'}`}
-        >
+      <motion.div
+        key="main-app"
+        initial={false}
+        animate={{ 
+          opacity: 1, 
+          y: showIntro ? 14 : 0, 
+          scale: showIntro ? 0.99 : 1
+        }}
+        style={{ pointerEvents: showIntro ? 'none' : 'auto' }}
+        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
+        id="monsoon-ai-app-root"
+        className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${showIntro ? 'fixed inset-0 overflow-hidden h-screen' : ''} bg-slate-50`}
+      >
           {/* App Header & Navigation */}
           <Header
             onDownloadReport={handleDownloadReport}
@@ -268,6 +345,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 space-y-6">
+        <ErrorBoundary fallbackTitle="Active View Module Recovery">
         {activeTab === 'dashboard' && (
           <div className="space-y-6" id="dashboard-content">
             {/* Print-Only Official Report Header Banner */}
@@ -317,14 +395,14 @@ export default function App() {
             <AnimatedSection delay={0.2}>
               <LiveMap 
                 selectedStationId={selectedStationId} 
-                data={filteredData} 
+                data={mapData} 
                 onSelectStation={setSelectedStationId}
               />
             </AnimatedSection>
             {/* Time Series Visualizer */}
             <AnimatedSection delay={0.3}>
               <ForecastChart
-              data={filteredData}
+              data={mapData}
               selectedStationName={activeStationName}
               compareData={compareData}
               compareYear={compareYear}
@@ -406,6 +484,7 @@ export default function App() {
         {activeTab === 'help' && (
           <HelpGuideView />
         )}
+        </ErrorBoundary>
       </main>
 
       {/* Scientific Footer */}
@@ -426,6 +505,14 @@ export default function App() {
               Terms & Glossary Help
             </button>
             <span>•</span>
+            <button
+              onClick={() => setIsGlassGuideOpen(true)}
+              className="text-sky-600 hover:text-sky-800 font-semibold underline underline-offset-2 transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <Sparkles className="w-3 h-3 text-cyan-500" />
+              Glassmorphic UI Architecture
+            </button>
+            <span>•</span>
             <span className="flex items-center gap-1 text-slate-600">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
               Verified Leakage-Free Temporal Split
@@ -437,14 +524,19 @@ export default function App() {
           </div>
         </div>
       </footer>
-        </motion.div>
-      )}
+      </motion.div>
 
       {/* Weather Bulletin Modal */}
       <WeatherBulletinModal
         isOpen={isBulletinModalOpen}
         onClose={() => setIsBulletinModalOpen(false)}
         dataset={filteredData}
+      />
+
+      {/* Glassmorphic UI Design Architecture Modal */}
+      <GlassmorphicGuideModal
+        isOpen={isGlassGuideOpen}
+        onClose={() => setIsGlassGuideOpen(false)}
       />
 
       {/* Global AI Meteorological Assistant (Available in both Intro and Dashboard) */}

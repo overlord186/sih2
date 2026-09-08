@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { RainfallRegime, PredictionScenarioInput, PredictionResult } from '../types';
+import { MET_STATIONS } from '../data/monsoonDataset';
 import { WindIsobarCanvas } from './WindIsobarCanvas';
 import {
   Compass,
@@ -42,6 +43,8 @@ interface StationMapNode {
   // Precise geo coords
   lat: number;
   lon: number;
+  mapX: number;
+  mapY: number;
   typicalMonsoonIssue: string;
   scenarioPresets: {
     id: string;
@@ -52,550 +55,57 @@ interface StationMapNode {
   }[];
 }
 
-const REGION_NODES: StationMapNode[] = [
-  {
-    id: 'BOM_SANTACRUZ',
-    name: 'Mumbai (Santacruz)',
-    state: 'Maharashtra',
-    subdivision: 'Konkan & Western Coast',
-    climateZone: 'Tropical Coastal Orographic Surge',
-    lat: 19.076,
-    lon: 72.8777,
-    typicalMonsoonIssue: 'Arabian Sea offshore vortex causes sudden 150+ mm downpours that NWP drastically underestimates.',
+const INDIA_MAP_IMAGE_SRC = '/india_states_map.svg';
+const INDIA_MAP_BLACK_BLUE_SRC = '/india_map_black_blue.png';
+
+const REGION_NODES: StationMapNode[] = MET_STATIONS.map(station => {
+  const mapX = Math.round(100 + ((station.lon - 68) / (97 - 68)) * 650);
+  const mapY = Math.round(850 - ((station.lat - 8) / (37 - 8)) * 770);
+  return {
+    id: station.id,
+    name: station.name,
+    state: station.state,
+    subdivision: station.subdivision,
+    climateZone: station.climateZone,
+    lat: station.lat,
+    lon: station.lon,
+    mapX,
+    mapY,
+    typicalMonsoonIssue: 'Standard synoptic forcing and local thermodynamic convective parameters.',
     scenarioPresets: [
       {
-        id: 'bom-monsoon-burst',
-        label: 'Vortex Cloudburst',
+        id: `${station.id}-heavy`,
+        label: 'Heavy Monsoon Surge',
         icon: '⛈️',
-        description: 'Deep offshore trough triggers intense localized deluge. NWP caps out at 48mm; AI scales it to 120mm+ flood warning.',
+        description: 'Strong convective activity or synoptic forcing leading to heavy precipitation.',
         input: {
-          stationId: 'BOM_SANTACRUZ',
-          rawForecastMm: 48.0,
-          relativeHumidity: 95,
-          surfacePressure: 994.5,
-          windSpeed: 44,
-          prevDayRain: 65.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'bom-moderate',
-        label: 'Steady Monsoon Showers',
-        icon: '🌧️',
-        description: 'Consistent southwesterly monsoonal wind flow bringing steady rainfall over coastal plains.',
-        input: {
-          stationId: 'BOM_SANTACRUZ',
-          rawForecastMm: 28.0,
-          relativeHumidity: 88,
-          surfacePressure: 1002.0,
-          windSpeed: 26,
-          prevDayRain: 22.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'bom-break',
-        label: 'Coastal Break Spell',
-        icon: '⛅',
-        description: 'Monsoon trough shifts north; coastal squalls pause with high humidity but reduced rainfall.',
-        input: {
-          stationId: 'BOM_SANTACRUZ',
-          rawForecastMm: 5.0,
-          relativeHumidity: 78,
-          surfacePressure: 1007.0,
-          windSpeed: 14,
-          prevDayRain: 2.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'PNQ_SHIVAJINAGAR',
-    name: 'Pune (Shivajinagar)',
-    state: 'Maharashtra',
-    subdivision: 'Madhya Maharashtra / Deccan Plateau',
-    climateZone: 'Western Ghats Rain-Shadow Lee Side',
-    lat: 18.5204,
-    lon: 73.8567,
-    typicalMonsoonIssue: 'Western Ghats trap moist clouds, leaving the lee plateau dry; NWP repeatedly generates false drizzle.',
-    scenarioPresets: [
-      {
-        id: 'pnq-drizzle-trap',
-        label: 'NWP False Drizzle Trap',
-        icon: '🚫🌧️',
-        description: 'NWP grid model predicts 5.5mm rain, but descending lee-side winds dry the air. AI Zero-Rain Gate zeroes it out.',
-        input: {
-          stationId: 'PNQ_SHIVAJINAGAR',
-          rawForecastMm: 5.5,
-          relativeHumidity: 65,
-          surfacePressure: 1010.0,
-          windSpeed: 12,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'pnq-ghats-spillover',
-        label: 'Ghats Rain Spillover',
-        icon: '🌦️',
-        description: 'Vigorous monsoon winds carry dense cloud spray across Ghat crests into eastern valleys.',
-        input: {
-          stationId: 'PNQ_SHIVAJINAGAR',
-          rawForecastMm: 14.0,
-          relativeHumidity: 82,
-          surfacePressure: 1004.5,
-          windSpeed: 22,
-          prevDayRain: 12.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'pnq-dry-plateau',
-        label: 'Sunny Plateau Day',
-        icon: '☀️',
-        description: 'Clear conditions with brisk westerly winds. Ideal for outdoor sports and travel.',
-        input: {
-          stationId: 'PNQ_SHIVAJINAGAR',
-          rawForecastMm: 1.2,
-          relativeHumidity: 58,
-          surfacePressure: 1012.0,
-          windSpeed: 16,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'NAG_SONEGAON',
-    name: 'Nagpur (Sonegaon)',
-    state: 'Maharashtra / Central India',
-    subdivision: 'Vidarbha Basin',
-    climateZone: 'Central India Monsoon Low-Pressure Corridor',
-    lat: 21.1458,
-    lon: 79.0882,
-    typicalMonsoonIssue: 'Bay of Bengal monsoon depressions travel along this corridor, delivering widespread steady stratiform rain.',
-    scenarioPresets: [
-      {
-        id: 'nag-depression-transit',
-        label: 'Depression Direct Hit',
-        icon: '🌀',
-        description: 'A synoptic low-pressure system passes directly overhead. Sustained day-long rain feeds river catchment basins.',
-        input: {
-          stationId: 'NAG_SONEGAON',
-          rawForecastMm: 38.0,
+          stationId: station.id,
+          rawForecastMm: 35.0,
           relativeHumidity: 92,
-          surfacePressure: 997.5,
-          windSpeed: 32,
-          prevDayRain: 30.0,
-          leadTimeDays: 2,
-        },
-      },
-      {
-        id: 'nag-active-trough',
-        label: 'Trough Convergence',
-        icon: '🌧️',
-        description: 'Active monsoon trough axis lies close to Vidarbha, triggering widespread afternoon and evening rain bands.',
-        input: {
-          stationId: 'NAG_SONEGAON',
-          rawForecastMm: 24.0,
-          relativeHumidity: 86,
-          surfacePressure: 1001.0,
-          windSpeed: 20,
-          prevDayRain: 15.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'nag-humid-gap',
-        label: 'Humid Interlude',
-        icon: '⛅',
-        description: 'Trough shifts northward toward foothills of Himalayas; dry warm spell with high convective heating.',
-        input: {
-          stationId: 'NAG_SONEGAON',
-          rawForecastMm: 3.5,
-          relativeHumidity: 70,
-          surfacePressure: 1008.0,
-          windSpeed: 10,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'DEL_SAFDARJUNG',
-    name: 'Delhi (Safdarjung)',
-    state: 'National Capital Region',
-    subdivision: 'Northwest India Plains',
-    climateZone: 'Semi-Arid Sub-Humid Monsoon Margin',
-    lat: 28.584,
-    lon: 77.206,
-    typicalMonsoonIssue: 'Moist monsoon easterlies meet dry westerly troughs, triggering sudden intense urban flash flood spells.',
-    scenarioPresets: [
-      {
-        id: 'del-wd-interaction',
-        label: 'Trough & WD Clash',
-        icon: '⛈️⚡',
-        description: 'Mid-latitude upper westerly trough interacts with moist easterly monsoon winds, triggering sudden cloudburst.',
-        input: {
-          stationId: 'DEL_SAFDARJUNG',
-          rawForecastMm: 42.0,
-          relativeHumidity: 94,
-          surfacePressure: 995.0,
-          windSpeed: 38,
+          surfacePressure: 998.0,
+          windSpeed: 25,
           prevDayRain: 20.0,
           leadTimeDays: 1,
         },
       },
       {
-        id: 'del-break-spell',
-        label: 'Break Monsoon Dry Heat',
-        icon: '☀️🌡️',
-        description: 'Typical break monsoon period: trough shifts away; NWP retains lingering false rain bias.',
+        id: `${station.id}-moderate`,
+        label: 'Moderate Rain',
+        icon: '🌧️',
+        description: 'Typical monsoon condition with moderate persistent rainfall.',
         input: {
-          stationId: 'DEL_SAFDARJUNG',
-          rawForecastMm: 4.2,
-          relativeHumidity: 62,
-          surfacePressure: 1006.0,
-          windSpeed: 12,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'del-moderate-monsoon',
-        label: 'Passing Monsoon Showers',
-        icon: '🌦️',
-        description: 'Moderate monsoon surges over Yamuna plains bringing welcomed temperature drops and steady rain.',
-        input: {
-          stationId: 'DEL_SAFDARJUNG',
-          rawForecastMm: 18.0,
-          relativeHumidity: 84,
-          surfacePressure: 1000.5,
-          windSpeed: 22,
-          prevDayRain: 10.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'CCU_ALIPORE',
-    name: 'Kolkata (Alipore)',
-    state: 'West Bengal',
-    subdivision: 'Gangetic West Bengal / Delta',
-    climateZone: 'Deltaic Maritime & Bay Depression Landfall',
-    lat: 22.53,
-    lon: 88.33,
-    typicalMonsoonIssue: 'Deep Bay of Bengal depressions make landfall, generating intense squall bands and severe urban waterlogging.',
-    scenarioPresets: [
-      {
-        id: 'ccu-depression-landfall',
-        label: 'Bay Depression Landfall',
-        icon: '🌀🌧️',
-        description: 'A deep depression crosses Gangetic coast. Fierce gale-force squalls and relentless stratiform rain dump 90mm+.',
-        input: {
-          stationId: 'CCU_ALIPORE',
-          rawForecastMm: 44.0,
-          relativeHumidity: 96,
-          surfacePressure: 993.0,
-          windSpeed: 42,
-          prevDayRain: 50.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'ccu-kalbaisakhi-monsoon',
-        label: 'Coastal Convective Surge',
-        icon: '⛈️🌊',
-        description: 'High maritime moisture surge combined with daytime solar heating triggers intense evening thunderstorm squalls.',
-        input: {
-          stationId: 'CCU_ALIPORE',
-          rawForecastMm: 28.0,
-          relativeHumidity: 90,
-          surfacePressure: 999.5,
-          windSpeed: 28,
-          prevDayRain: 18.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'ccu-humid-break',
-        label: 'Sultry Monsoon Lull',
-        icon: '⛅',
-        description: 'Trough shifts towards Himalayan foothills; heavy cloud cover remains but precipitation pauses with high humidity.',
-        input: {
-          stationId: 'CCU_ALIPORE',
-          rawForecastMm: 3.0,
-          relativeHumidity: 78,
-          surfacePressure: 1005.0,
-          windSpeed: 14,
-          prevDayRain: 2.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'BLR_HAL',
-    name: 'Bengaluru (HAL)',
-    state: 'Karnataka',
-    subdivision: 'South Interior Karnataka',
-    climateZone: 'High-Altitude Southern Deccan Plateau',
-    lat: 12.95,
-    lon: 77.67,
-    typicalMonsoonIssue: 'Sharp evening thunderstorm cells develop along the peninsular wind shear zone, creating rapid localized urban flash inundations.',
-    scenarioPresets: [
-      {
-        id: 'blr-shear-convection',
-        label: 'Peninsular Shear Squall',
-        icon: '⛈️⚡',
-        description: 'East-west wind shear zone across southern peninsula sparks rapid towering cumulonimbus cells over the urban core.',
-        input: {
-          stationId: 'BLR_HAL',
-          rawForecastMm: 32.0,
-          relativeHumidity: 88,
-          surfacePressure: 1006.0,
-          windSpeed: 28,
-          prevDayRain: 14.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'blr-pleasant-drizzle',
-        label: 'Pleasant Plateau Drizzle',
-        icon: '🌦️',
-        description: 'Cool westerly breeze carrying light stratiform drizzle from Ghats spillover, keeping temperatures pleasantly mild.',
-        input: {
-          stationId: 'BLR_HAL',
-          rawForecastMm: 4.5,
-          relativeHumidity: 74,
-          surfacePressure: 1011.0,
-          windSpeed: 18,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'blr-sunny-break',
-        label: 'Dry Break Spell',
-        icon: '☀️',
-        description: 'Clear skies over the plateau with crisp westerly breeze. NWP frequently predicts weak precipitation that fails to materialize.',
-        input: {
-          stationId: 'BLR_HAL',
-          rawForecastMm: 2.2,
-          relativeHumidity: 60,
-          surfacePressure: 1014.0,
-          windSpeed: 12,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'GAU_BORJHAR',
-    name: 'Guwahati (Borjhar)',
-    state: 'Assam',
-    subdivision: 'Assam & Meghalaya',
-    climateZone: 'Brahmaputra Basin & Sub-Himalayan Funnel',
-    lat: 26.11,
-    lon: 91.59,
-    typicalMonsoonIssue: 'Bay monsoon branch funnels between Shillong Plateau and Himalayas, causing extreme multi-day orographic rainfall and riverine floods.',
-    scenarioPresets: [
-      {
-        id: 'gau-orographic-deluge',
-        label: 'Brahmaputra Flood Surge',
-        icon: '🌧️🏔️',
-        description: 'Monsoon moisture funnels into Meghalaya-Assam valley. Unrelenting heavy rain over catchment areas feeds river crests.',
-        input: {
-          stationId: 'GAU_BORJHAR',
-          rawForecastMm: 58.0,
-          relativeHumidity: 97,
-          surfacePressure: 994.0,
-          windSpeed: 30,
-          prevDayRain: 75.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'gau-morning-storm',
-        label: 'Valley Convective Storm',
-        icon: '⛈️',
-        description: 'Nocturnal katabatic drainage winds converge with moist valley air, sparking severe pre-dawn downpours.',
-        input: {
-          stationId: 'GAU_BORJHAR',
-          rawForecastMm: 34.0,
-          relativeHumidity: 92,
-          surfacePressure: 999.0,
-          windSpeed: 20,
-          prevDayRain: 25.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'gau-humid-mist',
-        label: 'Warm Humid Overcast',
-        icon: '🌫️',
-        description: 'Dense cloud ceiling over valley with elevated humidity but scattered light shower activity.',
-        input: {
-          stationId: 'GAU_BORJHAR',
-          rawForecastMm: 6.0,
-          relativeHumidity: 84,
-          surfacePressure: 1004.5,
-          windSpeed: 10,
-          prevDayRain: 4.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-  {
-    id: 'JAI_SANGANER',
-    name: 'Jaipur (Sanganer)',
-    state: 'Rajasthan',
-    subdivision: 'East Rajasthan',
-    climateZone: 'Semi-Arid Western Border Margin',
-    lat: 26.82,
-    lon: 75.81,
-    typicalMonsoonIssue: 'Trough excursions into Rajasthan trigger intense but brief desert downpours, while break spells cause extreme evaporation.',
-    scenarioPresets: [
-      {
-        id: 'jai-trough-burst',
-        label: 'Aravalli Trough Flash Rain',
-        icon: '⛈️🏜️',
-        description: 'Southern shift of monsoon trough pumps Arabian Sea moisture against Aravalli hills, triggering rare flash deluge.',
-        input: {
-          stationId: 'JAI_SANGANER',
-          rawForecastMm: 36.0,
-          relativeHumidity: 86,
-          surfacePressure: 997.0,
-          windSpeed: 32,
-          prevDayRain: 12.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'jai-drizzle-trap',
-        label: 'High-Evaporation Dry Trap',
-        icon: '☀️🚫',
-        description: 'NWP predicts 3.8mm rain from high cloud, but dry boundary layer causes rain to evaporate before hitting ground. Zero-Rain Gate active.',
-        input: {
-          stationId: 'JAI_SANGANER',
-          rawForecastMm: 3.8,
-          relativeHumidity: 54,
-          surfacePressure: 1008.0,
-          windSpeed: 16,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'jai-humid-monsoon',
-        label: 'Passing Monsoon Showers',
-        icon: '🌦️',
-        description: 'Moist southeasterly breeze brings cool scattered monsoon showers across the desert capital.',
-        input: {
-          stationId: 'JAI_SANGANER',
-          rawForecastMm: 12.0,
-          relativeHumidity: 78,
-          surfacePressure: 1002.5,
-          windSpeed: 22,
+          stationId: station.id,
+          rawForecastMm: 15.0,
+          relativeHumidity: 85,
+          surfacePressure: 1002.0,
+          windSpeed: 15,
           prevDayRain: 5.0,
           leadTimeDays: 1,
         },
-      },
-    ],
-  },
-  {
-    id: 'NOIDA_SECTOR62',
-    name: 'Noida (Sector-62)',
-    state: 'Uttar Pradesh (NCR)',
-    subdivision: 'West Uttar Pradesh',
-    climateZone: 'Semi-Arid Sub-Humid Monsoon Margin',
-    lat: 28.625,
-    lon: 77.373,
-    typicalMonsoonIssue: 'Severe urban waterlogging triggered by sudden intense convection in NCR.',
-    scenarioPresets: [
-      {
-        id: 'noida-flash-flood',
-        label: 'Urban Flash Flood',
-        icon: '⛈️🚗',
-        description: 'Intense localized convective cloudburst causing rapid urban waterlogging.',
-        input: {
-          stationId: 'NOIDA_SECTOR62',
-          rawForecastMm: 55.0,
-          relativeHumidity: 95,
-          surfacePressure: 994.0,
-          windSpeed: 25,
-          prevDayRain: 15.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'noida-monsoon-drizzle',
-        label: 'Continuous Light Rain',
-        icon: '🌧️',
-        description: 'Steady light rain under active monsoon trough conditions.',
-        input: {
-          stationId: 'NOIDA_SECTOR62',
-          rawForecastMm: 12.0,
-          relativeHumidity: 88,
-          surfacePressure: 1002.0,
-          windSpeed: 15,
-          prevDayRain: 10.0,
-          leadTimeDays: 1,
-        },
-      },
-      {
-        id: 'noida-humid-heat',
-        label: 'Humid Break Spell',
-        icon: '🥵',
-        description: 'High humidity and temperature with no rain, typical of a monsoon break.',
-        input: {
-          stationId: 'NOIDA_SECTOR62',
-          rawForecastMm: 1.0,
-          relativeHumidity: 70,
-          surfacePressure: 1007.0,
-          windSpeed: 10,
-          prevDayRain: 0.0,
-          leadTimeDays: 1,
-        },
-      },
-    ],
-  },
-];
-
-// Exact station positions calibrated on the authentic India States & Union Territories Map (800 x 953)
-const CALIBRATED_STATION_COORDS: Record<string, { x: number; y: number }> = {
-  DEL_SAFDARJUNG: { x: 286, y: 296 },   // Delhi NCR between Haryana & UP
-  BOM_SANTACRUZ: { x: 168, y: 548 },    // Mumbai on Maharashtra western coastline
-  PNQ_SHIVAJINAGAR: { x: 196, y: 574 }, // Pune, inland Western Ghats plateau
-  NAG_SONEGAON: { x: 345, y: 492 },     // Nagpur, Vidarbha eastern Maharashtra
-  CCU_ALIPORE: { x: 552, y: 480 },      // Kolkata, Gangetic West Bengal near Bay of Bengal head
-  BLR_HAL: { x: 274, y: 726 },          // Bengaluru, South Interior Karnataka plateau
-  GAU_BORJHAR: { x: 672, y: 366 },      // Guwahati, Assam Brahmaputra valley
-  JAI_SANGANER: { x: 236, y: 344 },     // Jaipur, East Rajasthan near Aravalli range
-  NOIDA_SECTOR62: { x: 292, y: 295 },   // Noida, adjacent to Delhi in NCR
-};
-
-// Projected station points on the authentic 800 x 953 map
-const PROJECTED_STATIONS = REGION_NODES.map((node) => {
-  const coords = CALIBRATED_STATION_COORDS[node.id] || { x: 400, y: 476 };
-  return {
-    ...node,
-    mapX: coords.x,
-    mapY: coords.y,
+      }
+    ]
   };
 });
-
-// Official Survey & States Map Asset path matching the user's provided authentic India Map
-const INDIA_MAP_IMAGE_SRC = '/india_map.jpg';
-// User reference map: Pitch black background with electric blue outline of India
-const INDIA_MAP_BLACK_BLUE_SRC = '/india_map_black_blue.png';
-
 export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = ({
   currentInput,
   currentResult,
@@ -621,14 +131,14 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
     setSelectedStationId(currentInput.stationId);
   }, [currentInput.stationId]);
 
-  const activeNode = PROJECTED_STATIONS.find((n) => n.id === selectedStationId) || PROJECTED_STATIONS[0];
+  const activeNode = REGION_NODES.find((n) => n.id === selectedStationId) || REGION_NODES[0];
 
   // Group overlapping stations for map rendering
   const renderNodes = React.useMemo(() => {
     const groups: Record<string, any> = {};
     const singles: any[] = [];
 
-    PROJECTED_STATIONS.forEach(node => {
+    REGION_NODES.forEach(node => {
       if (node.id === 'DEL_SAFDARJUNG' || node.id === 'NOIDA_SECTOR62') {
         const macro = 'Delhi NCR Region';
         if (!groups[macro]) {
@@ -912,8 +422,16 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                 {/* India Map Image Base */}
                 <img
                   src={mapMode === 'neon-dark' ? INDIA_MAP_BLACK_BLUE_SRC : INDIA_MAP_IMAGE_SRC}
-                  alt="Map of India outline on black background with blue boundary"
+                  alt="India Synoptic Weather Basemap"
                   referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    const img = e.currentTarget;
+                    if (img.src.includes('/india_map_black_blue.png')) {
+                      img.src = '/india_states_map.svg';
+                    } else if (!img.src.includes('/india_location_map.svg')) {
+                      img.src = '/india_location_map.svg';
+                    }
+                  }}
                   className={`w-full h-full object-contain pointer-events-none transition-all duration-300 ${
                     mapMode === 'neon-dark'
                       ? 'brightness-110 contrast-125 filter drop-shadow-[0_0_12px_rgba(56,189,248,0.35)]'

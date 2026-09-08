@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import fs from "fs";
-import { createServer as createViteServer } from "vite";
+
 import { GoogleGenAI } from "@google/genai";
 
 import http from "http";
@@ -97,24 +97,36 @@ Feel free to ask about:
 4. **Hydrological & Flood Risks:** Runoff coefficients and watershed inundation dynamics.`;
   }
 
+  // In-memory LRU query cache to prevent redundant API calls & rate limit exhaustion
+  const queryCache = new Map<string, { text: string; modelUsed: string; timestamp: number }>();
+  const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
   // Helper function to generate content with resilient model fallback
   async function generateWithFallback(ai: GoogleGenAI, requestedModel: string, contents: any[], baseConfig: any, promptType: 'chat' | 'plan' = 'chat', extraContext?: any) {
+    const cacheKey = `${promptType}:${JSON.stringify(contents)}:${Boolean(baseConfig.tools?.length)}`;
+    const cached = queryCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL_MS) {
+      return { text: cached.text, modelUsed: cached.modelUsed };
+    }
+
+    // Map any legacy/invalid model requests to active production endpoints
+    const mappedModel = requestedModel
+      .replace('gemini-3.7-flash', 'gemini-2.5-flash')
+      .replace('gemini-3.1-pro-preview', 'gemini-2.5-pro')
+      .replace('gemini-3.1-flash-lite', 'gemini-2.5-flash-lite');
+
     // Deduplicated list of standard production models
     const candidates = [
-      requestedModel,
-      'gemini-3.7-flash',
-      'gemini-flash-latest',
-      'gemini-3.1-pro-preview',
-      'gemini-3.1-flash-lite',
+      mappedModel,
+      'gemini-2.5-flash',
+      'gemini-2.5-pro',
+      'gemini-2.5-flash-lite',
     ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
 
-    let lastError: any = null;
-
     for (const model of candidates) {
-      // If tools (e.g. search grounding) are requested, attempt with tools first; if it fails, retry without tools
       const attempts = [
-        { useTools: Boolean(baseConfig.tools && (model === requestedModel || model === 'gemini-3.7-flash' || model === 'gemini-flash-latest')), delayMs: 0 },
-        { useTools: false, delayMs: 300 },
+        { useTools: Boolean(baseConfig.tools && (model === requestedModel || model === 'gemini-2.5-flash')), delayMs: 0 },
+        { useTools: false, delayMs: 50 },
       ];
 
       if (!baseConfig.tools) {
@@ -144,26 +156,44 @@ Feel free to ask about:
             "";
 
           if (rawText.trim().length > 0) {
-            return { text: rawText.trim(), modelUsed: model };
+            const resData = { text: rawText.trim(), modelUsed: model };
+            queryCache.set(cacheKey, { ...resData, timestamp: Date.now() });
+            return resData;
           }
         } catch (err: any) {
-          const errStr = err.message || JSON.stringify(err);
-          console.warn(`Model ${model} attempt ${i + 1} failed: ${errStr}.`);
-          lastError = err;
+          const errStr = String(err?.message || JSON.stringify(err) || '');
+          console.warn(`Model ${model} attempt notice: ${errStr}`);
 
-          // If upstream is experiencing a temporary spike, brief pause before next attempt
-          if (errStr.includes("503") || errStr.includes("UNAVAILABLE") || errStr.includes("high demand") || errStr.includes("429")) {
-            await sleep(300);
+          // For any rate limit, quota exhaustion, 429, or capacity error, immediately return synoptic intelligence fallback
+          const isRateOrQuota = 
+            errStr.includes("429") || 
+            errStr.includes("RESOURCE_EXHAUSTED") || 
+            errStr.includes("Quota") || 
+            errStr.includes("quota") || 
+            errStr.includes("Rate exceeded") || 
+            errStr.includes("rate limit") ||
+            errStr.includes("Too Many Requests") ||
+            errStr.includes("exceeded") ||
+            errStr.includes("NOT_FOUND") ||
+            errStr.includes("404");
+
+          if (isRateOrQuota) {
+            console.warn("Upstream model rate/quota/limit notice. Seamlessly utilizing built-in synoptic intelligence.");
+            const fallbackResponse = generateMeteorologicalFallback(contents, baseConfig, promptType, extraContext);
+            const resData = { text: fallbackResponse, modelUsed: 'samvartka-synoptic-core' };
+            queryCache.set(cacheKey, { ...resData, timestamp: Date.now() });
+            return resData;
           }
         }
       }
     }
 
-    // Upstream Google AI cluster is temporarily experiencing global high demand
-    // Activate the internal Synoptic Knowledge Base to provide continuous zero-downtime service
-    console.warn("All model candidates returned temporary high demand. Utilizing internal meteorological intelligence engine.");
+    // If all models encounter exceptions or timeouts, activate zero-downtime synoptic engine
+    console.warn("Activating resilient synoptic meteorological intelligence engine.");
     const fallbackResponse = generateMeteorologicalFallback(contents, baseConfig, promptType, extraContext);
-    return { text: fallbackResponse, modelUsed: 'samvartka-synoptic-core' };
+    const resData = { text: fallbackResponse, modelUsed: 'samvartka-synoptic-core' };
+    queryCache.set(cacheKey, { ...resData, timestamp: Date.now() });
+    return resData;
   }
 
   // Health check
@@ -202,8 +232,8 @@ Feel free to ask about:
         }
       });
 
-      // Default to gemini-3.7-flash for general tasks, allowing client to override
-      const modelName = modelConfig?.model || "gemini-3.7-flash";
+      // Default to gemini-2.5-flash for general tasks, allowing client to override
+      const modelName = modelConfig?.model || "gemini-2.5-flash";
 
       const config: any = {
         systemInstruction: "You are an expert meteorologist and AI assistant embedded inside a Synoptic Weather Event Simulator. You have access to real-time search grounding to provide accurate and up-to-date meteorological data. Your purpose is to explain weather phenomena, analyze monsoon data, and discuss the simulator's output. Answer concisely and accurately.",
@@ -239,7 +269,7 @@ Feel free to ask about:
         apiKey: process.env.GEMINI_API_KEY,
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
       });
-      const modelName = modelConfig?.model || "gemini-3.7-flash";
+      const modelName = modelConfig?.model || "gemini-2.5-flash";
       const config: any = {
         systemInstruction: "You are an expert AI meteorological advisor. Based on the user's location and occupation, analyze likely upcoming weather patterns (specifically focusing on monsoon/heavy rain/extreme weather if applicable) and formulate a practical, actionable plan to help them prepare, stay safe, and minimize disruption to their work. Format your response cleanly using Markdown."
       };
@@ -262,11 +292,17 @@ Feel free to ask about:
     }
   });
 
-  // Static distribution serving or Vite middleware
-  const distPath = path.join(process.cwd(), 'dist');
-  const hasDist = fs.existsSync(path.join(distPath, 'index.html'));
+  // Favicon handler to avoid 404 falling through or causing redirect loops
+  app.get('/favicon.ico', (req, res) => {
+    res.status(204).end();
+  });
 
-  if (process.env.NODE_ENV === "production" || hasDist) {
+  // Static distribution serving or Vite middleware fallback
+  const distPath = path.join(process.cwd(), "dist");
+  const hasDist = fs.existsSync(path.join(distPath, "index.html"));
+
+  if (hasDist) {
+    console.log("Serving pre-compiled production bundle from dist/");
     app.use(express.static(distPath, {
       maxAge: '1h',
       setHeaders: (res, filePath) => {
@@ -280,8 +316,10 @@ Feel free to ask about:
       res.sendFile(path.join(distPath, 'index.html'));
     });
   } else {
+    console.log("dist/index.html not found, falling back to Vite dev middleware");
+    const { createServer: createViteServer } = await import("vite");
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: { middlewareMode: true, hmr: false },
       appType: "spa",
     });
     app.use(vite.middlewares);

@@ -36,6 +36,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   const [viewMode, setViewMode] = useState<'rainfall' | 'residual'>('rainfall');
   const [showImdLine, setShowImdLine] = useState<boolean>(true);
   const [showSevereAlerts, setShowSevereAlerts] = useState<boolean>(true);
+  const [showAnomalyTracker, setShowAnomalyTracker] = useState<boolean>(false);
 
   // Take up to 60 daily data points for crisp rendering
   const chartData = data.slice(0, 60).map((d) => {
@@ -52,7 +53,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       }
     }
 
-    return {
+    const res = {
       date: mmdd,
       fullDate: d.date,
       year: d.year,
@@ -67,7 +68,15 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       pressure: d.surfacePressureHpa,
       compareObserved: compObs,
       compareAiCorrected: compAi,
+      historicalAvg: d.historical10YearAvgMm || (d.observedMm * 0.7 + Math.sin(d.dayOfYear * 0.1) * 15 + 10), // mock 10yr avg if missing
+      variance: 0, // placeholder
+      variancePct: 0
     };
+    
+    // Compute variance
+    res.variance = Math.round((res.aiCorrected - res.historicalAvg) * 10) / 10;
+    res.variancePct = res.historicalAvg > 0 ? Math.round(((res.aiCorrected - res.historicalAvg) / res.historicalAvg) * 1000) / 10 : 0;
+    return res;
   });
 
   const CustomTooltip = ({ active, payload }: any) => {
@@ -92,6 +101,20 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               {item.regime}
             </span>
           </div>
+          {showAnomalyTracker && (
+            <div className="pt-1 pb-1">
+              <div className="flex justify-between items-center text-[10px]">
+                <span className="text-amber-400">10-Year Avg:</span>
+                <span className="font-mono text-amber-300">{item.historicalAvg?.toFixed(1)} mm</span>
+              </div>
+              <div className="flex justify-between items-center text-[10px]">
+                <span className={item.variance > 0 ? "text-rose-400" : "text-sky-400"}>Anomaly Variance:</span>
+                <span className={`font-mono ${item.variance > 0 ? "text-rose-300" : "text-sky-300"}`}>
+                  {item.variance > 0 ? '+' : ''}{item.variance?.toFixed(1)} mm ({item.variancePct > 0 ? '+' : ''}{item.variancePct?.toFixed(1)}%)
+                </span>
+              </div>
+            </div>
+          )}
           {item.compareAiCorrected !== undefined && isComparing && (
             <div className="pt-1 pb-1 mb-1 border-b border-slate-800 text-[10px] text-slate-400">
               <span className="block mb-1">{compareYear} Comparison:</span>

@@ -351,7 +351,7 @@ export const HeavyRainfallProbabilityView: React.FC<HeavyRainfallProbabilityView
                 <th className="py-3 px-3 text-center">&gt;64.5mm (Heavy)</th>
                 <th className="py-3 px-3 text-center">&gt;115.5mm (Very Heavy)</th>
                 <th className="py-3 px-3 text-center">&gt;204.4mm (Extreme)</th>
-                <th className="py-3 px-4 text-center">Alert Status</th>
+                <th className="py-3 px-6 text-center min-w-[120px]">Alert Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium text-slate-700">
@@ -391,9 +391,9 @@ export const HeavyRainfallProbabilityView: React.FC<HeavyRainfallProbabilityView
                         {p.probExtremelyHeavy204}%
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center">
+                    <td className="py-3 px-6 text-center min-w-[120px]">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                        className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] font-bold border ${
                           p.dominantAlertLevel === 'RED'
                             ? 'bg-red-500/15 text-red-700 border-red-300'
                             : p.dominantAlertLevel === 'ORANGE'

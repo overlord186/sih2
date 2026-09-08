@@ -33,6 +33,8 @@ export interface RainfallDataPoint {
   synopticRegime?: SynopticWeatherRegime;
   baselineLinearMm: number;
   correctedForecastMm: number;
+  historical10YearAvgMm?: number;
+  historicalVariance?: number;
 }
 
 export interface MetricSummary {
