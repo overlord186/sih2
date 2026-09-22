@@ -1,0 +1,83 @@
+{
+  "ts_errors": [],
+  "build_errors": [
+    {
+      "file": "package.json",
+      "line": 8,
+      "error": "Non-cross-platform shell commands ('rm -rf' and 'cp -r') in build and clean scripts",
+      "cause": "Windows cmd.exe does not recognize 'rm' or 'cp'. PowerShell fails on 'rm -rf'. The build script will fail on native Windows environments.",
+      "fix": "Use node-based cross-platform copy/clean scripts or tools like rimraf/cpx or a custom node script (e.g. node -e \"...\")."
+    },
+    {
+      "file": "System Environment (PATH)",
+      "line": 1,
+      "error": "Node.js / npm runtime is not installed or not available in the system PATH",
+      "cause": "'node' and 'npm' commands were not found in Windows PATH or common installation directories.",
+      "fix": "Install Node.js (v20+ or v22 LTS) via winget (`winget install OpenJS.NodeJS.LTS`) or the official installer and restart the terminal."
+    }
+  ],
+  "missing_deps": [
+    {
+      "file": "src/components/WeatherBackground3D.tsx",
+      "line": 4,
+      "error": "Importing from undeclared package 'three-stdlib'",
+      "cause": "'three-stdlib' is imported (`import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';`) but is not declared in package.json dependencies or devDependencies, and is actually completely unused in the file.",
+      "fix": "Remove the unused import `import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';` from src/components/WeatherBackground3D.tsx."
+    }
+  ],
+  "broken_imports": [
+    {
+      "file": "src/components/WeatherBackground3D.tsx",
+      "line": 4,
+      "error": "Unresolvable type import from 'three-stdlib'",
+      "cause": "Package 'three-stdlib' is not installed or listed in package.json.",
+      "fix": "Remove line 4 since OrbitControlsImpl is never referenced in WeatherBackground3D.tsx."
+    }
+  ],
+  "frontend_errors": [],
+  "backend_errors": [
+    {
+      "file": "server.ts",
+      "line": 23,
+      "error": "process.env.GEMINI_API_KEY will be undefined when running locally with .env",
+      "cause": "dotenv is not imported/configured in server.ts, so process.env remains empty of .env variables.",
+      "fix": "Import dotenv/config at the beginning of server.ts."
+    }
+  ],
+  "gemini_errors": [
+    {
+      "file": "server.ts",
+      "line": 131,
+      "error": "Invalid / Non-existent Gemini model name 'gemini-3.8-flash' in candidates list",
+      "cause": "'gemini-3.8-flash' is not a valid Gemini API model name. It will result in a 404 NOT_FOUND error when sent to Google GenAI API.",
+      "fix": "Remove 'gemini-3.8-flash' and replace with standard active models like 'gemini-2.5-flash', 'gemini-2.0-flash', or 'gemini-2.5-pro'."
+    },
+    {
+      "file": "server.ts",
+      "line": 133,
+      "error": "Invalid / Unstable preview model 'gemini-3.1-pro-preview' in candidate fallback list",
+      "cause": "gemini-3.1-pro-preview is mapped away on line 125, but reappears in candidates on line 133, causing potential 404 upstream errors.",
+      "fix": "Use current GA / stable models 'gemini-2.5-flash', 'gemini-2.5-pro', and 'gemini-2.0-flash'."
+    }
+  ],
+  "env_errors": [
+    {
+      "file": ".env",
+      "line": 1,
+      "error": "Missing .env file in project root",
+      "cause": ".env is not created or committed, while .env.example exists with required GEMINI_API_KEY and APP_URL variables.",
+      "fix": "Create .env from .env.example with GEMINI_API_KEY and APP_URL, ensuring it is kept in .gitignore."
+    },
+    {
+      "file": "server.ts",
+      "line": 1,
+      "error": "dotenv is declared in package.json but never loaded in server.ts",
+      "cause": "Node.js running tsx server.ts or node dist/server.cjs does not automatically load .env files unless dotenv.config() or 'dotenv/config' is imported.",
+      "fix": "Add `import 'dotenv/config';` at the very top of server.ts."
+    }
+  ],
+  "broken_routes_buttons": [],
+  "runtime_errors": [],
+  "security_errors": [],
+  "mobile_responsive_errors": []
+}
