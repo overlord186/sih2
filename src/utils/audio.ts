@@ -366,6 +366,254 @@ export class WeatherSynthesizer {
     } catch {}
   }
 
+  // Dropsonde ejection hiss & telemetry chirp
+  public playDropsondeReleaseSound() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+
+      // 1. Pneumatic ejection hiss (filtered noise)
+      const bufSize = Math.floor(ctx.sampleRate * 0.18);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.04));
+      const hissSrc = ctx.createBufferSource();
+      hissSrc.buffer = buf;
+      const hissFilter = ctx.createBiquadFilter();
+      hissFilter.type = 'highpass';
+      hissFilter.frequency.setValueAtTime(2400, t);
+      const hissGain = ctx.createGain();
+      hissGain.gain.setValueAtTime(0.2, t);
+      hissGain.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      hissSrc.connect(hissFilter);
+      hissFilter.connect(hissGain);
+      hissGain.connect(ctx.destination);
+      hissSrc.start(t);
+
+      // 2. High-tech dual telemetry pings (descending tones)
+      [1760, 1318.5, 2093].forEach((f, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        const start = t + 0.08 + idx * 0.05;
+        osc.frequency.setValueAtTime(f, start);
+        osc.frequency.exponentialRampToValueAtTime(f * 0.85, start + 0.08);
+        g.gain.setValueAtTime(0.08, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.09);
+      });
+    } catch {}
+  }
+
+  // Thunder crackle and rolling rumble for lightning events
+  public playLightningThunderCrack() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+
+      // Sharp initial electrostatic snap
+      const snapOsc = ctx.createOscillator();
+      const snapG = ctx.createGain();
+      snapOsc.type = 'sawtooth';
+      snapOsc.frequency.setValueAtTime(160, t);
+      snapOsc.frequency.exponentialRampToValueAtTime(30, t + 0.09);
+      snapG.gain.setValueAtTime(0.28, t);
+      snapG.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      snapOsc.connect(snapG);
+      snapG.connect(ctx.destination);
+      snapOsc.start(t);
+      snapOsc.stop(t + 0.15);
+
+      // Low rolling acoustic reverberation
+      const bufSize = Math.floor(ctx.sampleRate * 1.6);
+      const buf = ctx.createBuffer(1, bufSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      let val = 0;
+      for (let i = 0; i < bufSize; i++) {
+        val = (val * 0.96) + (Math.random() * 2 - 1) * 0.15;
+        data[i] = val * Math.exp(-i / (ctx.sampleRate * 0.65));
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buf;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass';
+      f.frequency.setValueAtTime(140, t);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.25, t + 0.05);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
+      noise.connect(f);
+      f.connect(g);
+      g.connect(ctx.destination);
+      noise.start(t + 0.03);
+    } catch {}
+  }
+
+  // Doppler radar acoustic sweep ping
+  public playRadarScanPing() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(2200, t);
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.14);
+      g.gain.setValueAtTime(0.08, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.15);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.16);
+    } catch {}
+  }
+
+  // Satellite Radiometer Scan pulse
+  public playSatelliteSwathSweep() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(950, t);
+      osc.frequency.linearRampToValueAtTime(1450, t + 0.12);
+      g.gain.setValueAtTime(0.06, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.15);
+    } catch {}
+  }
+
+  // Emergency Red Alert Siren chirp
+  public playCrisisAlertTone() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      [800, 1100, 800, 1100].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sawtooth';
+        const start = t + idx * 0.12;
+        osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.12, start);
+        g.gain.exponentialRampToValueAtTime(0.001, start + 0.11);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.12);
+      });
+    } catch {}
+  }
+
+  // Mission Complete / Victory Fanfare
+  public playMissionSuccessFanfare() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const chord = [523.25, 659.25, 783.99, 1046.50, 1318.51];
+      chord.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        const start = t + idx * 0.08;
+        osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.15, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.8);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.85);
+      });
+    } catch {}
+  }
+
+  // Daily Challenge Correct Answer Celebration Jingle
+  public playChallengeCorrectSound() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      // Arpeggiated C-Major to E-High with warm overtone chime
+      const notes = [523.25, 659.25, 783.99, 1046.5, 1318.5]; // C5, E5, G5, C6, E6
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'sine';
+        const start = t + idx * 0.09;
+        osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.2, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.6);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.65);
+      });
+    } catch {}
+  }
+
+  // Daily Challenge Incorrect Answer Gentle Thud
+  public playChallengeWrongSound() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(260, t);
+      osc.frequency.exponentialRampToValueAtTime(140, t + 0.35);
+      g.gain.setValueAtTime(0.15, t);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.38);
+      osc.connect(g);
+      g.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    } catch {}
+  }
+
+  // Achievement Badge Unlock Sparkling Fanfare
+  public playBadgeUnlockSound() {
+    if (!this.ctx || this._muted) return;
+    try {
+      if (this.ctx.state === 'suspended') this.ctx.resume().catch(() => {});
+      const ctx = this.ctx;
+      const t = ctx.currentTime;
+      const notes = [440, 554.37, 659.25, 880, 1108.73, 1318.51, 1760]; // A major glissando
+      notes.forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const g = ctx.createGain();
+        osc.type = 'triangle';
+        const start = t + idx * 0.06;
+        osc.frequency.setValueAtTime(freq, start);
+        g.gain.setValueAtTime(0.18, start);
+        g.gain.exponentialRampToValueAtTime(0.0001, start + 0.5);
+        osc.connect(g);
+        g.connect(ctx.destination);
+        osc.start(start);
+        osc.stop(start + 0.55);
+      });
+    } catch {}
+  }
+
   public toggleMute(): boolean {
     this.setMuted(!this._muted);
     return this._muted;

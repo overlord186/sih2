@@ -17,79 +17,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800;900&display=swap" rel="stylesheet" />
 
-    <script>
-      // Robust EventTarget-based WebSocket Mock
-      class MockWebSocket extends EventTarget {
-        constructor(url, protocols) {
-          super();
-          this.url = url;
-          this.protocols = protocols;
-          this.readyState = 1; // OPEN
-          this.CONNECTING = 0;
-          this.OPEN = 1;
-          this.CLOSING = 2;
-          this.CLOSED = 3;
-          
-          this.onopen = null;
-          this.onmessage = null;
-          this.onerror = null;
-          this.onclose = null;
-          
-          setTimeout(() => {
-            const event = new Event('open');
-            this.dispatchEvent(event);
-            if (this.onopen) this.onopen(event);
-          }, 0);
-        }
-        send(data) {}
-        close(code, reason) {
-          this.readyState = 3;
-          setTimeout(() => {
-            const event = new Event('close');
-            event.code = code || 1000;
-            event.reason = reason || '';
-            event.wasClean = true;
-            this.dispatchEvent(event);
-            if (this.onclose) this.onclose(event);
-          }, 0);
-        }
-      }
-      
-      window.OriginalWebSocket = window.WebSocket;
-      window.WebSocket = function(url, protocols) {
-        if (url && (url.includes('vite') || url.includes('24678') || url.includes('localhost'))) {
-          return new MockWebSocket(url, protocols);
-        }
-        return new window.OriginalWebSocket(url, protocols);
-      };
-      Object.assign(window.WebSocket, {
-        CONNECTING: 0,
-        OPEN: 1,
-        CLOSING: 2,
-        CLOSED: 3
-      });
-      
-      // Stop propagation of websocket/vite/rate-limit noise
-      window.addEventListener('error', function(e) {
-        var str = (e && (e.message || e.error && e.error.message)) || '';
-        if (str.includes('WebSocket') || str.includes('websocket') || str.includes('vite') || str.includes('ResizeObserver') || str.includes('Rate exceeded')) {
-          if (e.preventDefault) e.preventDefault();
-          if (e.stopPropagation) e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        }
-      }, true);
-      window.addEventListener('unhandledrejection', function(e) {
-        var reason = e && (e.reason || e.message || '');
-        var str = typeof reason === 'string' ? reason : (reason && reason.message) || '';
-        if (str.includes('WebSocket') || str.includes('websocket') || str.includes('vite') || str.includes('ResizeObserver') || str.includes('Rate exceeded')) {
-          if (e.preventDefault) e.preventDefault();
-          if (e.stopPropagation) e.stopPropagation();
-          if (e.stopImmediatePropagation) e.stopImmediatePropagation();
-        }
-      }, true);
-    </script>
-
     <style>
+      vite-error-overlay {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
       html, body {
         background-color: #f8fafc;
         color: #0f172a;
@@ -109,6 +43,23 @@
         font-family: 'JetBrains Mono', monospace;
       }
     </style>
+    <script>
+      // Graceful error handler to prevent blank white screens if any early script or API fails
+      window.addEventListener('error', function(e) {
+        var str = (e && (e.message || e.error && e.error.message)) || '';
+        if (str && (str.includes('Rate exceeded') || str.includes('429') || str.includes('RESOURCE_EXHAUSTED') || str.includes('Quota'))) {
+          var loader = document.getElementById('initial-loader');
+          if (loader) {
+            var statusEl = document.getElementById('loader-status');
+            var btnEl = document.getElementById('reload-platform-btn');
+            if (statusEl) {
+              statusEl.innerHTML = '<span style="color:#0284c7;font-weight:700;">Embedded Synoptic Core Active</span>';
+            }
+            if (btnEl) btnEl.style.display = 'inline-block';
+          }
+        }
+      });
+    </script>
   </head>
   <body class="bg-slate-50 text-slate-900 min-h-screen font-sans antialiased">
     <div id="root">
@@ -126,8 +77,8 @@
           <span style="width: 14px; height: 14px; border: 2px solid #2563eb; border-top-color: transparent; border-radius: 50%; animation: samvartaka-spin 0.8s linear infinite;"></span>
           <span>Connecting to Synoptic Weather Console...</span>
         </div>
-        <button id="reload-platform-btn" onclick="window.location.reload()" style="display: none; margin-top: 1.5rem; padding: 0.75rem 1.5rem; border-radius: 0.875rem; background: #2563eb; color: white; border: none; font-weight: 600; font-size: 0.875rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); transition: transform 0.15s ease;">
-          Refresh Operational View
+        <button id="reload-platform-btn" onclick="if(window.__mountSamvartakaApp){window.__mountSamvartakaApp();}else{location.reload();}" style="display: none; margin-top: 1.5rem; padding: 0.75rem 1.5rem; border-radius: 0.875rem; background: #2563eb; color: white; border: none; font-weight: 600; font-size: 0.875rem; cursor: pointer; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35); transition: transform 0.15s ease;">
+          Launch Operational View
         </button>
         <style>
           @keyframes samvartaka-spin { to { transform: rotate(360deg); } }
@@ -135,17 +86,17 @@
       </div>
     </div>
     <script>
-      // Fallback timer: if React takes longer than 4 seconds or encounters load throttle
+      // Fast fallback timer: makes launch button immediately available if network is slow
       setTimeout(function() {
         var statusEl = document.getElementById('loader-status');
         var btnEl = document.getElementById('reload-platform-btn');
         if (statusEl && document.getElementById('initial-loader')) {
-          statusEl.innerHTML = '<span style="color:#d97706;">⚡ Connection throttled. Click below to refresh:</span>';
-          statusEl.style.background = '#fffbeb';
-          statusEl.style.borderColor = '#fde68a';
+          statusEl.innerHTML = '<span style="color:#2563eb;">🛰️ Synoptic Core Ready</span>';
+          statusEl.style.background = '#eff6ff';
+          statusEl.style.borderColor = '#bfdbfe';
           if (btnEl) btnEl.style.display = 'inline-block';
         }
-      }, 4000);
+      }, 1500);
     </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>

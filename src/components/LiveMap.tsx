@@ -47,11 +47,13 @@ import {
   SlidersHorizontal,
   Navigation,
   Check,
+  Flame,
 } from 'lucide-react';
 import { InteractiveGlobe } from './InteractiveGlobe';
 import { ErrorBoundary } from './ErrorBoundary';
 import { fetchLiveWeatherData } from '../utils/weatherApi';
 import { D3RadarReflectivityOverlay } from './D3RadarReflectivityOverlay';
+import { D3SpatialRainfallHeatmapOverlay } from './D3SpatialRainfallHeatmapOverlay';
 
 export interface TileDiagnosticLog {
   id: string;
@@ -158,14 +160,37 @@ function MapController({ center, zoom, bounds }: { center: [number, number], zoo
     };
   }, [map]);
 
+  // Track previous target coordinates and zoom to avoid hijacking user-initiated pan/zoom
+  const prevCenterRef = useRef<[number, number] | null>(null);
+  const prevZoomRef = useRef<number | null>(null);
+  const prevBoundsRef = useRef<[[number, number], [number, number]] | null>(null);
+
   useEffect(() => {
     if (bounds) {
-      map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.2 });
+      const boundsChanged = !prevBoundsRef.current || 
+        prevBoundsRef.current[0][0] !== bounds[0][0] ||
+        prevBoundsRef.current[0][1] !== bounds[0][1] ||
+        prevBoundsRef.current[1][0] !== bounds[1][0] ||
+        prevBoundsRef.current[1][1] !== bounds[1][1];
+
+      if (boundsChanged) {
+        prevBoundsRef.current = bounds;
+        map.fitBounds(bounds, { padding: [50, 50], animate: true, duration: 1.2 });
+      }
     } else {
-      map.setView(center, zoom, {
-        animate: true,
-        duration: 1.2
-      });
+      const centerChanged = !prevCenterRef.current ||
+        Math.abs(prevCenterRef.current[0] - center[0]) > 0.001 ||
+        Math.abs(prevCenterRef.current[1] - center[1]) > 0.001;
+      const zoomChanged = prevZoomRef.current !== zoom;
+
+      if (centerChanged || zoomChanged) {
+        prevCenterRef.current = center;
+        prevZoomRef.current = zoom;
+        map.setView(center, zoom, {
+          animate: true,
+          duration: 1.2
+        });
+      }
     }
   }, [map, center, zoom, bounds]);
 
@@ -274,9 +299,10 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
   const [showHazardZones, setShowHazardZones] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedZone, setSelectedZone] = useState('ALL');
+  const [selectedRegimeFilter, setSelectedRegimeFilter] = useState<'ALL' | 'DELUGE' | 'MODERATE' | 'LIGHT' | 'DRY'>('ALL');
 
   // Remote Sensing State
-  const [remoteLayer, setRemoteLayer] = useState<'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR'>('NONE');
+  const [remoteLayer, setRemoteLayer] = useState<'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP'>('NONE');
   const [satelliteChannel, setSatelliteChannel] = useState<SatelliteChannel>('TIR1_10_8');
   const [satelliteOpacity, setSatelliteOpacity] = useState<number>(0.65);
   const [selectedRadarSite, setSelectedRadarSite] = useState<RadarSiteId>('MUMBAI');
@@ -582,7 +608,7 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
     return () => window.removeEventListener('engine-radar-toggle', handleEngineRadar);
   }, []);
 
-  const handleSetRemoteLayer = (layer: 'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR') => {
+  const handleSetRemoteLayer = (layer: 'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP') => {
     try {
       setRemoteLayer(layer);
       window.dispatchEvent(
@@ -603,22 +629,24 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
   }, [remoteLayer, isRadarPlaying]);
 
   const activeStation = MET_STATIONS.find(s => s.id === selectedStationId) || MET_STATIONS[0];
-  const center: [number, number] = [activeStation?.lat || 20, activeStation?.lon || 77];
+  const center = useMemo<[number, number]>(() => [activeStation?.lat || 20, activeStation?.lon || 77], [activeStation?.lat, activeStation?.lon]);
   const zoom = selectedStationId === 'ALL' ? 5 : 7;
   
   const liveData = useLiveData(activeStation.lat, activeStation.lon);
   const radarSiteData = DOPPLER_RADAR_SITES[selectedRadarSite];
   const currentRadarFrame = radarSiteData.frames[radarFrameIdx] || radarSiteData.frames[0];
 
-  // Dynamic map viewport target: Centers onto radar antenna when Doppler is engaged
-  let mapCenter: [number, number] = remoteLayer === 'DOPPLER_RADAR'
-    ? [radarSiteData?.lat || 20, radarSiteData?.lon || 77]
-    : center;
-    
-  if (isNaN(mapCenter[0]) || isNaN(mapCenter[1])) {
-    console.error("Invalid mapCenter detected!", { mapCenter, remoteLayer, radarSiteData, activeStation });
-    mapCenter = [20, 77]; // safe fallback
-  }
+  // Dynamic map viewport target: Centers onto radar antenna when Doppler is engaged (memoized to keep reference stable)
+  const mapCenter = useMemo<[number, number]>(() => {
+    let pt: [number, number] = remoteLayer === 'DOPPLER_RADAR'
+      ? [radarSiteData?.lat || 20, radarSiteData?.lon || 77]
+      : center;
+    if (isNaN(pt[0]) || isNaN(pt[1])) {
+      return [20, 77];
+    }
+    return pt;
+  }, [remoteLayer, radarSiteData?.lat, radarSiteData?.lon, center]);
+
   const mapZoom: number = remoteLayer === 'DOPPLER_RADAR' ? 8 : zoom;
   
   // Calculate bounding box for 'ALL'
@@ -803,6 +831,17 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
                 >
                   <Radio className="w-3 h-3 text-rose-300 animate-pulse" />
                   <span>Doppler Radar (dBZ)</span>
+                </button>
+                <button
+                  onClick={() => handleSetRemoteLayer('HEATMAP')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 ${
+                    remoteLayer === 'HEATMAP'
+                      ? 'bg-amber-600 text-white font-semibold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Flame className="w-3 h-3 text-amber-300 animate-pulse" />
+                  <span>Spatial Heatmap (D3)</span>
                 </button>
               </div>
 
@@ -1001,7 +1040,7 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
             className="absolute inset-0 pointer-events-none z-[350] w-full h-full"
           />
           
-          <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom={false} zoomControl={true} className="h-full w-full z-0">
+          <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom={true} minZoom={3} maxZoom={18} zoomControl={true} className="h-full w-full z-0">
           <MapController center={mapCenter} zoom={mapZoom} bounds={bounds} />
           <TileDiagnosticsTracker
             onStatsChange={setTileStats}
@@ -1078,6 +1117,15 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
               totalFrames={5}
             />
           )}
+
+          {/* High-Performance D3 Spatial Rainfall Intensity Heatmap Overlay */}
+          {remoteLayer === 'HEATMAP' && (
+            <D3SpatialRainfallHeatmapOverlay
+              stations={filteredStations}
+              stationStats={stationStats}
+              opacity={0.8}
+            />
+          )}
           
           {filteredStations.map((station) => {
             const isActive = selectedStationId === 'ALL' || station.id === selectedStationId;
@@ -1116,9 +1164,19 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
             let sizeBase = isActive ? 26 : (stats.count > 0 ? 18 : 12);
             if (isDeluge && isActive) sizeBase += 6;
             
-            const html = `<div class="relative flex items-center justify-center cursor-pointer group" style="width: ${sizeBase}px; height: ${sizeBase}px;">
-              ${(isDeluge || isModerate) ? `<div class="absolute inset-0 ${colorClass} rounded-full ${pulseClass} opacity-60"></div>` : ''}
-              <div class="relative w-full h-full ${colorClass} ${shapeClass} border-2 ${isActive ? 'border-white ring-2 ring-blue-500 shadow-xl z-20 scale-110' : 'border-white/80 opacity-90 shadow-sm'} transition-transform duration-300 group-hover:scale-125"></div>
+            
+            let isHighlighted = true;
+            if (selectedRegimeFilter !== 'ALL') {
+              if (selectedRegimeFilter === 'DELUGE' && !isDeluge) isHighlighted = false;
+              if (selectedRegimeFilter === 'MODERATE' && !isModerate) isHighlighted = false;
+              if (selectedRegimeFilter === 'LIGHT' && !isLight) isHighlighted = false;
+              if (selectedRegimeFilter === 'DRY' && !isDry) isHighlighted = false;
+            }
+
+            const opacityClass = isHighlighted ? 'opacity-100' : 'opacity-20 grayscale';
+            const html = `<div class="relative flex items-center justify-center cursor-pointer group transition-all duration-300 ${opacityClass}" style="width: ${sizeBase}px; height: ${sizeBase}px;">
+              ${(isDeluge || isModerate) && isHighlighted ? `<div class="absolute inset-0 ${colorClass} rounded-full ${pulseClass} opacity-60"></div>` : ''}
+              <div class="relative w-full h-full ${colorClass} ${shapeClass} border-2 ${isActive ? 'border-white ring-2 ring-blue-500 shadow-xl z-20 scale-110' : 'border-white/80 shadow-sm'} transition-transform duration-300 ${isHighlighted ? 'group-hover:scale-125' : ''}"></div>
             </div>`;
             
             const customIcon = L.divIcon({
@@ -1348,8 +1406,8 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
         </>
         )}
 
-        {/* Dynamic Rainfall Intensity & Visual Overlay Legend */}
-        {!is3DMode && (
+        {/* Dynamic Rainfall Intensity & Visual Overlay Legend (hidden during Doppler Radar mode to avoid clutter and overlap) */}
+        {!is3DMode && remoteLayer !== 'DOPPLER_RADAR' && (
           <div className="absolute bottom-4 right-4 z-[400] max-w-xs sm:max-w-sm pointer-events-auto">
             <div className="bg-slate-900/90 backdrop-blur-md text-white rounded-2xl p-3 shadow-2xl border border-slate-700/80 transition-all duration-300">
               <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 mb-2">
@@ -1372,42 +1430,38 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
                 <div className="space-y-2 text-xs">
                   <div className="grid grid-cols-2 gap-1.5">
                     {/* Torrential Deluge */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-950/70 border border-red-500/40">
+                    <button onClick={() => setSelectedRegimeFilter(selectedRegimeFilter === 'DELUGE' ? 'ALL' : 'DELUGE')} className={`flex items-center text-left gap-2 p-1.5 rounded-lg bg-slate-950/70 border transition-colors ${selectedRegimeFilter === 'DELUGE' ? 'border-red-400 ring-1 ring-red-400' : 'border-red-500/40 hover:border-red-400'}`}>
                       <span className="w-3 h-3 rounded-full bg-red-500 shrink-0 shadow-[0_0_8px_rgba(239,68,68,0.9)] animate-pulse"></span>
                       <div>
                         <div className="text-[11px] font-bold text-red-300">Heavy / Deluge</div>
                         <div className="text-[9px] text-slate-400 font-mono">&gt; 64.5 mm/24h</div>
                       </div>
-                    </div>
-
+                    </button>
                     {/* Moderate Rain */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-950/70 border border-amber-500/40">
+                    <button onClick={() => setSelectedRegimeFilter(selectedRegimeFilter === 'MODERATE' ? 'ALL' : 'MODERATE')} className={`flex items-center text-left gap-2 p-1.5 rounded-lg bg-slate-950/70 border transition-colors ${selectedRegimeFilter === 'MODERATE' ? 'border-amber-400 ring-1 ring-amber-400' : 'border-amber-500/40 hover:border-amber-400'}`}>
                       <span className="w-3 h-3 rounded-full bg-amber-500 shrink-0 shadow-[0_0_8px_rgba(245,158,11,0.8)]"></span>
                       <div>
                         <div className="text-[11px] font-bold text-amber-300">Moderate Rain</div>
                         <div className="text-[9px] text-slate-400 font-mono">15.6 - 64.4 mm</div>
                       </div>
-                    </div>
-
+                    </button>
                     {/* Light Rain */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-950/70 border border-blue-500/40">
+                    <button onClick={() => setSelectedRegimeFilter(selectedRegimeFilter === 'LIGHT' ? 'ALL' : 'LIGHT')} className={`flex items-center text-left gap-2 p-1.5 rounded-lg bg-slate-950/70 border transition-colors ${selectedRegimeFilter === 'LIGHT' ? 'border-blue-400 ring-1 ring-blue-400' : 'border-blue-500/40 hover:border-blue-400'}`}>
                       <span className="w-3 h-3 rounded-full bg-blue-500 shrink-0 shadow-[0_0_8px_rgba(59,130,246,0.8)]"></span>
                       <div>
                         <div className="text-[11px] font-bold text-blue-300">Light / Drizzle</div>
                         <div className="text-[9px] text-slate-400 font-mono">2.5 - 15.5 mm</div>
                       </div>
-                    </div>
-
+                    </button>
                     {/* Dry / Break */}
-                    <div className="flex items-center gap-2 p-1.5 rounded-lg bg-slate-950/70 border border-slate-700">
+                    <button onClick={() => setSelectedRegimeFilter(selectedRegimeFilter === 'DRY' ? 'ALL' : 'DRY')} className={`flex items-center text-left gap-2 p-1.5 rounded-lg bg-slate-950/70 border transition-colors ${selectedRegimeFilter === 'DRY' ? 'border-slate-400 ring-1 ring-slate-400' : 'border-slate-700 hover:border-slate-500'}`}>
                       <span className="w-3 h-3 rounded-full bg-slate-400 shrink-0"></span>
                       <div>
                         <div className="text-[11px] font-bold text-slate-300">Dry / Break</div>
                         <div className="text-[9px] text-slate-400 font-mono">&lt; 2.5 mm</div>
                       </div>
-                    </div>
+                    </button>
                   </div>
-
                   {/* Remote Sensing Dynamic Legend Integration */}
                   {remoteLayer === 'INSAT_3D' && (
                     <div className="mt-2 pt-2 border-t border-slate-800">
@@ -1419,21 +1473,6 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
                       <div className="flex justify-between text-[8px] text-slate-400 font-mono mt-0.5">
                         <span>190 K (Convective)</span>
                         <span>300 K (Warm Ground)</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {remoteLayer === 'DOPPLER_RADAR' && (
-                    <div className="mt-2 pt-2 border-t border-slate-800">
-                      <div className="text-[10px] font-bold text-rose-300 uppercase tracking-wider mb-1 flex items-center justify-between">
-                        <span>Doppler Radar Reflectivity</span>
-                        <span className="text-[9px] font-mono text-rose-400">dBZ Reflectivity</span>
-                      </div>
-                      <div className="h-2 w-full rounded-full bg-gradient-to-r from-emerald-400 via-amber-400 via-rose-500 to-purple-600 border border-rose-400/30"></div>
-                      <div className="flex justify-between text-[8px] text-slate-400 font-mono mt-0.5">
-                        <span>10 dBZ (Light)</span>
-                        <span>35 dBZ</span>
-                        <span>65+ dBZ (Hail/Extreme)</span>
                       </div>
                     </div>
                   )}

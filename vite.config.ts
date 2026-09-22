@@ -6,6 +6,40 @@ import {defineConfig} from 'vite';
 export default defineConfig(() => {
   return {
     plugins: [
+
+      {
+        name: 'catch-vite-websocket-rejection',
+        transformIndexHtml: {
+          order: 'pre',
+          handler() {
+            return [
+              {
+                tag: 'script',
+                attrs: { type: 'text/javascript' },
+                injectTo: 'head-prepend',
+                children: `
+                  window.addEventListener('unhandledrejection', function(event) {
+                    var reason = event.reason;
+                    var msg = typeof reason === 'string' ? reason : (reason && reason.message) ? reason.message : '';
+                    if (msg.includes('WebSocket') || msg.includes('vite')) {
+                      event.preventDefault();
+                      event.stopImmediatePropagation();
+                    }
+                  });
+                  
+                  // Also intercept console.error to avoid spam
+                  var oErr = console.error;
+                  console.error = function() {
+                    if (arguments[0] && typeof arguments[0] === 'string' && arguments[0].includes('WebSocket')) return;
+                    oErr.apply(console, arguments);
+                  };
+                `
+              }
+            ];
+          }
+        }
+      },
+
       react(),
       tailwindcss(),
     ],

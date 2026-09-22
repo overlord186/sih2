@@ -1655,6 +1655,41 @@ const GlobeCore = ({
   globeGroupRef: React.RefObject<THREE.Group>;
 }) => {
   const earthTexture = useEarthTexture();
+  const [satelliteTexture, setSatelliteTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin('anonymous');
+    const urls = [
+      'https://fastly.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/planets/earth_atmos_2048.jpg',
+      'https://cdn.jsdelivr.net/gh/mrdoob/three.js@dev/examples/textures/planets/earth_atmos_2048.jpg',
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+      'https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg'
+    ];
+    let idx = 0;
+    const tryNext = () => {
+      if (idx >= urls.length) return;
+      const url = urls[idx++];
+      loader.load(
+        url,
+        (tex) => {
+          if (!isMounted) return;
+          tex.wrapS = THREE.ClampToEdgeWrapping;
+          tex.wrapT = THREE.ClampToEdgeWrapping;
+          tex.colorSpace = THREE.SRGBColorSpace;
+          tex.needsUpdate = true;
+          setSatelliteTexture(tex);
+        },
+        undefined,
+        () => tryNext()
+      );
+    };
+    tryNext();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useFrame((state, delta) => {
     if (globeGroupRef.current && isRotating) {
@@ -1669,14 +1704,12 @@ const GlobeCore = ({
   return (
     <>
       <group ref={globeGroupRef} rotation={[0, -Math.PI / 2, 0]}>
-        {/* Core Earth Sphere */}
+        {/* Core Earth Sphere with Photorealistic NASA Satellite Imagery */}
         <Sphere args={[1.95, 64, 64]}>
-          <meshPhongMaterial 
-            map={earthTexture || undefined} 
-            emissiveMap={earthTexture || undefined}
-            emissive="#0284c7"
-            emissiveIntensity={0.25}
-            shininess={35} 
+          <meshStandardMaterial 
+            map={satelliteTexture || earthTexture || undefined} 
+            roughness={0.55}
+            metalness={0.12}
           />
         </Sphere>
 

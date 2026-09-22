@@ -340,6 +340,69 @@ export const HelpGuideView: React.FC = () => {
             </p>
           </div>
         </div>
+
+        {/* ML Methodology Section */}
+        <div className="mt-8 pt-6 border-t border-slate-200">
+          <div className="flex items-center gap-2 mb-4">
+            <Cpu className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-bold text-slate-900">Machine Learning Methodology</h2>
+          </div>
+          <p className="text-sm text-slate-600 leading-relaxed mb-6">
+            SAMVARTAKA employs a robust dual-architecture ensemble to bridge the gap between traditional numerical weather prediction (NWP) and highly localized, non-linear atmospheric phenomena. This ensemble evaluates key meteorological parameters—most notably <strong>Outgoing Longwave Radiation (OLR)</strong> and <strong>Vertical Wind Shear</strong>—to diagnose real-time weather regimes.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Supervised Model */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-3 relative z-10">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center border border-blue-200">
+                  <Activity className="w-4 h-4 text-blue-700" />
+                </div>
+                <div>
+                  <div className="text-slate-900 font-bold text-sm">Supervised Classifier (XGBoost)</div>
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500 font-semibold">Historical Bias Correction</div>
+                </div>
+              </div>
+              <div className="space-y-3 relative z-10 text-xs text-slate-600 leading-relaxed">
+                <p>
+                  <strong>How it works:</strong> Trained on over 30 years of historical IMD data, this model maps raw NWP errors to specific synoptic setups. It outputs explicit probabilities for known weather regimes (e.g., Active Monsoon Spell vs. Monsoon Break).
+                </p>
+                <div className="bg-white p-3 rounded border border-slate-200 text-slate-700">
+                  <strong>Key Parameters Weighed:</strong>
+                  <ul className="list-disc pl-4 mt-1 space-y-1">
+                    <li><strong>OLR (Cloud Tops):</strong> Low OLR (&lt; 150 W/m²) heavily weights the probability toward <em>Monsoon Depressions</em>, signaling deep, organized convection blocking terrestrial heat escape.</li>
+                    <li><strong>Wind Shear:</strong> High shear (&gt; 25 m/s) combined with low pressure is used as a primary decision node to trigger convective multipliers, anticipating severe localized downpours.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Unsupervised Model */}
+            <div className="bg-purple-50/40 border border-purple-100 rounded-xl p-5 relative overflow-hidden">
+              <div className="flex items-center gap-2 mb-3 relative z-10">
+                <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center border border-purple-200">
+                  <Layers className="w-4 h-4 text-purple-700" />
+                </div>
+                <div>
+                  <div className="text-slate-900 font-bold text-sm">Unsupervised Clustering (SOMs)</div>
+                  <div className="text-[10px] uppercase tracking-wider text-purple-500 font-semibold">Novel Extreme Detection</div>
+                </div>
+              </div>
+              <div className="space-y-3 relative z-10 text-xs text-slate-600 leading-relaxed">
+                <p>
+                  <strong>How it works:</strong> Self-Organizing Maps continuously group real-time 3D atmospheric variables into clusters without predefined labels. This is critical for detecting unprecedented extremes (e.g., climate change anomalies) that historical models miss.
+                </p>
+                <div className="bg-white p-3 rounded border border-purple-100 text-slate-700">
+                  <strong>Key Parameters Weighed:</strong>
+                  <ul className="list-disc pl-4 mt-1 space-y-1">
+                    <li><strong>OLR Divergence:</strong> Tracks rapid changes in OLR gradients across adjacent grid cells. Sudden localized OLR drops alert the model to anomalous, hyper-localized storm clustering.</li>
+                    <li><strong>Anomalous Shear Profiles:</strong> Detects when vertical wind shear decouples from typical historical trough patterns, flagging the synoptic state as a "Novel Extreme" rather than forcing it into a known category.</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Search & Filter Bar */}

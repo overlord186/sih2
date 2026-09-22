@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sparkles, Calendar, CloudRain, Waves, Zap, Wind, Compass } from 'lucide-react';
+import { ExploreBeacon } from './exploreTour/ExploreBeacon';
 
 export interface CaseStudy {
   id: string;
@@ -51,6 +52,18 @@ export const ScenarioScrubberBar: React.FC<ScenarioScrubberBarProps> = ({
       highlightStat: '+184 mm/day peak',
     },
     {
+      id: 'pune-flash-flood',
+      title: 'Pune Flash Floods (2019)',
+      subtitle: 'Urban Catchment Inundation',
+      badge: 'Rapid Onset Detected',
+      badgeColor: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
+      icon: <Waves className="w-3.5 h-3.5 text-orange-400" />,
+      stationId: 'PNQ_SHIVAJINAGAR',
+      year: 2019,
+      leadTime: 1,
+      highlightStat: '112 mm in 4 hours',
+    },
+    {
       id: 'brahmaputra-flood',
       title: 'Brahmaputra Basin Deluge',
       subtitle: 'Sub-Himalayan Funneling',
@@ -61,6 +74,18 @@ export const ScenarioScrubberBar: React.FC<ScenarioScrubberBarProps> = ({
       year: 2024,
       leadTime: 1,
       highlightStat: '1,720 mm Season',
+    },
+    {
+      id: 'vidarbha-extremes',
+      title: 'Vidarbha Monsoon Extremes',
+      subtitle: 'Deep Depression Path',
+      badge: 'Soil Moisture Saturated',
+      badgeColor: 'bg-purple-500/20 text-purple-300 border-purple-500/30',
+      icon: <Wind className="w-3.5 h-3.5 text-purple-400" />,
+      stationId: 'NAG_SONEGAON',
+      year: 2022,
+      leadTime: 2,
+      highlightStat: '250% Above Normal',
     },
     {
       id: 'yamuna-deluge',
@@ -107,7 +132,11 @@ export const ScenarioScrubberBar: React.FC<ScenarioScrubberBarProps> = ({
   };
 
   return (
-    <div className={`bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md backdrop-blur-md space-y-3 ${className}`}>
+    <div 
+      id="scenario-scrubber-bar"
+      data-explore-id="scenario-scrubber-bar"
+      className={`bg-slate-900/90 border border-slate-800 rounded-xl p-3 shadow-md backdrop-blur-md space-y-3 relative ${className}`}
+    >
       {/* Top Row: Case Study Quick-Launch Badges */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-2.5">
         <div className="flex items-center gap-2">
@@ -118,6 +147,7 @@ export const ScenarioScrubberBar: React.FC<ScenarioScrubberBarProps> = ({
           <span className="text-[11px] text-slate-400 hidden sm:inline">
             Load historical benchmarks instantly
           </span>
+          <ExploreBeacon id="scenario-scrubber-bar" size="sm" />
         </div>
 
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-1.5">

@@ -1,6 +1,13 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+vite-error-overlay {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
 :root {
   /* Surface Layers (Deep Stratosphere / Oceanic Glass) */
   --hud-bg-base: rgba(2, 6, 23, 0.88);
@@ -662,6 +669,32 @@ body.cine-4k-grain::after {
 }
 
 
+
+/* Custom subtle workstation scrollbar and scrollbar hiding */
+.no-scrollbar::-webkit-scrollbar,
+.workstation-scrollbar::-webkit-scrollbar-thumb,
+.workstation-scrollbar::-webkit-scrollbar-track {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.workstation-rail-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(51, 65, 85, 0.4) transparent;
+}
+.workstation-rail-scroll::-webkit-scrollbar {
+  width: 3px;
+}
+.workstation-rail-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.workstation-rail-scroll::-webkit-scrollbar-thumb {
+  background: rgba(51, 65, 85, 0.6);
+  border-radius: 9999px;
+}
 
 /* Fix for Leaflet Map sizing */
 .leaflet-container {

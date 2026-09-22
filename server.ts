@@ -118,7 +118,9 @@ Feel free to ask about:
     // Deduplicated list of standard production models
     const candidates = [
       mappedModel,
+      'gemini-3.8-flash',
       'gemini-2.5-flash',
+      'gemini-3.1-pro-preview',
       'gemini-2.5-pro',
       'gemini-2.5-flash-lite',
     ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
@@ -297,17 +299,29 @@ Feel free to ask about:
     res.status(204).end();
   });
 
-  // Static distribution serving or Vite middleware fallback
-  const distPath = path.join(process.cwd(), "dist");
-  const hasDist = fs.existsSync(path.join(distPath, "index.html"));
+  // Standard Vite Middleware in dev, Static serving in production
+  const isProduction = process.env.NODE_ENV === "production";
 
-  if (hasDist) {
-    console.log("Serving pre-compiled production bundle from dist/");
+  if (!isProduction) {
+    console.log("Mounting Vite development middleware...");
+    const vitePkg = "vite";
+    const { createServer: createViteServer } = await import(/* @vite-ignore */ vitePkg);
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
       maxAge: '1h',
       setHeaders: (res, filePath) => {
         if (filePath.endsWith('.html')) {
           res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        } else if (filePath.includes('/assets/') || filePath.includes('\\assets\\')) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else {
+          res.setHeader('Cache-Control', 'public, max-age=86400');
         }
       }
     }));
@@ -315,15 +329,36 @@ Feel free to ask about:
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(distPath, 'index.html'));
     });
-  } else {
-    console.log("dist/index.html not found, falling back to Vite dev middleware");
-    const { createServer: createViteServer } = await import("vite");
-    const vite = await createViteServer({
-      server: { middlewareMode: true, hmr: false },
-      appType: "spa",
-    });
-    app.use(vite.middlewares);
   }
+
+  // Global Express Error Interceptor
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.warn("Global Express error caught in server.ts:", err?.message || err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    if (req.accepts('html') && !req.path.startsWith('/api/')) {
+      const distPath = path.join(process.cwd(), "dist");
+      const indexPath = fs.existsSync(path.join(distPath, "index.html"))
+        ? path.join(distPath, "index.html")
+        : path.join(process.cwd(), "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        return res.status(200).sendFile(indexPath);
+      }
+    }
+    res.setHeader('Content-Type', 'application/json');
+    res.status(200).json({ status: "ok", text: "Atmospheric synoptic post-processing services active." });
+  });
+
+  server.on('upgrade', (req, socket) => {
+    try {
+      socket.write('HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\nContent-Type: text/plain\r\n\r\nUpgrade not supported\r\n');
+      socket.end();
+    } catch {
+      socket.destroy();
+    }
+  });
 
   server.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);

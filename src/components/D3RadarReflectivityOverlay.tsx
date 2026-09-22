@@ -3,7 +3,7 @@ import { useMap } from 'react-leaflet';
 import * as d3 from 'd3';
 import L from 'leaflet';
 import { DopplerRadarFrame, RadarSiteId } from '../types';
-import { Radio, Play, Pause, Compass, Layers, Zap, Eye, Sliders, Info, ShieldAlert } from 'lucide-react';
+import { Radio, Play, Pause, Compass, Layers, Zap, Eye, Sliders, Info, ShieldAlert, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
 
 export type RadarProduct = 'REFLECTIVITY_DBZ' | 'DIFF_REFLECTIVITY_ZDR' | 'RADIAL_VELOCITY_VR';
 
@@ -92,11 +92,14 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
 
   // User Interactive States
   const [product, setProduct] = useState<RadarProduct>('REFLECTIVITY_DBZ');
-  const [minDbzThreshold, setMinDbzThreshold] = useState<number>(15);
+  const [minDbzThreshold, setMinDbzThreshold] = useState<number>(25); // Default to 25 dBZ so clear-air doesn't blanket the city
+  const [radarOpacity, setRadarOpacity] = useState<number>(0.45); // Semi-transparent by default so underlying roads/cities/coastlines remain visible
   const [sweepEnabled, setSweepEnabled] = useState<boolean>(true);
   const [showRings, setShowRings] = useState<boolean>(true);
   const [showAzimuthSpokes, setShowAzimuthSpokes] = useState<boolean>(true);
   const [showStormTrack, setShowStormTrack] = useState<boolean>(true);
+  const [isPanelCollapsed, setIsPanelCollapsed] = useState<boolean>(false);
+  const [isLegendCollapsed, setIsLegendCollapsed] = useState<boolean>(false);
   const [inspectData, setInspectData] = useState<{
     x: number;
     y: number;
@@ -110,7 +113,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
   } | null>(null);
 
   // Sync with Leaflet view changes (zoom, pan, resize)
-  const [, setMapVersion] = useState(0);
+  const [mapVersion, setMapVersion] = useState(0);
   useEffect(() => {
     const handleViewUpdate = () => {
       setMapVersion((v) => v + 1);
@@ -163,7 +166,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
     } catch {
       return { x: 0, y: 0 };
     }
-  }, [map, radarSite.lat, radarSite.lon]);
+  }, [map, radarSite.lat, radarSite.lon, mapVersion]);
 
   // Compute dynamic pixel radius for range rings based on current zoom
   const pixelRadiusForKm = useMemo(() => {
@@ -178,7 +181,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
         return km * 1.5;
       }
     };
-  }, [map, radarSite.lat, radarSite.lon, centerPoint.y]);
+  }, [map, radarSite.lat, radarSite.lon, centerPoint.y, mapVersion]);
 
   const maxRadiusPx = pixelRadiusForKm(radarSite.rangeKm);
 
@@ -226,14 +229,14 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
         const flankAngle = Math.abs(angularDist - 45);
         const flankFactor = Math.exp(-((flankAngle * flankAngle) / 200 + (radialDist * radialDist) / 1600)) * 0.7;
 
-        // Stratiform background rain shield
-        const stratiformFactor = (rangeKm < 180 && angularDist < 90) ? 0.35 : 0.05;
+        // Stratiform background rain shield - localized near storm core only
+        const stratiformFactor = (rangeKm < 140 && angularDist < 60) ? 0.22 : 0.0;
 
         // Combined intensity
-        let intensity = Math.max(coreFactor, flankFactor * 0.8, stratiformFactor);
+        let intensity = Math.max(coreFactor, flankFactor * 0.75, stratiformFactor);
         
         // Add natural turbulence noise
-        const noise = (Math.sin(azDeg * 0.4 + rangeKm * 0.15) * Math.cos(azDeg * 0.8) * 0.12);
+        const noise = (Math.sin(azDeg * 0.4 + rangeKm * 0.15) * Math.cos(azDeg * 0.8) * 0.08);
         intensity = Math.max(0, Math.min(1.0, intensity + noise));
 
         const echoDbz = Math.round(intensity * maxDbz * 10) / 10;
@@ -287,52 +290,6 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
     }
   };
 
-  // Mouse hover query on radar scope
-  const handleScopeMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-
-    const dx = mouseX - centerPoint.x;
-    const dy = mouseY - centerPoint.y;
-    const pixelDist = Math.sqrt(dx * dx + dy * dy);
-
-    if (pixelDist > maxRadiusPx || pixelDist < 4) {
-      setInspectData(null);
-      return;
-    }
-
-    // Convert pixel distance to approx Km
-    const approxKm = (pixelDist / maxRadiusPx) * radarSite.rangeKm;
-    
-    // Azimuth in standard meteorological degrees (0 = North, 90 = East)
-    let azDeg = (Math.atan2(dx, -dy) * 180) / Math.PI;
-    if (azDeg < 0) azDeg += 360;
-
-    // Find closest gate
-    const closestGate = radarEchoGates.find(
-      (g) => Math.abs(g.rangeKm - approxKm) < 12 && Math.abs(g.azimuthDeg - azDeg) < 8
-    );
-
-    const dbz = closestGate ? closestGate.dbz : Math.max(5, Math.round((1 - pixelDist / maxRadiusPx) * 25));
-    const zdr = closestGate ? closestGate.zdr : 0.8;
-    const velocityMs = closestGate ? closestGate.velocityMs : Math.round(Math.cos(azDeg * Math.PI / 180) * 15);
-    const rainRateMmHr = dbzToRainRateMmHr(dbz);
-    const hydrometeor = classifyHydrometeor(dbz, zdr);
-
-    setInspectData({
-      x: mouseX,
-      y: mouseY,
-      rangeKm: Math.round(approxKm * 10) / 10,
-      azimuthDeg: Math.round(azDeg),
-      dbz,
-      zdr,
-      velocityMs,
-      rainRateMmHr,
-      hydrometeor,
-    });
-  };
-
   // Storm centroid coordinates in pixel space
   const stormCentroidPx = useMemo(() => {
     const stormDistKm = 65;
@@ -365,12 +322,10 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
 
   return (
     <div className="absolute inset-0 pointer-events-none z-[450] overflow-hidden">
-      {/* SVG Canvas Overlay for D3 Renderings */}
+      {/* SVG Canvas Overlay for D3 Renderings - Map retains drag/zoom interaction */}
       <svg
         ref={svgRef}
-        className="w-full h-full pointer-events-auto"
-        onMouseMove={handleScopeMouseMove}
-        onMouseLeave={() => setInspectData(null)}
+        className="w-full h-full pointer-events-none"
       >
         <defs>
           {/* Glowing Radial Phosphor Gradient for Radar Sweep */}
@@ -399,12 +354,12 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
 
         {/* RADAR RETICLE & GATES ROOT GROUP */}
         <g transform={`translate(${centerPoint.x}, ${centerPoint.y})`}>
-          {/* Outer Boundary Mask Ring */}
+          {/* Outer Boundary Mask Ring - Transparent fill so map is never shadowed */}
           <circle
             r={maxRadiusPx}
-            fill="rgba(2, 6, 23, 0.28)"
+            fill="none"
             stroke="rgba(56, 189, 248, 0.45)"
-            strokeWidth="2"
+            strokeWidth="1.5"
             filter="url(#hud-glow)"
           />
 
@@ -473,8 +428,8 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
             );
           })}
 
-          {/* D3 RADAR ECHO GATES (POLAR PIXEL CELLS) */}
-          <g id="d3-radar-echo-cells">
+          {/* D3 RADAR ECHO GATES (POLAR PIXEL CELLS) - Semi-transparent so streets and coastlines remain visible */}
+          <g id="d3-radar-echo-cells" style={{ opacity: radarOpacity }}>
             {radarEchoGates.map((gate, idx) => {
               const pathStr = arcGenerator(gate) || '';
               const fill = getGateColor(gate);
@@ -483,10 +438,31 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                   key={`gate-${idx}`}
                   d={pathStr}
                   fill={fill}
-                  fillOpacity={0.72}
-                  stroke="rgba(0,0,0,0.1)"
-                  strokeWidth="0.3"
-                  className="transition-opacity duration-150 hover:fill-opacity-95"
+                  fillOpacity={0.8}
+                  stroke="rgba(0,0,0,0.05)"
+                  strokeWidth="0.2"
+                  className="transition-opacity duration-150 hover:fill-opacity-100 pointer-events-auto cursor-crosshair"
+                  onMouseEnter={(e) => {
+                    const rect = e.currentTarget.ownerSVGElement?.getBoundingClientRect();
+                    if (rect) {
+                      const mouseX = e.clientX - rect.left;
+                      const mouseY = e.clientY - rect.top;
+                      const rainRateMmHr = dbzToRainRateMmHr(gate.dbz);
+                      const hydrometeor = classifyHydrometeor(gate.dbz, gate.zdr);
+                      setInspectData({
+                        x: mouseX,
+                        y: mouseY,
+                        rangeKm: gate.rangeKm,
+                        azimuthDeg: gate.azimuthDeg,
+                        dbz: gate.dbz,
+                        zdr: gate.zdr,
+                        velocityMs: gate.velocityMs,
+                        rainRateMmHr,
+                        hydrometeor,
+                      });
+                    }
+                  }}
+                  onMouseLeave={() => setInspectData(null)}
                 />
               );
             })}
@@ -650,10 +626,10 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
         </div>
       )}
 
-      {/* TOP-RIGHT RADAR CONTROLS & DUAL-POL PRODUCT SELECTOR */}
-      <div className="absolute top-3 right-3 z-[500] pointer-events-auto flex flex-col items-end gap-2">
+      {/* TOP-LEFT RADAR CONTROLS & DUAL-POL PRODUCT SELECTOR */}
+      <div className="absolute top-3 left-3 z-[500] pointer-events-auto flex flex-col items-start gap-2">
         <div className="bg-slate-950/90 backdrop-blur-xl border border-cyan-500/40 rounded-xl p-2.5 shadow-2xl text-white text-xs max-w-sm">
-          {/* Header Title */}
+          {/* Header Title & Minimize Toggle */}
           <div className="flex items-center justify-between gap-3 mb-2 border-b border-slate-800 pb-1.5">
             <div className="flex items-center gap-1.5">
               <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
@@ -662,176 +638,222 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                 <div className="text-[9px] text-slate-400 font-mono">D3 S-Band Dual-Polarization DWR</div>
               </div>
             </div>
-            {/* Play/Pause Sweep Timeline */}
-            <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+            
+            <div className="flex items-center gap-1.5">
+              {/* Play/Pause Sweep Timeline */}
+              <div className="flex items-center gap-1 bg-slate-900 px-1.5 py-0.5 rounded border border-slate-800">
+                <button
+                  onClick={onPrevFrame}
+                  className="text-slate-400 hover:text-white p-0.5 text-[10px] cursor-pointer"
+                  title="Previous volume scan"
+                >
+                  ⏮
+                </button>
+                <button
+                  onClick={onTogglePlay}
+                  className="text-cyan-400 hover:text-cyan-200 p-0.5 cursor-pointer"
+                  title={isPlaying ? 'Pause radar sweep' : 'Resume live sweep'}
+                >
+                  {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+                </button>
+                <button
+                  onClick={onNextFrame}
+                  className="text-slate-400 hover:text-white p-0.5 text-[10px] cursor-pointer"
+                  title="Next volume scan"
+                >
+                  ⏭
+                </button>
+                <span className="text-[10px] font-mono text-cyan-300 font-bold px-1">
+                  {frame.timestamp}
+                </span>
+              </div>
+
+              {/* Minimize/Expand Toggle */}
               <button
-                onClick={onPrevFrame}
-                className="text-slate-400 hover:text-white p-0.5 text-[10px] cursor-pointer"
-                title="Previous volume scan"
+                onClick={() => setIsPanelCollapsed(!isPanelCollapsed)}
+                className="p-1 rounded bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 cursor-pointer"
+                title={isPanelCollapsed ? 'Expand Controls' : 'Minimize Controls'}
               >
-                ⏮
+                {isPanelCollapsed ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronUp className="w-3.5 h-3.5" />}
               </button>
-              <button
-                onClick={onTogglePlay}
-                className="text-cyan-400 hover:text-cyan-200 p-0.5 cursor-pointer"
-                title={isPlaying ? 'Pause radar sweep' : 'Resume live sweep'}
-              >
-                {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
-              </button>
-              <button
-                onClick={onNextFrame}
-                className="text-slate-400 hover:text-white p-0.5 text-[10px] cursor-pointer"
-                title="Next volume scan"
-              >
-                ⏭
-              </button>
-              <span className="text-[10px] font-mono text-cyan-300 font-bold px-1">
-                {frame.timestamp}
-              </span>
             </div>
           </div>
 
-          {/* Dual-Pol Product Selector Pills */}
-          <div className="flex items-center gap-1 mb-2">
-            <span className="text-[10px] text-slate-400 mr-1">Product:</span>
-            <button
-              onClick={() => setProduct('REFLECTIVITY_DBZ')}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
-                product === 'REFLECTIVITY_DBZ'
-                  ? 'bg-rose-600 text-white shadow-sm ring-1 ring-rose-400'
-                  : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              Reflectivity (Z)
-            </button>
-            <button
-              onClick={() => setProduct('DIFF_REFLECTIVITY_ZDR')}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
-                product === 'DIFF_REFLECTIVITY_ZDR'
-                  ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400'
-                  : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              Diff Refl (Zdr)
-            </button>
-            <button
-              onClick={() => setProduct('RADIAL_VELOCITY_VR')}
-              className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
-                product === 'RADIAL_VELOCITY_VR'
-                  ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
-                  : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
-              }`}
-            >
-              Velocity (Vr)
-            </button>
-          </div>
+          {!isPanelCollapsed && (
+            <>
+              {/* Dual-Pol Product Selector Pills */}
+              <div className="flex items-center gap-1 mb-2">
+                <span className="text-[10px] text-slate-400 mr-1">Product:</span>
+                <button
+                  onClick={() => setProduct('REFLECTIVITY_DBZ')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                    product === 'REFLECTIVITY_DBZ'
+                      ? 'bg-rose-600 text-white shadow-sm ring-1 ring-rose-400'
+                      : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Reflectivity (Z)
+                </button>
+                <button
+                  onClick={() => setProduct('DIFF_REFLECTIVITY_ZDR')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                    product === 'DIFF_REFLECTIVITY_ZDR'
+                      ? 'bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-400'
+                      : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Diff Refl (Zdr)
+                </button>
+                <button
+                  onClick={() => setProduct('RADIAL_VELOCITY_VR')}
+                  className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold transition-all cursor-pointer ${
+                    product === 'RADIAL_VELOCITY_VR'
+                      ? 'bg-emerald-600 text-white shadow-sm ring-1 ring-emerald-400'
+                      : 'bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  Velocity (Vr)
+                </button>
+              </div>
 
-          {/* Quick Toggles */}
-          <div className="grid grid-cols-2 gap-2 text-[10px] font-mono border-t border-slate-800/80 pt-1.5">
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
-              <input
-                type="checkbox"
-                checked={sweepEnabled}
-                onChange={(e) => setSweepEnabled(e.target.checked)}
-                className="accent-cyan-500 rounded"
-              />
-              <span>Phosphor Sweep</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
-              <input
-                type="checkbox"
-                checked={showStormTrack}
-                onChange={(e) => setShowStormTrack(e.target.checked)}
-                className="accent-rose-500 rounded"
-              />
-              <span>Cell Track Vector</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
-              <input
-                type="checkbox"
-                checked={showRings}
-                onChange={(e) => setShowRings(e.target.checked)}
-                className="accent-cyan-500 rounded"
-              />
-              <span>Range Rings (50km)</span>
-            </label>
-            <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
-              <input
-                type="checkbox"
-                checked={showAzimuthSpokes}
-                onChange={(e) => setShowAzimuthSpokes(e.target.checked)}
-                className="accent-cyan-500 rounded"
-              />
-              <span>Azimuth Spokes (30°)</span>
-            </label>
-          </div>
+              {/* Quick Toggles */}
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono border-t border-slate-800/80 pt-1.5">
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={sweepEnabled}
+                    onChange={(e) => setSweepEnabled(e.target.checked)}
+                    className="accent-cyan-500 rounded"
+                  />
+                  <span>Phosphor Sweep</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={showStormTrack}
+                    onChange={(e) => setShowStormTrack(e.target.checked)}
+                    className="accent-rose-500 rounded"
+                  />
+                  <span>Cell Track Vector</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={showRings}
+                    onChange={(e) => setShowRings(e.target.checked)}
+                    className="accent-cyan-500 rounded"
+                  />
+                  <span>Range Rings (50km)</span>
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer text-slate-300 hover:text-white">
+                  <input
+                    type="checkbox"
+                    checked={showAzimuthSpokes}
+                    onChange={(e) => setShowAzimuthSpokes(e.target.checked)}
+                    className="accent-cyan-500 rounded"
+                  />
+                  <span>Azimuth Spokes (30°)</span>
+                </label>
+              </div>
 
-          {/* dBZ Threshold Filter Slider */}
-          <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[10px] font-mono">
-            <span className="text-slate-400 flex items-center gap-1">
-              <Sliders className="w-3 h-3 text-cyan-400" /> Min Gate: {minDbzThreshold} dBZ
-            </span>
-            <input
-              type="range"
-              min="5"
-              max="45"
-              step="5"
-              value={minDbzThreshold}
-              onChange={(e) => setMinDbzThreshold(Number(e.target.value))}
-              className="w-24 accent-cyan-400 cursor-pointer"
-            />
-          </div>
+              {/* Sliders for Opacity and Gate Threshold */}
+              <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex flex-col gap-1.5 text-[10px] font-mono">
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 flex items-center gap-1">
+                    <Eye className="w-3 h-3 text-cyan-400" /> Map Transparency: {Math.round((1 - radarOpacity) * 100)}%
+                  </span>
+                  <input
+                    type="range"
+                    min="0.15"
+                    max="0.85"
+                    step="0.05"
+                    value={radarOpacity}
+                    onChange={(e) => setRadarOpacity(Number(e.target.value))}
+                    className="w-24 accent-cyan-400 cursor-pointer"
+                    title="Control radar overlay opacity so underlying map is clear"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-400 flex items-center gap-1">
+                    <Sliders className="w-3 h-3 text-cyan-400" /> Min Gate: {minDbzThreshold} dBZ
+                  </span>
+                  <input
+                    type="range"
+                    min="5"
+                    max="45"
+                    step="5"
+                    value={minDbzThreshold}
+                    onChange={(e) => setMinDbzThreshold(Number(e.target.value))}
+                    className="w-24 accent-cyan-400 cursor-pointer"
+                  />
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* COMPACT INTERACTIVE COLOR BAR LEGEND */}
         <div className="bg-slate-950/90 backdrop-blur-xl border border-slate-800 rounded-xl p-2 shadow-xl text-white font-mono text-[9px] w-64">
           <div className="flex items-center justify-between mb-1">
-            <span className="text-slate-300 font-bold">
+            <span className="text-slate-300 font-bold truncate max-w-[150px]">
               {product === 'REFLECTIVITY_DBZ'
-                ? 'NWS/IMD Reflectivity (dBZ)'
+                ? 'NWS/IMD dBZ'
                 : product === 'DIFF_REFLECTIVITY_ZDR'
-                ? 'Differential Reflectivity Zdr (dB)'
-                : 'Radial Doppler Velocity Vr (m/s)'}
+                ? 'Diff Refl Zdr'
+                : 'Doppler Vr'}
             </span>
-            <span className="text-cyan-400 font-bold">Hover for Reticle</span>
+            <div className="flex items-center gap-1">
+              <span className="text-cyan-400 font-bold text-[8px]">Hover Gate</span>
+              <button
+                onClick={() => setIsLegendCollapsed(!isLegendCollapsed)}
+                className="p-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"
+                title={isLegendCollapsed ? 'Expand Legend' : 'Collapse Legend'}
+              >
+                {isLegendCollapsed ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+              </button>
+            </div>
           </div>
 
-          {product === 'REFLECTIVITY_DBZ' && (
-            <div>
-              <div className="h-2 rounded-full w-full flex overflow-hidden border border-slate-700">
-                {['#00ffff','#00ff7f','#00e000','#ffff00','#ff9900','#ff4500','#cc0000','#990099','#ffffff'].map((c, i) => (
-                  <div key={i} className="flex-1" style={{ backgroundColor: c }} />
-                ))}
-              </div>
-              <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
-                <span>5 (Mist)</span>
-                <span>30 (Rain)</span>
-                <span>50 (Downpour)</span>
-                <span>65+ (Hail)</span>
-              </div>
-            </div>
-          )}
+          {!isLegendCollapsed && (
+            <>
+              {product === 'REFLECTIVITY_DBZ' && (
+                <div>
+                  <div className="h-2 rounded-full w-full flex overflow-hidden border border-slate-700">
+                    {['#00ffff','#00ff7f','#00e000','#ffff00','#ff9900','#ff4500','#cc0000','#990099','#ffffff'].map((c, i) => (
+                      <div key={i} className="flex-1" style={{ backgroundColor: c }} />
+                    ))}
+                  </div>
+                  <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                    <span>5 (Mist)</span>
+                    <span>30 (Rain)</span>
+                    <span>50 (Deluge)</span>
+                    <span>65+ (Hail)</span>
+                  </div>
+                </div>
+              )}
 
-          {product === 'DIFF_REFLECTIVITY_ZDR' && (
-            <div>
-              <div className="h-2 rounded-full w-full bg-gradient-to-r from-indigo-500 via-sky-400 via-yellow-400 to-rose-500 border border-slate-700"></div>
-              <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
-                <span>-1.0 (Graupel)</span>
-                <span>1.5 (Raindrops)</span>
-                <span>4.0+ (Large Drops)</span>
-              </div>
-            </div>
-          )}
+              {product === 'DIFF_REFLECTIVITY_ZDR' && (
+                <div>
+                  <div className="h-2 rounded-full w-full bg-gradient-to-r from-indigo-500 via-sky-400 via-yellow-400 to-rose-500 border border-slate-700"></div>
+                  <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                    <span>-1.0 (Graupel)</span>
+                    <span>1.5 (Raindrops)</span>
+                    <span>4.0+ (Large Drops)</span>
+                  </div>
+                </div>
+              )}
 
-          {product === 'RADIAL_VELOCITY_VR' && (
-            <div>
-              <div className="h-2 rounded-full w-full bg-gradient-to-r from-emerald-500 via-slate-400 to-rose-500 border border-slate-700"></div>
-              <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
-                <span>-40 m/s (Inbound)</span>
-                <span>0 m/s</span>
-                <span>+40 m/s (Outbound)</span>
-              </div>
-            </div>
+              {product === 'RADIAL_VELOCITY_VR' && (
+                <div>
+                  <div className="h-2 rounded-full w-full bg-gradient-to-r from-emerald-500 via-slate-400 to-rose-500 border border-slate-700"></div>
+                  <div className="flex justify-between text-[8px] text-slate-400 mt-0.5">
+                    <span>-40 m/s (Inbound)</span>
+                    <span>0 m/s</span>
+                    <span>+40 m/s (Outbound)</span>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
