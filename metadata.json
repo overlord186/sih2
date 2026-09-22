@@ -1,0 +1,6 @@
+{
+  "name": "SAMVARTAKA AI - Rainfall Post-Processor",
+  "description": "SAMVARTAKA AI: Regime-Aware AI Post-Processing of Monsoon Rainfall Forecasts across operational seasons",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,1334 @@
+import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import {
+  Wind,
+  Gauge,
+  Droplets,
+  ShieldAlert,
+  Sparkles,
+  CheckCircle,
+  TrendingDown,
+  TrendingUp,
+  RotateCcw,
+  Compass,
+  Maximize2,
+  Box,
+  Sun,
+  Zap,
+} from 'lucide-react';
+import { RainfallRegime } from '../types';
+
+export interface WeatherStage3DProps {
+  timeLabel: string;
+  hour: number;
+  synopticPhase: string;
+  stationName: string;
+  rawForecastMm: number;
+  aiForecastMm: number;
+  detectedRegime: RainfallRegime;
+  windSpeed: number;
+  humidity: number;
+  pressure: number;
+  narrative: string;
+  onToggle2D?: () => void;
+}
+
+export const WeatherStage3D: React.FC<WeatherStage3DProps> = ({
+  timeLabel,
+  hour,
+  synopticPhase,
+  stationName,
+  rawForecastMm,
+  aiForecastMm,
+  detectedRegime,
+  windSpeed,
+  humidity,
+  pressure,
+  narrative,
+  onToggle2D,
+}) => {
+  const mountRef = useRef<HTMLDivElement>(null);
+  const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
+  const [cameraMode, setCameraMode] = useState<'perspective' | 'top' | 'station'>('perspective');
+  const [isBrightBoost, setIsBrightBoost] = useState<boolean>(true); // Default to crystal bright high visibility
+
+  // Stable references for instant dynamic reactivity without scene rebuilding
+  const isBrightBoostRef = useRef<boolean>(isBrightBoost);
+  useEffect(() => {
+    isBrightBoostRef.current = isBrightBoost;
+  }, [isBrightBoost]);
+
+  const isAutoRotatingRef = useRef<boolean>(isAutoRotating);
+  useEffect(() => {
+    isAutoRotatingRef.current = isAutoRotating;
+    if (controlsRef.current) {
+      controlsRef.current.autoRotate = isAutoRotating;
+    }
+  }, [isAutoRotating]);
+
+  // Animation and scene references for real-time reactivity without recreation
+  const sceneRef = useRef<THREE.Scene | null>(null);
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+
+  // Dynamic moving meshes refs
+  const anemometerCupsRef = useRef<THREE.Group | null>(null);
+  const radarDishRef = useRef<THREE.Group | null>(null);
+  const radarPulseRef = useRef<THREE.Mesh | null>(null);
+  const windVaneRef = useRef<THREE.Group | null>(null);
+  const rainSystemRef = useRef<THREE.Points | null>(null);
+  const lightningLightRef = useRef<THREE.PointLight | null>(null);
+  const lightningMeshRef = useRef<THREE.Line | null>(null);
+  const treesGroupRef = useRef<THREE.Group | null>(null);
+  const waterMeshRef = useRef<THREE.Mesh | null>(null);
+  const sunLightRef = useRef<THREE.DirectionalLight | null>(null);
+  const hemiLightRef = useRef<THREE.HemisphereLight | null>(null);
+  const ambLightRef = useRef<THREE.AmbientLight | null>(null);
+  const starsRef = useRef<THREE.Points | null>(null);
+  const cloudsGroupRef = useRef<THREE.Group | null>(null);
+  const sunbeamsGroupRef = useRef<THREE.Group | null>(null);
+  const beaconLightsRef = useRef<THREE.PointLight[]>([]);
+
+  // Keep props in refs for smooth animation loop
+  const propsRef = useRef({
+    windSpeed,
+    hour,
+    aiForecastMm,
+    rawForecastMm,
+    detectedRegime,
+    pressure,
+    humidity,
+  });
+
+  useEffect(() => {
+    propsRef.current = {
+      windSpeed,
+      hour,
+      aiForecastMm,
+      rawForecastMm,
+      detectedRegime,
+      pressure,
+      humidity,
+    };
+  }, [windSpeed, hour, aiForecastMm, rawForecastMm, detectedRegime, pressure, humidity]);
+
+  // Regime status helpers
+  const isExtreme = detectedRegime === RainfallRegime.HEAVY_EXTREME || aiForecastMm >= 64.5;
+  const isModerate = detectedRegime === RainfallRegime.MODERATE || (aiForecastMm >= 15.6 && aiForecastMm < 64.5);
+  const isLight = detectedRegime === RainfallRegime.LIGHT || (aiForecastMm >= 2.5 && aiForecastMm < 15.6);
+  const isDry = detectedRegime === RainfallRegime.DRY || aiForecastMm < 2.5;
+
+  const getBeaufortDescription = (spd: number) => {
+    if (spd < 12) return 'Light Breeze';
+    if (spd < 20) return 'Moderate Breeze';
+    if (spd < 30) return 'Fresh Breeze';
+    if (spd < 40) return 'Strong Wind';
+    return 'Gale Squall';
+  };
+
+  const getAdvisory = () => {
+    if (isExtreme) {
+      return {
+        alertBadge: 'Red Warning: Torrential Deluge',
+        badgeClass: 'bg-rose-600 text-white shadow-rose-900/30',
+        summary: 'Massive convective cloudburst! Severe urban runoff, rapid drainage overflow, and hazardous visibility.',
+        action: 'Stay indoors, keep electrical gear off ground floors, avoid underpasses, and monitor emergency civic alerts.',
+        aiImpact: `Coarse NWP model capped out at only ${rawForecastMm} mm. Machine learning corrected for sub-grid convective physics to predict ${aiForecastMm} mm.`,
+      };
+    }
+    if (isModerate) {
+      return {
+        alertBadge: 'Orange Advisory: Heavy Monsoon Spells',
+        badgeClass: 'bg-amber-600 text-white shadow-amber-900/30',
+        summary: 'Steady, persistent monsoonal rain bands with sustained squally winds across the station catchment.',
+        action: 'Carry sturdy rainwear, waterproof transit covers, and allow extra travel buffer for waterlogged roads.',
+        aiImpact: `AI calibrated model grid bias from ${rawForecastMm} mm to an accurate ${aiForecastMm} mm catchment accumulation.`,
+      };
+    }
+    if (isLight) {
+      return {
+        alertBadge: 'Green Watch: Light Monsoon Showers',
+        badgeClass: 'bg-teal-600 text-white shadow-teal-900/30',
+        summary: 'Scattered intermittent drizzle and passing light shower cells beneath broken stratocumulus decks.',
+        action: 'A compact folding umbrella or water-resistant light jacket is recommended for outdoor transit.',
+        aiImpact: `AI fine-tuned the precipitation intensity from ${rawForecastMm} mm to an observed realistic rate of ${aiForecastMm} mm.`,
+      };
+    }
+    return {
+      alertBadge: 'Normal: Dry Break Spell',
+      badgeClass: 'bg-emerald-600 text-white shadow-emerald-900/30',
+      summary: 'Moisture trough shifted away from station. Sub-saturated boundary layer prevents surface rain.',
+      action: 'Safe for sports, outdoor construction, civic utility maintenance, and rapid road transit.',
+      aiImpact:
+        rawForecastMm > 0
+          ? `Zero-Rain Gate activated: Raw model predicted ${rawForecastMm} mm false drizzle, but AI recognized high evaporation and suppressed it to 0.0 mm.`
+          : `Station dry conditions confirmed (${aiForecastMm} mm). Accurate verification against surface barometry.`,
+    };
+  };
+
+  const advisory = getAdvisory();
+
+  // Initialize Three.js WebGL Scene
+  useEffect(() => {
+    const container = mountRef.current;
+    if (!container) return;
+
+    const width = container.clientWidth || 800;
+    const height = container.clientHeight || 420;
+
+    // 1. Scene
+    const scene = new THREE.Scene();
+    sceneRef.current = scene;
+    scene.fog = new THREE.FogExp2(0x1e293b, 0.012); // Lighter, clearer atmospheric fog
+
+    // 2. Camera
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.5, 500);
+    camera.position.set(24, 16, 28);
+    cameraRef.current = camera;
+
+    // 3. Renderer
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
+    renderer.setSize(width, height);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = isBrightBoost ? 1.55 : 1.32; // Crisp, luminous high visibility
+    rendererRef.current = renderer;
+    container.appendChild(renderer.domElement);
+
+    // 4. Orbit Controls
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.maxPolarAngle = Math.PI / 2 - 0.05; // Don't go below ground
+    controls.minDistance = 8;
+    controls.maxDistance = 65;
+    controls.target.set(0, 4, 0);
+    controlsRef.current = controls;
+
+    // 5. Lighting Setup - Multi-Source Luminous Illumination
+    const ambLight = new THREE.AmbientLight(0xe0f2fe, 0.65); // Soft omnidirectional skylight
+    scene.add(ambLight);
+    ambLightRef.current = ambLight;
+
+    const hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x166534, 1.2);
+    hemiLight.position.set(0, 50, 0);
+    scene.add(hemiLight);
+    hemiLightRef.current = hemiLight;
+
+    const sunLight = new THREE.DirectionalLight(0xffedd5, 1.8);
+    sunLight.position.set(25, 40, 20);
+    sunLight.castShadow = true;
+    sunLight.shadow.mapSize.width = 1024;
+    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.camera.near = 5;
+    sunLight.shadow.camera.far = 100;
+    sunLight.shadow.camera.left = -25;
+    sunLight.shadow.camera.right = 25;
+    sunLight.shadow.camera.top = 25;
+    sunLight.shadow.camera.bottom = -25;
+    scene.add(sunLight);
+    sunLightRef.current = sunLight;
+
+    // Observatory Station Architectural Warm Floodlight
+    const stationSpotlight = new THREE.PointLight(0xfef08a, 1.2, 35, 1.2);
+    stationSpotlight.position.set(-2, 8, -2);
+    scene.add(stationSpotlight);
+
+    // Lightning Flash Light (convective thunderstorm discharge)
+    const lightningLight = new THREE.PointLight(0xa5f3fc, 0, 120, 1.2);
+    lightningLight.position.set(0, 35, 0);
+    scene.add(lightningLight);
+    lightningLightRef.current = lightningLight;
+
+    // 6. Ground & Terrain Mesh - Vibrant Alpine Highlands
+    const terrainGeo = new THREE.PlaneGeometry(80, 80, 48, 48);
+    const posAttr = terrainGeo.attributes.position;
+    for (let i = 0; i < posAttr.count; i++) {
+      const x = posAttr.getX(i);
+      const y = posAttr.getY(i);
+      const distFromCenter = Math.sqrt(x * x + y * y);
+      const elevation = Math.sin(x * 0.1) * Math.cos(y * 0.1) * 1.2 - (distFromCenter < 12 ? 0 : 0.8);
+      posAttr.setZ(i, elevation);
+    }
+    terrainGeo.computeVertexNormals();
+
+    const groundMat = new THREE.MeshStandardMaterial({
+      color: 0x16a34a, // Vibrant lush alpine highland green
+      roughness: 0.75,
+      metalness: 0.05,
+      flatShading: true,
+    });
+    const ground = new THREE.Mesh(terrainGeo, groundMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    // Distant Mountain Ridges with Luminous Glacial Snowcaps & Shimmering Crystal Peaks
+    const mountainGeo = new THREE.ConeGeometry(15, 20, 7);
+    const mountainMat = new THREE.MeshStandardMaterial({
+      color: 0x334155, // Rich slate granite rock
+      roughness: 0.8,
+      metalness: 0.2,
+      flatShading: true,
+    });
+
+    const snowCapGeo = new THREE.ConeGeometry(6.5, 8.5, 7);
+    const snowCapMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff, // Brilliant sunlit alpine snow
+      roughness: 0.2,
+      metalness: 0.1,
+      flatShading: true,
+    });
+
+    const crystalVeinMat = new THREE.MeshStandardMaterial({
+      color: 0x818cf8,
+      emissive: 0x4338ca,
+      emissiveIntensity: 0.65,
+      roughness: 0.15,
+      flatShading: true,
+    });
+
+    const mtnPositions = [
+      [-32, 7, -32],
+      [-18, 9, -36],
+      [4, 11, -38],
+      [24, 8, -34],
+      [-38, 6, -15],
+    ];
+    mtnPositions.forEach(([mx, my, mz], idx) => {
+      const scaleX = 1 + (idx % 3) * 0.3;
+      const scaleY = 1 + (idx % 2) * 0.4;
+      const scaleZ = 1 + (idx % 3) * 0.3;
+
+      // Base Rocky Mountain Body
+      const mtn = new THREE.Mesh(mountainGeo, idx % 2 === 0 ? mountainMat : crystalVeinMat);
+      mtn.position.set(mx, my, mz);
+      mtn.scale.set(scaleX, scaleY, scaleZ);
+      mtn.rotation.y = idx * 1.1;
+      scene.add(mtn);
+
+      // Glacial Snowcap perched on peak summit
+      const snow = new THREE.Mesh(snowCapGeo, snowCapMat);
+      snow.position.set(mx, my + (10 * scaleY) - (4.2 * scaleY), mz);
+      snow.scale.set(scaleX * 0.98, scaleY, scaleZ * 0.98);
+      snow.rotation.y = idx * 1.1;
+      scene.add(snow);
+    });
+
+    // Floating Fantasy Rock Crags (Hovering above the mountain ridges)
+    const floatRockGeo = new THREE.DodecahedronGeometry(2.5, 1);
+    const floatRockMat = new THREE.MeshStandardMaterial({
+      color: 0x241442,
+      emissive: 0x3b0764,
+      emissiveIntensity: 0.4,
+      roughness: 0.7,
+      flatShading: true,
+    });
+    const floatPositions = [
+      [-26, 22, -30],
+      [16, 20, -32],
+    ];
+    floatPositions.forEach(([fx, fy, fz]) => {
+      const floatRock = new THREE.Mesh(floatRockGeo, floatRockMat);
+      floatRock.position.set(fx, fy, fz);
+      scene.add(floatRock);
+    });
+
+    // 6B. Realistic 3D Mountain Gorge Waterfall (Matching photo's sheer dark slate canyon & conifers)
+    const cliffGroup = new THREE.Group();
+    cliffGroup.position.set(14, 4, -10);
+    scene.add(cliffGroup);
+
+    const cliffMat = new THREE.MeshStandardMaterial({
+      color: 0x222a30, // natural dark charcoal slate
+      roughness: 0.75,
+      metalness: 0.2,
+      flatShading: true,
+    });
+    const wetCliffMat = new THREE.MeshStandardMaterial({
+      color: 0x141b20,
+      roughness: 0.25,
+      metalness: 0.5,
+      flatShading: true,
+    });
+
+    const mainCliff = new THREE.Mesh(new THREE.BoxGeometry(8, 12, 7), cliffMat);
+    cliffGroup.add(mainCliff);
+
+    const wetFlank = new THREE.Mesh(new THREE.BoxGeometry(5, 11, 4), wetCliffMat);
+    wetFlank.position.set(0, -0.5, 2.5);
+    cliffGroup.add(wetFlank);
+
+    // Pine trees clinging to the waterfall cliff
+    const pineTrunkMat = new THREE.MeshStandardMaterial({ color: 0x271e16, roughness: 0.9 });
+    const pineLeafMat = new THREE.MeshStandardMaterial({ color: 0x0d2215, roughness: 0.75, flatShading: true });
+    [-2.8, 2.8].forEach((px, pIdx) => {
+      const pTree = new THREE.Group();
+      const pTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 1.8, 5), pineTrunkMat);
+      pTrunk.position.y = 0.9;
+      pTree.add(pTrunk);
+      [1.8, 2.7, 3.5].forEach((cy, cIdx) => {
+        const pCone = new THREE.Mesh(new THREE.ConeGeometry(1.2 - cIdx * 0.3, 1.4, 6), pineLeafMat);
+        pCone.position.y = cy;
+        pTree.add(pCone);
+      });
+      pTree.position.set(px, 5.5, (pIdx === 0 ? -1 : 1));
+      pTree.scale.set(0.9, 0.9, 0.9);
+      cliffGroup.add(pTree);
+    });
+
+    const waterfallRibbonGeo = new THREE.PlaneGeometry(3.5, 18, 16, 36);
+    const waterfallRibbonMat = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xdff1fc,
+      emissiveIntensity: 0.42,
+      roughness: 0.12,
+      metalness: 0.55,
+      transparent: true,
+      opacity: 0.92,
+      side: THREE.DoubleSide,
+    });
+    const waterfallMesh = new THREE.Mesh(waterfallRibbonGeo, waterfallRibbonMat);
+    waterfallMesh.position.set(14, 4.5, -4.5);
+    waterfallMesh.rotation.x = -0.68;
+    scene.add(waterfallMesh);
+
+    // Waterfall 3D Falling Spray Droplets
+    const WF_DROP_COUNT = 300;
+    const wfDropGeo = new THREE.BufferGeometry();
+    const wfDropPositions = new Float32Array(WF_DROP_COUNT * 3);
+    for (let i = 0; i < WF_DROP_COUNT; i++) {
+      wfDropPositions[i * 3] = 14 + (Math.random() - 0.5) * 3.0;
+      wfDropPositions[i * 3 + 1] = Math.random() * 8 + 0.5;
+      wfDropPositions[i * 3 + 2] = -10 + Math.random() * 14;
+    }
+    wfDropGeo.setAttribute('position', new THREE.BufferAttribute(wfDropPositions, 3));
+    const wfDropMat = new THREE.PointsMaterial({
+      color: 0xffffff,
+      size: 0.38,
+      transparent: true,
+      opacity: 0.9,
+      blending: THREE.AdditiveBlending,
+    });
+    const wfDropPoints = new THREE.Points(wfDropGeo, wfDropMat);
+    scene.add(wfDropPoints);
+
+    // 7. Water Catchment Basin / Lake (Dynamic Level & Refractive Ripples)
+    const waterGeo = new THREE.PlaneGeometry(38, 28, 32, 32);
+    const waterMat = new THREE.MeshStandardMaterial({
+      color: 0x087ea4, // Deep crystal teal alpine lake water
+      roughness: 0.08,
+      metalness: 0.85,
+      transparent: true,
+      opacity: 0.94,
+      depthWrite: true,
+    });
+    const waterMesh = new THREE.Mesh(waterGeo, waterMat);
+    waterMesh.rotation.x = -Math.PI / 2;
+    waterMesh.position.set(12, 0.05, 12);
+    waterMesh.receiveShadow = true;
+    waterMesh.renderOrder = 5;
+    scene.add(waterMesh);
+    waterMeshRef.current = waterMesh;
+
+    // Concrete Pad for Weather Station
+    const padGeo = new THREE.BoxGeometry(16, 0.6, 14);
+    const padMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7 });
+    const pad = new THREE.Mesh(padGeo, padMat);
+    pad.position.set(-2, 0.3, -2);
+    pad.receiveShadow = true;
+    pad.castShadow = true;
+    scene.add(pad);
+
+    // 8. 3D METEOROLOGICAL OBSERVATORY BUILDING
+    const stationGroup = new THREE.Group();
+    stationGroup.position.set(-2, 0.6, -2);
+
+    // Main Station Block
+    const buildingGeo = new THREE.BoxGeometry(9, 4.5, 7);
+    const buildingMat = new THREE.MeshStandardMaterial({
+      color: 0x1e293b,
+      roughness: 0.5,
+      metalness: 0.2,
+    });
+    const building = new THREE.Mesh(buildingGeo, buildingMat);
+    building.position.y = 2.25;
+    building.castShadow = true;
+    building.receiveShadow = true;
+    stationGroup.add(building);
+
+    // Roof Trim
+    const roofTrimGeo = new THREE.BoxGeometry(9.6, 0.4, 7.6);
+    const roofTrimMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, roughness: 0.4, metalness: 0.5 });
+    const roofTrim = new THREE.Mesh(roofTrimGeo, roofTrimMat);
+    roofTrim.position.y = 4.6;
+    stationGroup.add(roofTrim);
+
+    // Illuminated Windows (emitting warm light)
+    const windowMat = new THREE.MeshStandardMaterial({
+      color: 0xfef08a,
+      emissive: 0xf59e0b,
+      emissiveIntensity: 0.8,
+      roughness: 0.2,
+    });
+    const winGeo = new THREE.PlaneGeometry(1.2, 1.4);
+    for (let i = -2; i <= 2; i += 1.4) {
+      const win = new THREE.Mesh(winGeo, windowMat);
+      win.position.set(i, 2.5, 3.52);
+      stationGroup.add(win);
+    }
+
+    // Secondary Observation Tower on Roof
+    const towerGeo = new THREE.CylinderGeometry(1.8, 2.0, 3.2, 12);
+    const towerMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 });
+    const tower = new THREE.Mesh(towerGeo, towerMat);
+    tower.position.set(-2, 6.2, -1);
+    tower.castShadow = true;
+    stationGroup.add(tower);
+
+    // 9. 3D DOPPLER RADAR RADOME & LOCALIZED SCANNING BEAM
+    const radomeBaseGeo = new THREE.CylinderGeometry(0.5, 0.6, 2, 8);
+    const radomeBase = new THREE.Mesh(radomeBaseGeo, towerMat);
+    radomeBase.position.set(2.5, 5.6, 1.5);
+    stationGroup.add(radomeBase);
+
+    const radomeSphereGeo = new THREE.SphereGeometry(1.4, 16, 16);
+    const radomeSphereMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.25,
+      metalness: 0.15,
+      transparent: true,
+      opacity: 0.94,
+    });
+    const radome = new THREE.Mesh(radomeSphereGeo, radomeSphereMat);
+    radome.position.set(2.5, 7.6, 1.5);
+    stationGroup.add(radome);
+
+    // Interior Radar Dish that sweeps inside the radome
+    const radarDishGroup = new THREE.Group();
+    radarDishGroup.position.set(2.5, 7.6, 1.5);
+    const dishGeo = new THREE.CylinderGeometry(0.9, 0.2, 0.2, 12);
+    const dishMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.8, roughness: 0.2 });
+    const dish = new THREE.Mesh(dishGeo, dishMat);
+    dish.rotation.z = Math.PI / 3;
+    radarDishGroup.add(dish);
+
+    // Localized Doppler scan beam (attached to rotating dish, never occluding landscape or water)
+    const radarBeamGeo = new THREE.ConeGeometry(1.4, 3.0, 16, 1, true);
+    const radarBeamMat = new THREE.MeshBasicMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.35,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    const radarBeam = new THREE.Mesh(radarBeamGeo, radarBeamMat);
+    radarBeam.rotation.x = Math.PI / 2;
+    radarBeam.position.set(0, 0, 1.5);
+    radarDishGroup.add(radarBeam);
+    radarPulseRef.current = radarBeam;
+
+    stationGroup.add(radarDishGroup);
+    radarDishRef.current = radarDishGroup;
+
+    // 10. 3D ANEMOMETER (3-CUP WIND SENSOR)
+    const anemometerGroup = new THREE.Group();
+    anemometerGroup.position.set(-2, 7.8, -1);
+
+    // Steel Vertical Mast
+    const mastGeo = new THREE.CylinderGeometry(0.12, 0.15, 3.5, 8);
+    const mastMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.9, roughness: 0.2 });
+    const mast = new THREE.Mesh(mastGeo, mastMat);
+    mast.position.y = 1.75;
+    mast.castShadow = true;
+    anemometerGroup.add(mast);
+
+    // Red Aviation Warning Beacons (blinking LEDs)
+    const beaconGeo = new THREE.SphereGeometry(0.18, 8, 8);
+    const beaconMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const beaconMast = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconMast.position.set(-2, 11.5, -1);
+    stationGroup.add(beaconMast);
+
+    const beaconLight1 = new THREE.PointLight(0xef4444, 1.5, 8);
+    beaconLight1.position.set(-2, 11.5, -1);
+    stationGroup.add(beaconLight1);
+
+    const beaconRadome = new THREE.Mesh(beaconGeo, beaconMat);
+    beaconRadome.position.set(2.5, 9.2, 1.5);
+    stationGroup.add(beaconRadome);
+
+    const beaconLight2 = new THREE.PointLight(0xef4444, 1.5, 8);
+    beaconLight2.position.set(2.5, 9.2, 1.5);
+    stationGroup.add(beaconLight2);
+    beaconLightsRef.current = [beaconLight1, beaconLight2];
+
+    // Rotating Spindle & 3 Cups
+    const cupsGroup = new THREE.Group();
+    cupsGroup.position.y = 3.5;
+
+    // Cross arms
+    const armGeo = new THREE.CylinderGeometry(0.04, 0.04, 1.6, 6);
+    const arm1 = new THREE.Mesh(armGeo, mastMat);
+    arm1.rotation.z = Math.PI / 2;
+    cupsGroup.add(arm1);
+
+    const arm2 = new THREE.Mesh(armGeo, mastMat);
+    arm2.rotation.x = Math.PI / 2;
+    cupsGroup.add(arm2);
+
+    // 3 Hemispherical Cups
+    const cupGeo = new THREE.SphereGeometry(0.3, 8, 8, 0, Math.PI);
+    const cupMatRed = new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.4, roughness: 0.4 });
+    const cupMatSilver = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.8, roughness: 0.2 });
+
+    const cup1 = new THREE.Mesh(cupGeo, cupMatRed);
+    cup1.position.set(0.8, 0, 0);
+    cup1.rotation.y = Math.PI / 2;
+    cupsGroup.add(cup1);
+
+    const cup2 = new THREE.Mesh(cupGeo, cupMatSilver);
+    cup2.position.set(-0.8, 0, 0);
+    cup2.rotation.y = -Math.PI / 2;
+    cupsGroup.add(cup2);
+
+    const cup3 = new THREE.Mesh(cupGeo, cupMatSilver);
+    cup3.position.set(0, 0, 0.8);
+    cup3.rotation.x = Math.PI / 2;
+    cupsGroup.add(cup3);
+
+    anemometerGroup.add(cupsGroup);
+    anemometerCupsRef.current = cupsGroup;
+
+    // Wind Direction Vane
+    const vaneGroup = new THREE.Group();
+    vaneGroup.position.y = 2.4;
+    const vaneArrowGeo = new THREE.ConeGeometry(0.3, 0.9, 4);
+    const vaneArrowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3 });
+    const vaneArrow = new THREE.Mesh(vaneArrowGeo, vaneArrowMat);
+    vaneArrow.rotation.x = Math.PI / 2;
+    vaneArrow.position.z = 0.6;
+    vaneGroup.add(vaneArrow);
+    const vaneTail = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.5, 0.6), vaneArrowMat);
+    vaneTail.position.z = -0.6;
+    vaneGroup.add(vaneTail);
+    anemometerGroup.add(vaneGroup);
+    windVaneRef.current = vaneGroup;
+
+    // Solar PV Panel Array on Observatory Roof
+    const solarFrameGeo = new THREE.BoxGeometry(3.5, 0.15, 2.2);
+    const solarFrameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.8, roughness: 0.3 });
+    const solarFrame = new THREE.Mesh(solarFrameGeo, solarFrameMat);
+    solarFrame.position.set(-1.8, 4.9, 1.8);
+    solarFrame.rotation.x = 0.35; // Tilted toward sunlight
+    stationGroup.add(solarFrame);
+
+    const solarCellGeo = new THREE.PlaneGeometry(3.3, 2.0);
+    const solarCellMat = new THREE.MeshStandardMaterial({
+      color: 0x1e3a8a,
+      roughness: 0.1,
+      metalness: 0.9,
+      emissive: 0x172554,
+      emissiveIntensity: 0.4,
+    });
+    const solarCells = new THREE.Mesh(solarCellGeo, solarCellMat);
+    solarCells.position.set(-1.8, 4.99, 1.8);
+    solarCells.rotation.x = -Math.PI / 2 + 0.35;
+    stationGroup.add(solarCells);
+
+    // Stevenson Meteorological Instrument Screen Box (White wooden slatted shelter)
+    const stevensonGroup = new THREE.Group();
+    stevensonGroup.position.set(5.0, 0, -4.0);
+    const stBoxGeo = new THREE.BoxGeometry(1.4, 1.2, 1.2);
+    const stBoxMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.4 });
+    const stBox = new THREE.Mesh(stBoxGeo, stBoxMat);
+    stBox.position.y = 2.0;
+    stBox.castShadow = true;
+    stevensonGroup.add(stBox);
+
+    // Stilts / Legs for Stevenson screen
+    [-0.5, 0.5].forEach((sx) => {
+      [-0.4, 0.4].forEach((sz) => {
+        const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 6), stBoxMat);
+        leg.position.set(sx, 0.7, sz);
+        leg.castShadow = true;
+        stevensonGroup.add(leg);
+      });
+    });
+    stationGroup.add(stevensonGroup);
+
+    // Rain Gauge Funnel on Building
+    const rainGaugeGeo = new THREE.CylinderGeometry(0.4, 0.15, 0.8, 8);
+    const rainGaugeMat = new THREE.MeshStandardMaterial({ color: 0x0d9488, metalness: 0.5 });
+    const rainGauge = new THREE.Mesh(rainGaugeGeo, rainGaugeMat);
+    rainGauge.position.set(3, 5.0, -2);
+    stationGroup.add(rainGauge);
+
+    scene.add(stationGroup);
+
+    // Volumetric Atmospheric Sunbeams / Light Shafts (God Rays)
+    const sunbeamsGroup = new THREE.Group();
+    const beamGeo = new THREE.ConeGeometry(8, 35, 16, 1, true);
+    const beamMat = new THREE.MeshBasicMaterial({
+      color: 0xfef08a,
+      transparent: true,
+      opacity: 0.12,
+      side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    [-12, 4, 16].forEach((bx, bIdx) => {
+      const beam = new THREE.Mesh(beamGeo, beamMat);
+      beam.position.set(bx, 24, -8 + bIdx * 6);
+      beam.rotation.z = -0.25;
+      beam.rotation.x = 0.15;
+      sunbeamsGroup.add(beam);
+    });
+    scene.add(sunbeamsGroup);
+    sunbeamsGroupRef.current = sunbeamsGroup;
+
+    // 11. 3D TREES & VEGETATION (Natural Environment)
+    const treesGroup = new THREE.Group();
+    const treeTrunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+    const treeFoliageMat1 = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.7 });
+    const treeFoliageMat2 = new THREE.MeshStandardMaterial({ color: 0x16a34a, roughness: 0.7 });
+
+    const treeCoords: [number, number, number][] = [
+      [-12, 0, -8],
+      [-15, 0, 4],
+      [-9, 0, 10],
+      [6, 0, -14],
+      [14, 0, -8],
+      [18, 0, 4],
+      [-5, 0, 16],
+    ];
+
+    treeCoords.forEach(([tx, ty, tz], i) => {
+      const tree = new THREE.Group();
+      tree.position.set(tx, ty, tz);
+
+      // Trunk
+      const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.5, 3.5, 6), treeTrunkMat);
+      trunk.position.y = 1.75;
+      trunk.castShadow = true;
+      tree.add(trunk);
+
+      // Foliage Clustered Spheres
+      const folGroup = new THREE.Group();
+      folGroup.position.y = 3.5;
+      const fol1 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.6 + (i % 3) * 0.2), treeFoliageMat1);
+      fol1.castShadow = true;
+      folGroup.add(fol1);
+
+      const fol2 = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), treeFoliageMat2);
+      fol2.position.set(0.6, 0.8, 0.4);
+      fol2.castShadow = true;
+      folGroup.add(fol2);
+
+      tree.add(folGroup);
+      treesGroup.add(tree);
+    });
+
+    scene.add(treesGroup);
+    treesGroupRef.current = treesGroup;
+
+    // 12. 3D VOLUMETRIC CLOUDS
+    const cloudsGroup = new THREE.Group();
+    const cloudMat = new THREE.MeshStandardMaterial({
+      color: 0xe2e8f0,
+      roughness: 0.9,
+      transparent: true,
+      opacity: 0.85,
+    });
+
+    const cloudClusterCoords = [
+      [-18, 22, -10],
+      [0, 24, 5],
+      [18, 21, -12],
+      [-8, 25, 18],
+    ];
+
+    cloudClusterCoords.forEach(([cx, cy, cz]) => {
+      const cluster = new THREE.Group();
+      cluster.position.set(cx, cy, cz);
+      for (let j = 0; j < 6; j++) {
+        const cloudPuff = new THREE.Mesh(new THREE.DodecahedronGeometry(3.5 + Math.random() * 2), cloudMat);
+        cloudPuff.position.set((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 8);
+        cluster.add(cloudPuff);
+      }
+      cloudsGroup.add(cluster);
+    });
+    scene.add(cloudsGroup);
+    cloudsGroupRef.current = cloudsGroup;
+
+    // 13. 3D RAINDROP PARTICLE SYSTEM
+    const rainCount = 1800;
+    const rainGeo = new THREE.BufferGeometry();
+    const rainPositions = new Float32Array(rainCount * 3);
+    const rainVelocities = new Float32Array(rainCount);
+
+    for (let i = 0; i < rainCount; i++) {
+      rainPositions[i * 3] = (Math.random() - 0.5) * 60;
+      rainPositions[i * 3 + 1] = Math.random() * 40;
+      rainPositions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+      rainVelocities[i] = 0.6 + Math.random() * 0.8;
+    }
+    rainGeo.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+
+    const rainMat = new THREE.PointsMaterial({
+      color: 0x7dd3fc,
+      size: 0.25,
+      transparent: true,
+      opacity: 0.75,
+    });
+    const rainSystem = new THREE.Points(rainGeo, rainMat);
+    scene.add(rainSystem);
+    rainSystemRef.current = rainSystem;
+
+    // 14. 3D STARFIELD PARTICLES (Night Sky)
+    const starCount = 600;
+    const starGeo = new THREE.BufferGeometry();
+    const starPositions = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount; i++) {
+      const radius = 90 + Math.random() * 30;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(Math.random());
+      starPositions[i * 3] = radius * Math.sin(phi) * Math.cos(theta);
+      starPositions[i * 3 + 1] = Math.max(10, radius * Math.cos(phi));
+      starPositions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta);
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+    const starMat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.6, transparent: true, opacity: 0.8 });
+    const stars = new THREE.Points(starGeo, starMat);
+    scene.add(stars);
+    starsRef.current = stars;
+
+    // 15. 3D LIGHTNING BOLT LINE
+    const lightningGeo = new THREE.BufferGeometry();
+    const lightningMat = new THREE.LineBasicMaterial({ color: 0xa5f3fc, linewidth: 3 });
+    const lightningMesh = new THREE.Line(lightningGeo, lightningMat);
+    lightningMesh.visible = false;
+    scene.add(lightningMesh);
+    lightningMeshRef.current = lightningMesh;
+
+    // RESIZE OBSERVER
+    const handleResize = () => {
+      if (!container || !renderer || !camera) return;
+      const newW = container.clientWidth;
+      const newH = container.clientHeight;
+      camera.aspect = newW / newH;
+      camera.updateProjectionMatrix();
+      renderer.setSize(newW, newH);
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(container);
+
+    // 16. ANIMATION LOOP
+    let animationFrameId: number;
+    let timer = new THREE.Timer();
+    timer.connect(document);
+    let nextLightningTime = 2.0;
+
+    // State for smooth interpolations
+    const animState = {
+      windSpeed: windSpeed,
+      rainMm: aiForecastMm,
+      waterHeight: 0.05,
+      bgColor: new THREE.Color(0x38bdf8),
+      fogColor: new THREE.Color(0xbae6fd),
+      hemiColor: new THREE.Color(0xffffff),
+      hemiGroundColor: new THREE.Color(0x15803d),
+      sunColor: new THREE.Color(0xffedd5),
+      hemiIntensity: 1.2,
+      sunIntensity: 1.8,
+    };
+    
+    // Helper to get target colors based on time and weather (High-Visibility Luminous Palette)
+    const getTargetLighting = (hour: number, regime: RainfallRegime) => {
+      const isNightTime = hour === 0 || hour >= 21 || hour <= 4;
+      const isDawnTime = hour > 4 && hour <= 8;
+      const isDuskTime = hour >= 18 && hour < 21;
+      
+      let tBg = 0x38bdf8, tFog = 0xbae6fd, tHemi = 0xffffff, tHemiGr = 0x16a34a, tSun = 0xffedd5, tHemiInt = 1.45, tSunInt = 2.1;
+
+      if (isNightTime) {
+        // Luminous sapphire night with starlight (never dark or murky)
+        tBg = 0x1e295d; tFog = 0x27356a; tHemi = 0xa5b4fc; tHemiGr = 0x1e293b; tSun = 0xc7d2fe; tHemiInt = 0.95; tSunInt = 1.2;
+      } else if (isDawnTime) {
+        // Radiant golden-coral sunrise
+        tBg = 0x4338ca; tFog = 0x6366f1; tHemi = 0xfdba74; tHemiGr = 0x334155; tSun = 0xfef08a; tHemiInt = 1.35; tSunInt = 1.85;
+      } else if (isDuskTime) {
+        // Vibrant twilight dusk
+        tBg = 0x3730a3; tFog = 0x4f46e5; tHemi = 0xfb7185; tHemiGr = 0x1e293b; tSun = 0xfb923c; tHemiInt = 1.25; tSunInt = 1.65;
+      } else {
+        // Daytime / Midday
+        if (regime === RainfallRegime.HEAVY_EXTREME) {
+          tBg = 0x334155; tFog = 0x475569; tHemi = 0x94a3b8; tHemiGr = 0x1e293b; tSun = 0xe2e8f0; tHemiInt = 1.15; tSunInt = 1.45;
+        } else if (regime === RainfallRegime.MODERATE) {
+          tBg = 0x475569; tFog = 0x64748b; tHemi = 0xcbd5e1; tHemiGr = 0x1e293b; tSun = 0xf1f5f9; tHemiInt = 1.3; tSunInt = 1.7;
+        }
+      }
+      return { tBg, tFog, tHemi, tHemiGr, tSun, tHemiInt, tSunInt, isNightTime };
+    };
+
+    const animate = (timestamp?: number) => {
+      animationFrameId = requestAnimationFrame(animate);
+      timer.update(timestamp);
+      const delta = Math.min(timer.getDelta(), 0.1); // cap delta to prevent large jumps
+      const elapsed = timer.getElapsed();
+
+      const { windSpeed: targetWind, hour: targetHour, aiForecastMm: targetRain, detectedRegime: targetRegime } = propsRef.current;
+      
+      // 1. Smooth Framerate-Independent Exponential Interpolation
+      const lerpSpeed = 1 - Math.exp(-delta * 3.2);
+      animState.windSpeed = THREE.MathUtils.lerp(animState.windSpeed, targetWind, lerpSpeed);
+      animState.rainMm = THREE.MathUtils.lerp(animState.rainMm, targetRain, lerpSpeed);
+      
+      // Dramatic water level rise on heavy rain & flood regimes
+      const targetWaterHeight = 0.05 + Math.min(
+        4.8,
+        (targetRain / 100) * 3.6 + (targetRegime === RainfallRegime.HEAVY_EXTREME ? 1.8 : targetRegime === RainfallRegime.MODERATE ? 0.9 : 0)
+      );
+      animState.waterHeight = THREE.MathUtils.lerp(animState.waterHeight, targetWaterHeight, lerpSpeed * 0.85);
+
+      const lighting = getTargetLighting(targetHour, targetRegime);
+      animState.bgColor.lerp(new THREE.Color(lighting.tBg), lerpSpeed);
+      animState.fogColor.lerp(new THREE.Color(lighting.tFog), lerpSpeed);
+      animState.hemiColor.lerp(new THREE.Color(lighting.tHemi), lerpSpeed);
+      animState.hemiGroundColor.lerp(new THREE.Color(lighting.tHemiGr), lerpSpeed);
+      animState.sunColor.lerp(new THREE.Color(lighting.tSun), lerpSpeed);
+      animState.hemiIntensity = THREE.MathUtils.lerp(animState.hemiIntensity, lighting.tHemiInt, lerpSpeed);
+      animState.sunIntensity = THREE.MathUtils.lerp(animState.sunIntensity, lighting.tSunInt, lerpSpeed);
+
+      // Smooth Dynamic Brightness Boost Scaling without Scene Recreation
+      const targetExposure = isBrightBoostRef.current ? 1.65 : 1.10;
+      renderer.toneMappingExposure = THREE.MathUtils.lerp(renderer.toneMappingExposure, targetExposure, lerpSpeed * 3);
+      const brightMultiplier = isBrightBoostRef.current ? 1.35 : 0.85;
+
+      // Apply colors & intensities
+      if (scene.background instanceof THREE.Color) scene.background.copy(animState.bgColor);
+      if (scene.fog instanceof THREE.FogExp2) scene.fog.color.copy(animState.fogColor);
+      
+      if (ambLightRef.current) {
+        ambLightRef.current.intensity = THREE.MathUtils.lerp(ambLightRef.current.intensity, 0.65 * brightMultiplier, lerpSpeed);
+      }
+      if (hemiLightRef.current) {
+        hemiLightRef.current.color.copy(animState.hemiColor);
+        hemiLightRef.current.groundColor.copy(animState.hemiGroundColor);
+        hemiLightRef.current.intensity = animState.hemiIntensity * brightMultiplier;
+      }
+      if (sunLightRef.current) {
+        sunLightRef.current.color.copy(animState.sunColor);
+        sunLightRef.current.intensity = animState.sunIntensity * brightMultiplier;
+      }
+      if (starsRef.current) {
+        // Fade stars based on how dark the background is becoming
+        const darkness = 1 - Math.max(animState.bgColor.r, animState.bgColor.g, animState.bgColor.b);
+        (starsRef.current.material as THREE.PointsMaterial).opacity = THREE.MathUtils.lerp(
+           (starsRef.current.material as THREE.PointsMaterial).opacity,
+           lighting.isNightTime ? darkness : 0, 
+           lerpSpeed
+        );
+        starsRef.current.visible = (starsRef.current.material as THREE.PointsMaterial).opacity > 0.01;
+      }
+
+      // Spin anemometer cups smoothly
+      if (anemometerCupsRef.current) {
+        const spinRate = Math.max(0.6, animState.windSpeed * 0.18);
+        anemometerCupsRef.current.rotation.y += spinRate * delta;
+      }
+
+      // Rotate radar dish & localized scan cone beam
+      if (radarDishRef.current) {
+        radarDishRef.current.rotation.y += 2.2 * delta;
+      }
+      if (radarPulseRef.current) {
+        (radarPulseRef.current.material as THREE.MeshBasicMaterial).opacity = 0.25 + Math.sin(elapsed * 4) * 0.15;
+      }
+
+      // Blink red aviation warning beacons with realistic strobe pattern
+      if (beaconLightsRef.current.length > 0) {
+        const beaconFlash = Math.sin(elapsed * 5) > 0.25 ? 1.8 : 0.15;
+        beaconLightsRef.current.forEach((bl) => {
+          bl.intensity = beaconFlash;
+        });
+      }
+
+      // Sunbeams visibility & smooth fading
+      if (sunbeamsGroupRef.current) {
+        const showSunbeams = !lighting.isNightTime && (targetRegime === RainfallRegime.DRY || targetRegime === RainfallRegime.LIGHT || (targetHour >= 7 && targetHour <= 17));
+        const targetBeamOpacity = showSunbeams ? (isBrightBoostRef.current ? 0.16 : 0.09) : 0;
+        sunbeamsGroupRef.current.children.forEach((b, idx) => {
+          const mesh = b as THREE.Mesh;
+          const mat = mesh.material as THREE.MeshBasicMaterial;
+          mat.opacity = THREE.MathUtils.lerp(mat.opacity, targetBeamOpacity, lerpSpeed);
+          mesh.rotation.y = elapsed * 0.04 + idx;
+        });
+      }
+
+      // Align wind vane with wind angle
+      if (windVaneRef.current) {
+        windVaneRef.current.rotation.y = Math.sin(elapsed * 0.4) * 0.25;
+      }
+
+      // Sway trees with wind smoothly
+      if (treesGroupRef.current) {
+        const swayAmount = Math.min(0.28, Math.max(0.04, animState.windSpeed * 0.005));
+        treesGroupRef.current.children.forEach((tree, idx) => {
+          tree.rotation.z = THREE.MathUtils.lerp(tree.rotation.z, Math.sin(elapsed * 2.5 + idx) * swayAmount, lerpSpeed * 2);
+        });
+      }
+
+      // Drift clouds slowly based on wind
+      if (cloudsGroupRef.current) {
+        cloudsGroupRef.current.position.x = (elapsed * (animState.windSpeed * 0.04 + 0.4)) % 60 - 30;
+      }
+
+      // Dynamic water level, flood inundation expansion & refractive surface wave ripples
+      if (waterMeshRef.current) {
+        waterMeshRef.current.position.y = animState.waterHeight;
+        const floodSpread = 1.0 + Math.min(1.5, animState.waterHeight * 0.28);
+        waterMeshRef.current.scale.set(floodSpread, floodSpread, 1);
+
+        const pos = waterGeo.attributes.position;
+        for (let i = 0; i < pos.count; i++) {
+          const u = pos.getX(i);
+          const v = pos.getY(i);
+          const wave = Math.sin(u * 0.35 + elapsed * 2.5) * Math.cos(v * 0.35 + elapsed * 2.0) * 0.09;
+          pos.setZ(i, wave);
+        }
+        waterGeo.computeVertexNormals();
+        waterGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Animate 3D Mountain Waterfall
+      if (waterfallMesh) {
+        const wfPos = waterfallRibbonGeo.attributes.position;
+        for (let i = 0; i < wfPos.count; i++) {
+          const py = wfPos.getY(i);
+          wfPos.setZ(i, Math.sin(py * 2.5 - elapsed * 14) * 0.18);
+        }
+        waterfallRibbonGeo.computeVertexNormals();
+        waterfallRibbonGeo.attributes.position.needsUpdate = true;
+      }
+      if (wfDropPoints) {
+        const dArr = wfDropGeo.attributes.position.array as Float32Array;
+        for (let i = 0; i < WF_DROP_COUNT; i++) {
+          dArr[i * 3 + 1] -= (9 + (i % 5)) * delta;
+          dArr[i * 3 + 2] += (10 + (i % 4)) * delta;
+          if (dArr[i * 3 + 1] < animState.waterHeight || dArr[i * 3 + 2] > 4) {
+            dArr[i * 3] = 14 + (Math.random() - 0.5) * 3.0;
+            dArr[i * 3 + 1] = 8.5;
+            dArr[i * 3 + 2] = -9.5;
+          }
+        }
+        wfDropGeo.attributes.position.needsUpdate = true;
+      }
+
+      // Rain particle animation with continuous smooth opacity fade
+      if (rainSystemRef.current) {
+        const targetRainOpacity = animState.rainMm > 0.5 ? Math.min(0.85, animState.rainMm * 0.02 + 0.15) : 0;
+        const rainMat = rainSystemRef.current.material as THREE.PointsMaterial;
+        rainMat.opacity = THREE.MathUtils.lerp(rainMat.opacity, targetRainOpacity, lerpSpeed);
+        rainSystemRef.current.visible = rainMat.opacity > 0.01;
+
+        if (rainSystemRef.current.visible) {
+          const positions = rainSystemRef.current.geometry.attributes.position.array as Float32Array;
+          const fallSpeed = Math.max(12, animState.rainMm * 0.45);
+          const windDrift = (animState.windSpeed / 35) * fallSpeed * 0.35;
+
+          for (let i = 0; i < rainCount; i++) {
+            positions[i * 3 + 1] -= fallSpeed * delta;
+            positions[i * 3] += windDrift * delta;
+
+            // Reset when hitting the ground
+            if (positions[i * 3 + 1] < 0) {
+              positions[i * 3 + 1] = 35 + Math.random() * 5;
+              positions[i * 3] = (Math.random() - 0.5) * 60;
+              positions[i * 3 + 2] = (Math.random() - 0.5) * 60;
+            }
+          }
+          rainSystemRef.current.geometry.attributes.position.needsUpdate = true;
+        }
+      }
+
+      // Extreme Convective Thunderstorm Lightning Flash System
+      if (targetRegime === RainfallRegime.HEAVY_EXTREME && elapsed > nextLightningTime) {
+        nextLightningTime = elapsed + 3.0 + Math.random() * 3.5;
+        if (lightningLightRef.current && lightningMeshRef.current) {
+          lightningLightRef.current.intensity = 5.5;
+          lightningLightRef.current.position.set((Math.random() - 0.5) * 30, 25, (Math.random() - 0.5) * 30);
+
+          // Generate branching forked lightning path
+          const boltPoints: THREE.Vector3[] = [];
+          let curPt = new THREE.Vector3(lightningLightRef.current.position.x, 32, lightningLightRef.current.position.z);
+          boltPoints.push(curPt.clone());
+
+          while (curPt.y > 0) {
+            curPt.y -= 4 + Math.random() * 3;
+            curPt.x += (Math.random() - 0.5) * 5;
+            curPt.z += (Math.random() - 0.5) * 5;
+            boltPoints.push(curPt.clone());
+          }
+
+          lightningMeshRef.current.geometry.dispose();
+          lightningMeshRef.current.geometry = new THREE.BufferGeometry().setFromPoints(boltPoints);
+          lightningMeshRef.current.visible = true;
+
+          // Quick fade-out timeout
+          setTimeout(() => {
+            if (lightningLightRef.current) lightningLightRef.current.intensity = 0;
+            if (lightningMeshRef.current) lightningMeshRef.current.visible = false;
+          }, 180);
+        }
+      }
+
+      // Auto-orbit camera rotation when enabled via reactive ref
+      if (controlsRef.current) {
+        controlsRef.current.autoRotate = isAutoRotatingRef.current;
+        controlsRef.current.autoRotateSpeed = 0.8;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      timer.dispose();
+      resizeObserver.disconnect();
+      if (container.contains(renderer.domElement)) {
+        container.removeChild(renderer.domElement);
+      }
+      renderer.dispose();
+    };
+  }, []);
+
+  // Handle Preset Camera Angles
+  const handleSetCamera = (mode: 'perspective' | 'top' | 'station') => {
+    setCameraMode(mode);
+    if (!cameraRef.current || !controlsRef.current) return;
+
+    if (mode === 'perspective') {
+      cameraRef.current.position.set(24, 16, 28);
+      controlsRef.current.target.set(0, 4, 0);
+    } else if (mode === 'top') {
+      cameraRef.current.position.set(0, 48, 12);
+      controlsRef.current.target.set(0, 0, 0);
+    } else if (mode === 'station') {
+      cameraRef.current.position.set(-6, 9, 6);
+      controlsRef.current.target.set(-2, 6, -2);
+    }
+  };
+
+  const handleResetCamera = () => {
+    handleSetCamera('perspective');
+  };
+
+  return (
+    <div id="synoptic-weather-3d-stage" className="rounded-2xl overflow-hidden border border-slate-700/80 shadow-lg bg-slate-900 text-slate-100">
+      {/* 3D WebGL Canvas Container */}
+      <div className="relative h-80 sm:h-96 w-full overflow-hidden select-none bg-slate-950">
+        {/* Three.js Canvas Mount */}
+        <div ref={mountRef} className="absolute inset-0 cursor-grab active:cursor-grabbing" />
+
+        {/* Top-Left Station & Telemetry Pill */}
+        <div className="absolute top-3 left-3 sm:left-4 z-20 flex items-center gap-2 pointer-events-none">
+          <div className="px-3 py-1.5 rounded-xl bg-slate-950/85 backdrop-blur-md border border-slate-700/80 shadow-lg text-white flex items-center gap-2.5">
+            <span className="text-lg">
+              {isExtreme ? '⛈️' : isModerate ? '🌧️' : isLight ? '🌦️' : '☀️'}
+            </span>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-bold block leading-tight text-white">
+                  {stationName}
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 text-[9px] font-mono">
+                  3D WebGL
+                </span>
+              </div>
+              <span className="text-[10px] text-slate-300 font-mono flex items-center gap-1">
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                {timeLabel} • {synopticPhase}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Top-Right 3D Camera Controls Toolbar */}
+        <div className="absolute top-3 right-3 sm:right-4 z-20 flex items-center gap-1.5 bg-slate-950/85 backdrop-blur-md p-1 rounded-xl border border-slate-700/80 text-xs shadow-md">
+          <button
+            onClick={() => setIsAutoRotating(!isAutoRotating)}
+            className={`px-2.5 py-1 rounded-lg font-medium text-[11px] transition-colors flex items-center gap-1 ${
+              isAutoRotating
+                ? 'bg-blue-600 text-white font-bold shadow-xs'
+                : 'text-slate-300 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Toggle 3D Cinematic Auto-Rotation"
+          >
+            <RotateCcw className={`w-3 h-3 ${isAutoRotating ? 'animate-spin' : ''}`} />
+            <span>Auto-Orbit</span>
+          </button>
+
+          <div className="h-3.5 w-[1px] bg-slate-700" />
+
+          <button
+            onClick={() => handleSetCamera('perspective')}
+            className={`px-2 py-1 rounded-lg text-[10px] transition-colors ${
+              cameraMode === 'perspective' ? 'bg-slate-800 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+            title="Overview 3D Perspective"
+          >
+            Overview
+          </button>
+
+          <button
+            onClick={() => handleSetCamera('station')}
+            className={`px-2 py-1 rounded-lg text-[10px] transition-colors ${
+              cameraMode === 'station' ? 'bg-slate-800 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+            title="Focus 3D Weather Station"
+          >
+            Observatory
+          </button>
+
+          <button
+            onClick={() => handleSetCamera('top')}
+            className={`px-2 py-1 rounded-lg text-[10px] transition-colors ${
+              cameraMode === 'top' ? 'bg-slate-800 text-cyan-300 font-bold' : 'text-slate-400 hover:text-white'
+            }`}
+            title="Top-Down Radar View"
+          >
+            Top-Down
+          </button>
+
+          <button
+            onClick={handleResetCamera}
+            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            title="Reset 3D View"
+          >
+            <Maximize2 className="w-3 h-3" />
+          </button>
+
+          <div className="h-3.5 w-[1px] bg-slate-700" />
+
+          <button
+            onClick={() => setIsBrightBoost(!isBrightBoost)}
+            className={`px-2 py-1 rounded-lg text-[10px] font-medium transition-colors flex items-center gap-1 ${
+              isBrightBoost
+                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40 font-bold'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+            }`}
+            title="Toggle High Brightness & Visibility Mode"
+          >
+            <Sun className="w-3 h-3 text-amber-400" />
+            <span>{isBrightBoost ? 'Bright: ON' : 'Bright: OFF'}</span>
+          </button>
+
+          {onToggle2D && (
+            <>
+              <div className="h-3.5 w-[1px] bg-slate-700 hidden sm:block" />
+              <button
+                onClick={onToggle2D}
+                className="px-2 py-1 rounded-lg text-[10px] bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
+                title="Switch to 2D Illustrated Canvas"
+              >
+                2D View
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Bottom-Left 3D Interaction Hint */}
+        <div className="absolute bottom-3 left-3 sm:left-4 z-20 pointer-events-none hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/70 backdrop-blur-xs text-[10px] text-slate-400 border border-slate-800">
+          <Box className="w-3 h-3 text-cyan-400" />
+          <span>Click & drag to rotate 3D view • Scroll to zoom</span>
+        </div>
+
+        {/* Bottom-Right Live Accumulation Gauge */}
+        <div className="absolute bottom-3 right-3 sm:right-4 z-20 flex items-center gap-2 bg-slate-950/85 backdrop-blur-md px-3.5 py-1.5 rounded-full border border-slate-700/80 text-white text-xs shadow-xl">
+          <Droplets className="w-4 h-4 text-sky-400 shrink-0" />
+          <span className="text-slate-300 font-medium">Accumulation:</span>
+          <span className="font-bold font-mono text-cyan-300 text-sm">
+            {aiForecastMm} mm
+          </span>
+        </div>
+      </div>
+
+      {/* Atmospheric Telemetry HUD & AI Calibration Context */}
+      <div className="p-4 bg-slate-900 border-t border-slate-800 space-y-3">
+        {/* Top Badges & Operational Advisory Header */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className={`px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase shadow-sm flex items-center gap-1.5 ${advisory.badgeClass}`}>
+              <ShieldAlert className="w-3.5 h-3.5" />
+              {advisory.alertBadge}
+            </span>
+            <span className="text-xs text-slate-400 font-mono">
+              Wind: <strong className="text-slate-200">{windSpeed} km/h</strong> ({getBeaufortDescription(windSpeed)}) • Pressure: <strong className="text-slate-200">{pressure.toFixed(1)} hPa</strong> • Moisture: <strong className="text-slate-200">{humidity}%</strong>
+            </span>
+          </div>
+
+          {/* Model Comparison Pill */}
+          <div className="flex items-center gap-2 bg-slate-800/90 px-3 py-1 rounded-lg border border-slate-700 text-xs font-mono">
+            <span className="text-slate-400">NWP: <strong className="text-slate-200">{rawForecastMm} mm</strong></span>
+            <span className="text-slate-500">→</span>
+            <span className="text-cyan-400 font-bold">AI Calibrated: <strong>{aiForecastMm} mm</strong></span>
+          </div>
+        </div>
+
+        {/* Dual Information Cards: Synoptic Condition vs AI Physical Correction */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-3 text-xs">
+          {/* Atmospheric Condition & Safety Action */}
+          <div className="md:col-span-7 bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 shadow-2xs space-y-1.5">
+            <div className="flex items-center gap-1.5 font-bold text-slate-200 text-xs">
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+              Synoptic Evolution & Public Safety
+            </div>
+            <p className="text-slate-300 leading-relaxed font-medium">
+              {advisory.summary}
+            </p>
+            <p className="text-amber-300/90 leading-relaxed font-medium">
+              <strong>Action:</strong> {advisory.action}
+            </p>
+            <p className="text-[11px] text-slate-500 mt-1 italic border-t border-slate-800/80 pt-1">
+              &ldquo;{narrative}&rdquo;
+            </p>
+          </div>
+
+          {/* Machine Learning Bias Calibration Explanation */}
+          <div className="md:col-span-5 bg-gradient-to-br from-blue-950/60 to-slate-950/80 p-3.5 rounded-xl border border-blue-900/60 shadow-2xs space-y-2 flex flex-col justify-between">
+            <div className="space-y-1">
+              <div className="flex items-center gap-1.5 font-bold text-cyan-300 text-xs">
+                <CheckCircle className="w-3.5 h-3.5 text-cyan-400" />
+                Physical Model Bias Correction
+              </div>
+              <p className="text-slate-300 leading-relaxed text-[11px]">
+                {advisory.aiImpact}
+              </p>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-blue-900/40 text-[11px] font-mono">
+              <span className="text-slate-400">Regime: <strong className="text-slate-200">{detectedRegime}</strong></span>
+              <span className="px-2 py-0.5 rounded bg-blue-950 text-cyan-300 border border-blue-800 text-[10px]">
+                {aiForecastMm > rawForecastMm
+                  ? `+${(aiForecastMm - rawForecastMm).toFixed(1)} mm Boost`
+                  : aiForecastMm < rawForecastMm
+                  ? `${(aiForecastMm - rawForecastMm).toFixed(1)} mm Suppressed`
+                  : 'Calibrated'}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
