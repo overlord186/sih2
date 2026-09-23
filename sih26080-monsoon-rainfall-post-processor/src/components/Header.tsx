@@ -31,6 +31,9 @@ import {
   Mountain,
   BrainCircuit,
   Activity,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { DashboardEngineControls } from './DashboardEngineControls';
@@ -268,7 +271,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
             </div>
 
-            {/* Station Filter with Quick Search */}
+            {/* Station Filter with Quick Search & Command Palette Trigger */}
             <div className="flex items-center gap-2">
               <Compass className="w-3.5 h-3.5 text-blue-400 shrink-0" />
               <span className="text-slate-400 font-medium whitespace-nowrap">Met Station:</span>
@@ -287,7 +290,7 @@ export const Header: React.FC<HeaderProps> = ({
                     }
                   }}
                   placeholder="Filter name or #idx..."
-                  className="w-28 sm:w-36 bg-slate-800 border border-slate-700 rounded-md pl-6 pr-5 py-1 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium transition-all"
+                  className="w-24 sm:w-32 bg-slate-800 border border-slate-700 rounded-md pl-6 pr-5 py-1 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-500 font-medium transition-all"
                   title="Quickly search meteorological stations by name or region index (e.g. 'Mumbai', '#04', 'Konkan')"
                 />
                 {stationSearchQuery && (
@@ -302,11 +305,24 @@ export const Header: React.FC<HeaderProps> = ({
                 )}
               </div>
 
+              {/* Omnipresent Command Palette Jump Button */}
+              <button
+                type="button"
+                id="header-station-palette-btn"
+                onClick={() => window.dispatchEvent(new CustomEvent('open-station-search'))}
+                className="flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium transition-all cursor-pointer shrink-0"
+                title="Press / or Ctrl+K to open Station Command Palette"
+              >
+                <Search className="w-3 h-3 text-cyan-400" />
+                <span className="hidden xl:inline text-[11px]">Jump</span>
+                <kbd className="px-1 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">/</kbd>
+              </button>
+
               <select
                 id="station-filter-select"
                 value={selectedStationId}
                 onChange={(e) => onStationChange(e.target.value)}
-                className="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-1 text-xs text-white focus:outline-none focus:border-blue-500 font-medium max-w-[170px] sm:max-w-[260px] truncate"
+                className="bg-slate-800 border border-slate-700 rounded-md px-2.5 py-1 text-xs text-white focus:outline-none focus:border-blue-500 font-medium max-w-[150px] sm:max-w-[220px] truncate"
               >
                 <option value="ALL">
                   All Stations {stationSearchQuery ? `(${filteredHeaderStations.length} of ${MET_STATIONS.length})` : `(${MET_STATIONS.length} Subdivisions)`}
@@ -331,56 +347,69 @@ export const Header: React.FC<HeaderProps> = ({
               )}
             </div>
 
-            {/* Lead Time Filter */}
+            {/* Lead Time Timeline Scrubber */}
             <div className="flex items-center gap-2">
-              <Calendar className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-slate-400 font-medium">Lead Time:</span>
-              <div className="inline-flex rounded-md shadow-xs bg-slate-800 p-0.5 border border-slate-700">
+              <Calendar className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+              <span className="text-slate-400 font-medium whitespace-nowrap">Timeline Scrubber:</span>
+              
+              <div className="flex items-center gap-1 bg-slate-800 p-0.5 rounded-lg border border-slate-700 shadow-inner">
                 <button
-                  id="lead-all-btn"
-                  onClick={() => onLeadTimeChange(0)}
-                  className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                    selectedLeadTime === 0
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  type="button"
+                  id="lead-prev-step-btn"
+                  onClick={() => onLeadTimeChange(Math.max(0, selectedLeadTime - 1))}
+                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  disabled={selectedLeadTime === 0}
+                  title="Previous Lead Time Horizon"
                 >
-                  All Leads
+                  <ChevronLeft className="w-3 h-3" />
                 </button>
+
+                {[
+                  { value: 0, label: 'All', horizon: 'Aggregate Climatology Horizon' },
+                  { value: 1, label: 'Day +1', horizon: 'T+24h • Convective Extreme Resolution' },
+                  { value: 2, label: 'Day +2', horizon: 'T+48h • Synoptic Moisture Shear Tracking' },
+                  { value: 3, label: 'Day +3', horizon: 'T+72h • Monsoon Trough Lobe Evolution' },
+                ].map((item) => {
+                  const isActive = selectedLeadTime === item.value;
+                  return (
+                    <button
+                      key={item.value}
+                      id={`lead-step-${item.value}-btn`}
+                      onClick={() => onLeadTimeChange(item.value)}
+                      className={`relative px-2.5 py-1 text-xs rounded-md font-medium transition-all cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-600 text-white font-bold shadow-xs'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      }`}
+                      title={item.horizon}
+                    >
+                      <span>{item.label}</span>
+                      {isActive && (
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-xs shadow-cyan-400" />
+                      )}
+                    </button>
+                  );
+                })}
+
                 <button
-                  id="lead-d1-btn"
-                  onClick={() => onLeadTimeChange(1)}
-                  className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                    selectedLeadTime === 1
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
+                  type="button"
+                  id="lead-next-step-btn"
+                  onClick={() => onLeadTimeChange(Math.min(3, selectedLeadTime === 0 ? 1 : selectedLeadTime + 1))}
+                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-700 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                  disabled={selectedLeadTime === 3}
+                  title="Next Lead Time Horizon"
                 >
-                  Day +1
-                </button>
-                <button
-                  id="lead-d2-btn"
-                  onClick={() => onLeadTimeChange(2)}
-                  className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                    selectedLeadTime === 2
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Day +2
-                </button>
-                <button
-                  id="lead-d3-btn"
-                  onClick={() => onLeadTimeChange(3)}
-                  className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
-                    selectedLeadTime === 3
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Day +3
+                  <ChevronRight className="w-3 h-3" />
                 </button>
               </div>
+
+              {/* Dynamic Atmospheric Scale Indicator */}
+              <span className="hidden xl:inline-block text-[10px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-full shadow-xs">
+                {selectedLeadTime === 0 && 'Aggregate Horizon'}
+                {selectedLeadTime === 1 && 'T+24h • Deep Convective'}
+                {selectedLeadTime === 2 && 'T+48h • Moisture Flow'}
+                {selectedLeadTime === 3 && 'T+72h • Trough Dynamics'}
+              </span>
             </div>
 
             {/* Model Version Dropdown */}

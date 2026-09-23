@@ -382,7 +382,7 @@ export const DistrictRainfallProductView: React.FC<DistrictRainfallProductViewPr
                   </div>
                 </th>
                 <th className="py-3 px-3">Subdivision / State</th>
-                <th className="py-3 px-3">Synoptic Regime</th>
+                <th className="py-3 px-3 min-w-[160px] whitespace-nowrap">Synoptic Regime</th>
                 <th
                   onClick={() => {
                     if (sortField === 'rawForecastMm') setSortAsc(!sortAsc);
@@ -456,8 +456,8 @@ export const DistrictRainfallProductView: React.FC<DistrictRainfallProductViewPr
                       <div className="text-slate-800 font-semibold">{p.subdivision}</div>
                       <div className="text-[10px] text-slate-400">{p.state}</div>
                     </td>
-                    <td className="py-3 px-3">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-semibold border border-slate-200">
+                    <td className="py-3 px-3 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200 whitespace-nowrap leading-none">
                         {p.synopticRegime}
                       </span>
                     </td>

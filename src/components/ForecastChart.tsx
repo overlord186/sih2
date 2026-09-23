@@ -1241,7 +1241,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       const currentYrLabel = item.year || 'Selected Year';
 
       return (
-        <div className="bg-slate-900/95 border border-slate-700 text-white p-3.5 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-2 font-sans min-w-[260px] max-w-[330px]">
+        <div className="bg-slate-900/95 border border-slate-700 text-white p-2.5 rounded-xl shadow-2xl backdrop-blur-xl text-xs space-y-1.5 font-sans min-w-[270px] max-w-[340px] max-h-[380px] overflow-y-auto">
           {/* Header */}
           <div className="flex items-center justify-between border-b border-slate-800 pb-1.5 font-mono">
             <div className="flex items-center gap-1.5">
@@ -1412,77 +1412,61 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
             </div>
           )}
 
-          {/* Core Values */}
-          <div className="space-y-1.5 pt-1.5 border-t border-slate-800">
+          {/* Core Values 3-Box Grid */}
+          <div className="space-y-1 pt-1.5 border-t border-slate-800">
             {dataRepresentation === 'weeklyMA' && (
-              <div className="text-[10px] text-amber-300 font-semibold flex items-center justify-between pb-1 border-b border-amber-500/20">
+              <div className="text-[10px] text-amber-300 font-semibold flex items-center justify-between pb-0.5">
                 <span className="flex items-center gap-1">
                   <TrendingUp className="w-3 h-3 text-amber-400" />
                   Weekly Moving Average (7-Day Rolling Mean)
                 </span>
-                <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-amber-200">
+                <span className="font-mono text-[9px] px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/40 text-amber-200">
                   Climate Signal
                 </span>
               </div>
             )}
-            <div className="flex justify-between items-start text-emerald-400">
-              <span className="flex items-center gap-1.5 pt-0.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-500"></span> Ground Obs:
-              </span>
-              <div className="text-right">
-                <span className="font-mono font-bold text-sm">
-                  {item.observed} mm{dataRepresentation === 'weeklyMA' ? '/d (7d WMA)' : ''}
+            <div className="grid grid-cols-3 gap-1.5">
+              <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-lg p-1.5 text-center">
+                <span className="block text-[9px] uppercase font-bold text-emerald-400">Ground Obs</span>
+                <span className="font-mono font-bold text-xs text-emerald-300">
+                  {item.observed} <span className="text-[9px] font-normal">mm</span>
                 </span>
-                <span className="block text-[10px] text-slate-400 font-mono">
-                  {dataRepresentation === 'weeklyMA'
-                    ? `Raw Daily: ${item.rawDailyObserved} mm`
-                    : `7-Day WMA: ${item.weeklyMaObs} mm/d`}
+                <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                  {dataRepresentation === 'weeklyMA' ? `Raw: ${item.rawDailyObserved}mm` : `7d: ${item.weeklyMaObs}mm`}
                 </span>
               </div>
-            </div>
 
-            <div className="flex justify-between items-start text-rose-400">
-              <span className="flex items-center gap-1.5 pt-0.5">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span> Raw NWP:
-              </span>
-              <div className="text-right">
-                <span className="font-mono font-bold text-sm">
-                  {item.rawForecast} mm{dataRepresentation === 'weeklyMA' ? '/d (7d WMA)' : ''}
+              <div className="bg-rose-950/40 border border-rose-500/30 rounded-lg p-1.5 text-center">
+                <span className="block text-[9px] uppercase font-bold text-rose-400">Raw NWP</span>
+                <span className="font-mono font-bold text-xs text-rose-300">
+                  {item.rawForecast} <span className="text-[9px] font-normal">mm</span>
                 </span>
-                <span className="block text-[10px] text-slate-400 font-mono">
-                  {dataRepresentation === 'weeklyMA'
-                    ? `Raw Daily: ${item.rawDailyRawForecast} mm`
-                    : `7-Day WMA: ${item.weeklyMaRaw} mm/d`}
+                <span className="block text-[9px] text-slate-400 font-mono mt-0.5">
+                  {dataRepresentation === 'weeklyMA' ? `Raw: ${item.rawDailyRawForecast}mm` : `7d: ${item.weeklyMaRaw}mm`}
                 </span>
               </div>
-            </div>
 
-            <div className="flex justify-between items-start text-blue-400">
-              <span className="flex items-center gap-1.5 pt-0.5">
-                <span className="w-2 h-2 rounded-full bg-blue-500"></span> AI Corrected:
-              </span>
-              <div className="text-right">
-                <span className="font-mono font-bold text-sm">
-                  {item.aiCorrected} mm{dataRepresentation === 'weeklyMA' ? '/d (7d WMA)' : ''}
+              <div className="bg-blue-950/40 border border-blue-500/30 rounded-lg p-1.5 text-center">
+                <span className="block text-[9px] uppercase font-bold text-cyan-400">AI Corrected</span>
+                <span className="font-mono font-bold text-xs text-cyan-200">
+                  {item.aiCorrected} <span className="text-[9px] font-normal">mm</span>
                 </span>
-                <span className="block text-[10px] text-cyan-300 font-mono">
-                  {dataRepresentation === 'weeklyMA'
-                    ? `Raw Daily: ${item.rawDailyAiCorrected} mm`
-                    : `7-Day WMA: ${item.weeklyMaAi} mm/d`}
+                <span className="block text-[9px] text-cyan-300 font-mono mt-0.5">
+                  {dataRepresentation === 'weeklyMA' ? `Raw: ${item.rawDailyAiCorrected}mm` : `7d: ${item.weeklyMaAi}mm`}
                 </span>
               </div>
             </div>
             
             {payload.filter((p: any) => p.dataKey && p.dataKey.includes('_aiCorrected')).length > 0 && (
-              <div className="pt-2 mt-2 border-t border-slate-700/50 space-y-1.5">
-                <div className="text-[10px] uppercase font-bold text-slate-400 mb-1">Compared Stations</div>
+              <div className="pt-1.5 mt-1 border-t border-slate-700/50 space-y-1">
+                <div className="text-[10px] uppercase font-bold text-slate-400">Compared Stations</div>
                 {payload.filter((p: any) => p.dataKey && p.dataKey.includes('_aiCorrected')).map((p: any) => {
                   const stId = p.dataKey.split('_')[0];
                   const obsData = payload.find((x: any) => x.dataKey === `${stId}_observed`);
                   return (
-                    <div key={stId} className="flex justify-between items-center text-[11px]" style={{ color: p.color }}>
+                    <div key={stId} className="flex justify-between items-center text-[10px]" style={{ color: p.color }}>
                       <span className="font-semibold">{stId}</span>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         {obsData && <span className="opacity-70">Obs: {obsData.value}mm</span>}
                         <span className="font-bold">AI: {p.value}mm</span>
                       </div>
@@ -1491,19 +1475,13 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                 })}
               </div>
             )}
-            
           </div>
 
-          <div className="pt-1.5 border-t border-slate-800 flex justify-between text-[11px] text-slate-400">
+          <div className="pt-1.5 border-t border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
             <span>RH: <strong className="text-white">{item.humidity}%</strong></span>
             <span>Pressure: <strong className="text-white">{item.pressure} hPa</strong></span>
-          </div>
-
-          <div className="pt-1 flex justify-between text-[11px] border-t border-slate-800/60">
-            <span className="text-slate-400">Absolute Error:</span>
             <span>
-              <span className="text-rose-400 font-mono">Raw: {item.rawError}mm</span> |{' '}
-              <span className="text-emerald-400 font-mono">AI: {item.aiError}mm</span>
+              Err: <span className="text-rose-400 font-mono">Raw {item.rawError}</span> | <span className="text-emerald-400 font-mono font-bold">AI {item.aiError}mm</span>
             </span>
           </div>
         </div>
@@ -2109,7 +2087,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       {/* Chart Canvas with D3 Zoom Listener Ref */}
       <div 
         ref={chartWrapperRef} 
-        className="h-[360px] w-full pt-1 cursor-grab active:cursor-grabbing select-none relative"
+        className="h-[420px] w-full pt-1 cursor-grab active:cursor-grabbing select-none relative overflow-visible"
         title="Scroll or Drag to Pan/Zoom using D3 Zoom"
       >
         
@@ -2204,6 +2182,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               />
               <Tooltip 
                 content={<CustomTooltip />} 
+                allowEscapeViewBox={{ x: true, y: true }}
+                wrapperStyle={{ zIndex: 1000, pointerEvents: 'none' }}
                 cursor={showGlobalCrosshair ? <CustomCrosshair /> : { stroke: themeStyles.tooltipCursor, strokeWidth: 1.5, strokeDasharray: '4 4' }} 
               />
               <Legend
@@ -2369,6 +2349,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               />
               <Tooltip 
                 content={<CustomTooltip />} 
+                allowEscapeViewBox={{ x: true, y: true }}
+                wrapperStyle={{ zIndex: 1000, pointerEvents: 'none' }}
                 cursor={showGlobalCrosshair ? <CustomCrosshair /> : { stroke: themeStyles.tooltipCursor, strokeWidth: 1.5, strokeDasharray: '4 4' }} 
               />
               <Legend
@@ -2636,11 +2618,13 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                     <FileText className="w-5 h-5 text-emerald-500" />
                     Day-by-Day Rainfall Analysis Report
                   </h3>
-                  <span className="text-xs font-mono font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className={`text-xs font-mono font-bold px-2.5 py-0.5 rounded-full ${
+                    isDark ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                  }`}>
                     {selectedStationName}
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className={`text-xs mt-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Thorough day-by-day station breakdown including ground truth observed rainfall, raw NWP forecasts, AI calibrations, D3 moving averages ({movingAvgWindow}-day), and meteorological assessment narratives.
                 </p>
               </div>
@@ -2698,34 +2682,34 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
             <div className={`p-4 border-b grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-xs shrink-0 ${
               isDark ? 'bg-slate-950/50 border-slate-800' : 'bg-slate-50/80 border-slate-200'
             }`}>
-              <div className="p-2.5 rounded-xl border bg-slate-800/40 border-slate-700/60">
-                <span className="text-slate-400 block text-[10px] uppercase font-mono tracking-wider">Days Analyzed</span>
-                <span className="text-base font-bold text-white font-mono">{reportStats.totalDays} <span className="text-xs font-normal text-slate-400">Days</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-slate-800/40 border-slate-700/60' : 'bg-white border-slate-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-600 font-semibold'}`}>Days Analyzed</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-white' : 'text-slate-900'}`}>{reportStats.totalDays} <span className={`text-xs font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Days</span></span>
               </div>
 
-              <div className="p-2.5 rounded-xl border bg-emerald-950/30 border-emerald-500/30">
-                <span className="text-emerald-300 block text-[10px] uppercase font-mono tracking-wider">Observed Ground Truth</span>
-                <span className="text-base font-bold text-emerald-400 font-mono">{reportStats.totalObserved} <span className="text-xs font-normal text-emerald-200">mm</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-emerald-950/30 border-emerald-500/30' : 'bg-emerald-50 border-emerald-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-emerald-300' : 'text-emerald-700 font-semibold'}`}>Observed Ground Truth</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-emerald-400' : 'text-emerald-800 font-black'}`}>{reportStats.totalObserved} <span className={`text-xs font-normal ${isDark ? 'text-emerald-200' : 'text-emerald-600'}`}>mm</span></span>
               </div>
 
-              <div className="p-2.5 rounded-xl border bg-blue-950/30 border-blue-500/30">
-                <span className="text-blue-300 block text-[10px] uppercase font-mono tracking-wider">AI Forecast Volume</span>
-                <span className="text-base font-bold text-blue-400 font-mono">{reportStats.totalAi} <span className="text-xs font-normal text-blue-200">mm</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-blue-950/30 border-blue-500/30' : 'bg-blue-50 border-blue-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-blue-300' : 'text-blue-700 font-semibold'}`}>AI Forecast Volume</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-blue-400' : 'text-blue-800 font-black'}`}>{reportStats.totalAi} <span className={`text-xs font-normal ${isDark ? 'text-blue-200' : 'text-blue-600'}`}>mm</span></span>
               </div>
 
-              <div className="p-2.5 rounded-xl border bg-rose-950/30 border-rose-500/30">
-                <span className="text-rose-300 block text-[10px] uppercase font-mono tracking-wider">Raw NWP Forecast</span>
-                <span className="text-base font-bold text-rose-400 font-mono">{reportStats.totalRaw} <span className="text-xs font-normal text-rose-200">mm</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-rose-950/30 border-rose-500/30' : 'bg-rose-50 border-rose-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-rose-300' : 'text-rose-700 font-semibold'}`}>Raw NWP Forecast</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-rose-400' : 'text-rose-800 font-black'}`}>{reportStats.totalRaw} <span className={`text-xs font-normal ${isDark ? 'text-rose-200' : 'text-rose-600'}`}>mm</span></span>
               </div>
 
-              <div className="p-2.5 rounded-xl border bg-purple-950/30 border-purple-500/30">
-                <span className="text-purple-300 block text-[10px] uppercase font-mono tracking-wider">AI Skill Gain</span>
-                <span className="text-base font-bold text-purple-300 font-mono">+{reportStats.skillGain}% <span className="text-xs font-normal text-purple-200">MAE Reduction</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-purple-950/30 border-purple-500/30' : 'bg-purple-50 border-purple-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-purple-300' : 'text-purple-700 font-semibold'}`}>AI Skill Gain</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-purple-300' : 'text-purple-800 font-black'}`}>+{reportStats.skillGain}% <span className={`text-xs font-normal ${isDark ? 'text-purple-200' : 'text-purple-600'}`}>MAE Reduction</span></span>
               </div>
 
-              <div className="p-2.5 rounded-xl border bg-amber-950/30 border-amber-500/30">
-                <span className="text-amber-300 block text-[10px] uppercase font-mono tracking-wider">D3 Anomalies</span>
-                <span className="text-base font-bold text-amber-400 font-mono">{reportStats.anomaliesCount} <span className="text-xs font-normal text-amber-200">Days</span></span>
+              <div className={`p-2.5 rounded-xl border ${isDark ? 'bg-amber-950/30 border-amber-500/30' : 'bg-amber-50 border-amber-200 shadow-xs'}`}>
+                <span className={`block text-[10px] uppercase font-mono tracking-wider ${isDark ? 'text-amber-300' : 'text-amber-700 font-semibold'}`}>D3 Anomalies</span>
+                <span className={`text-base font-bold font-mono ${isDark ? 'text-amber-400' : 'text-amber-800 font-black'}`}>{reportStats.anomaliesCount} <span className={`text-xs font-normal ${isDark ? 'text-amber-200' : 'text-amber-600'}`}>Days</span></span>
               </div>
             </div>
 
@@ -2812,11 +2796,11 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                 <div className="border rounded-xl overflow-hidden shadow-inner">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className={`font-mono text-[11px] uppercase tracking-wider sticky top-0 z-10 border-b ${
-                      isDark ? 'bg-slate-950 text-cyan-300 border-slate-800' : 'bg-slate-100 text-slate-700 border-slate-200'
+                      isDark ? 'bg-slate-950 text-cyan-300 border-slate-800' : 'bg-slate-100 text-slate-800 font-bold border-slate-300'
                     }`}>
                       <tr>
                         <th className="p-3">Date</th>
-                        <th className="p-3">Regime</th>
+                        <th className="p-3 min-w-[130px] whitespace-nowrap">Regime</th>
                         <th className="p-3 text-right">Ground Obs</th>
                         <th className="p-3 text-right">Raw NWP</th>
                         <th className="p-3 text-right">AI Corrected</th>
@@ -2843,53 +2827,53 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                             }`}
                           >
                             {/* Date */}
-                            <td className="p-3 font-mono font-bold text-slate-200">
+                            <td className={`p-3 font-mono font-bold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>
                               <div>{row.fullDate || row.date}</div>
-                              <span className="text-[10px] text-slate-400 font-normal">Day {idx + 1}</span>
+                              <span className={`text-[10px] font-normal ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Day {idx + 1}</span>
                             </td>
 
                             {/* Regime */}
-                            <td className="p-3">
-                              <span className={`px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            <td className="p-3 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-[11px] font-semibold whitespace-nowrap leading-none ${
                                 row.observed >= 64.5
-                                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                  ? (isDark ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-rose-100 text-rose-800 border border-rose-200')
                                   : row.observed >= 15.5
-                                  ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+                                  ? (isDark ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30' : 'bg-blue-100 text-blue-800 border border-blue-200')
                                   : row.observed >= 2.5
-                                  ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30'
-                                  : 'bg-slate-500/20 text-slate-300 border border-slate-500/30'
+                                  ? (isDark ? 'bg-sky-500/20 text-sky-300 border border-sky-500/30' : 'bg-sky-100 text-sky-800 border border-sky-200')
+                                  : (isDark ? 'bg-slate-500/20 text-slate-300 border border-slate-500/30' : 'bg-slate-100 text-slate-700 border border-slate-200')
                               }`}>
                                 {row.regime}
                               </span>
                             </td>
 
                             {/* Ground Obs */}
-                            <td className="p-3 text-right font-mono font-bold text-emerald-400">
-                              {row.observed} <span className="text-[10px] text-slate-400">mm</span>
+                            <td className={`p-3 text-right font-mono font-bold ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+                              {row.observed} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>mm</span>
                             </td>
 
                             {/* Raw NWP */}
-                            <td className="p-3 text-right font-mono text-rose-400">
-                              {row.rawForecast} <span className="text-[10px] text-slate-400">mm</span>
-                              <div className="text-[10px] opacity-75">Err: {row.rawError}mm</div>
+                            <td className={`p-3 text-right font-mono ${isDark ? 'text-rose-400' : 'text-rose-700 font-semibold'}`}>
+                              {row.rawForecast} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>mm</span>
+                              <div className={`text-[10px] ${isDark ? 'opacity-75' : 'text-rose-600 font-normal'}`}>Err: {row.rawError}mm</div>
                             </td>
 
                             {/* AI Corrected */}
-                            <td className="p-3 text-right font-mono font-bold text-blue-400">
-                              {row.aiCorrected} <span className="text-[10px] text-slate-400">mm</span>
-                              <div className={`text-[10px] font-semibold ${aiImproved ? 'text-emerald-400' : 'text-amber-400'}`}>
+                            <td className={`p-3 text-right font-mono font-bold ${isDark ? 'text-blue-400' : 'text-blue-700'}`}>
+                              {row.aiCorrected} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>mm</span>
+                              <div className={`text-[10px] font-semibold ${aiImproved ? (isDark ? 'text-emerald-400' : 'text-emerald-700') : (isDark ? 'text-amber-400' : 'text-amber-700')}`}>
                                 Err: {row.aiError}mm
                               </div>
                             </td>
 
                             {/* D3 Trend Line */}
-                            <td className="p-3 text-right font-mono text-purple-300">
-                              {row.d3AiTrendLine} <span className="text-[10px] text-slate-400">mm</span>
+                            <td className={`p-3 text-right font-mono ${isDark ? 'text-purple-300' : 'text-purple-700 font-semibold'}`}>
+                              {row.d3AiTrendLine} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>mm</span>
                             </td>
 
                             {/* D3 Moving Avg */}
-                            <td className="p-3 text-right font-mono text-amber-300">
-                              {row.d3AiMovingAvg} <span className="text-[10px] text-slate-400">mm</span>
+                            <td className={`p-3 text-right font-mono ${isDark ? 'text-amber-300' : 'text-amber-700 font-semibold'}`}>
+                              {row.d3AiMovingAvg} <span className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>mm</span>
                             </td>
 
                             {/* Anomaly Badge */}
@@ -2904,12 +2888,12 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                                   {row.anomalyZScore}σ
                                 </span>
                               ) : (
-                                <span className="text-slate-500 font-mono text-[10px]">&mdash;</span>
+                                <span className={`${isDark ? 'text-slate-500' : 'text-slate-400'} font-mono text-[10px]`}>&mdash;</span>
                               )}
                             </td>
 
                             {/* Narrative */}
-                            <td className="p-3 text-[11px] leading-relaxed text-slate-300">
+                            <td className={`p-3 text-[11px] leading-relaxed ${isDark ? 'text-slate-300' : 'text-slate-700 font-medium'}`}>
                               {narrative}
                             </td>
                           </tr>

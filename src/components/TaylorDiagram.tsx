@@ -137,7 +137,7 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
-            Co-plots spatial correlation ($r$), normalized variability ($\sigma_f / \sigma_o$), and centered RMS error ($E'$). Closer to the <strong className="text-emerald-400 font-semibold">Observed Reference Point</strong> indicates superior pattern matching.
+            Co-plots spatial correlation (r), normalized variability (σ_f / σ_o), and centered RMS error (E'). Closer to the <strong className="text-emerald-400 font-semibold">Observed Reference Point</strong> indicates superior pattern matching.
           </p>
         </div>
 
@@ -576,7 +576,7 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
             fontWeight="bold"
             textAnchor="middle"
           >
-            Normalized Standard Deviation ($\sigma_f / \sigma_o$) →
+            Normalized Standard Deviation (σ_f / σ_o) →
           </text>
           <text
             x={-originY + (maxR * scale) / 2}
@@ -587,7 +587,7 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
             textAnchor="middle"
             transform="rotate(-90)"
           >
-            Correlation Arc Angle $\cos^{-1}(r)$
+            Correlation Arc Angle cos⁻¹(r)
           </text>
         </svg>
       </div>
@@ -614,15 +614,15 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
           </div>
           <div className="text-[11px] text-slate-300 font-mono space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-400">Corr ($r$):</span>
+              <span className="text-slate-400">Corr (r):</span>
               <strong className="text-white">{stats.rawNwp.correlation.toFixed(3)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Norm $\sigma$:</span>
+              <span className="text-slate-400">Norm σ:</span>
               <strong className="text-white">{stats.rawNwp.std.toFixed(2)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Cent-RMSE ($E&apos;$):</span>
+              <span className="text-slate-400">Cent-RMSE (E&apos;):</span>
               <strong className="text-rose-300">{stats.rawNwp.crmse.toFixed(1)} mm</strong>
             </div>
           </div>
@@ -648,15 +648,15 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
           </div>
           <div className="text-[11px] text-slate-300 font-mono space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-400">Corr ($r$):</span>
+              <span className="text-slate-400">Corr (r):</span>
               <strong className="text-white">{stats.linearBaseline.correlation.toFixed(3)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Norm $\sigma$:</span>
+              <span className="text-slate-400">Norm σ:</span>
               <strong className="text-white">{stats.linearBaseline.std.toFixed(2)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Cent-RMSE ($E&apos;$):</span>
+              <span className="text-slate-400">Cent-RMSE (E&apos;):</span>
               <strong className="text-amber-300">{stats.linearBaseline.crmse.toFixed(1)} mm</strong>
             </div>
           </div>
@@ -682,15 +682,15 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
           </div>
           <div className="text-[11px] text-slate-200 font-mono space-y-1">
             <div className="flex justify-between">
-              <span className="text-slate-400">Corr ($r$):</span>
+              <span className="text-slate-400">Corr (r):</span>
               <strong className="text-emerald-400">{stats.aiCorrected.correlation.toFixed(3)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Norm $\sigma$:</span>
+              <span className="text-slate-400">Norm σ:</span>
               <strong className="text-emerald-400">{stats.aiCorrected.std.toFixed(2)}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-slate-400">Cent-RMSE ($E&apos;$):</span>
+              <span className="text-slate-400">Cent-RMSE (E&apos;):</span>
               <strong className="text-cyan-300 font-bold">{stats.aiCorrected.crmse.toFixed(1)} mm</strong>
             </div>
           </div>

@@ -8,6 +8,13 @@ import { generateMeteorologicalResponse } from "./src/utils/meteorologicalChatEn
 
 import http from "http";
 
+process.on('uncaughtException', (err) => {
+  console.error('Server uncaughtException safely handled:', err);
+});
+process.on('unhandledRejection', (reason) => {
+  console.error('Server unhandledRejection safely handled:', reason);
+});
+
 async function startServer() {
   const app = express();
   const server = http.createServer(app);
@@ -38,7 +45,10 @@ async function startServer() {
     if (promptType === 'plan') {
       const loc = extraContext?.location || 'Mumbai';
       const occ = extraContext?.occupation || 'Farmer';
-      const wCtx = extraContext?.weatherContext || '';
+      const rawWeather = extraContext?.weatherContext;
+      const wCtx = typeof rawWeather === 'string' 
+        ? rawWeather 
+        : (rawWeather ? JSON.stringify(rawWeather) : '');
 
       return `### 🌦️ Synoptic Action & Resilience Plan: ${loc}
 **Target Sector:** ${occ}  
@@ -277,7 +287,8 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
       let promptText = `I live in ${location || 'Mumbai'} and my occupation is ${occupation || 'Farmer'}. Please predict future weather patterns and formulate an action plan for me.`;
       
       if (weatherContext) {
-        promptText += `\n\nHere is the real-time 7-day weather forecast data for my location:\n${weatherContext}\n\nPlease base your predictions heavily on this live forecast data.`;
+        const weatherStr = typeof weatherContext === 'string' ? weatherContext : JSON.stringify(weatherContext);
+        promptText += `\n\nHere is the real-time 7-day weather forecast data for my location:\n${weatherStr}\n\nPlease base your predictions heavily on this live forecast data.`;
       }
       
       const contents = [{ role: "user", parts: [{ text: promptText }] }];
@@ -362,9 +373,32 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
     }
   });
 
-  server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  server.on('error', (err: any) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(`Primary port ${PORT} is already in use.`);
+    } else {
+      console.error('Server error:', err);
+    }
   });
+
+  // Listen without restrictive host string so Node binds dual-stack (IPv4 0.0.0.0 and IPv6 ::1/localhost)
+  server.listen(PORT, () => {
+    console.log(`Server running on:`);
+    console.log(`  > Local:     http://localhost:${PORT}`);
+    console.log(`  > Loopback:  http://127.0.0.1:${PORT}`);
+  });
+
+  // Also bind alternate port (8080 or 3000) so user can access either port seamlessly
+  const SECONDARY_PORT = PORT === 3000 ? 8080 : (PORT === 8080 ? 3000 : null);
+  if (SECONDARY_PORT) {
+    const secondaryServer = http.createServer(app);
+    secondaryServer.on('error', (err: any) => {
+      console.log(`Alternate port ${SECONDARY_PORT} unavailable (${err.message}), continuing on port ${PORT}.`);
+    });
+    secondaryServer.listen(SECONDARY_PORT, () => {
+      console.log(`  > Alternate: http://localhost:${SECONDARY_PORT}`);
+    });
+  }
 }
 
 startServer();

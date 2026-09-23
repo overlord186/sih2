@@ -160,7 +160,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             </h3>
           </div>
           <p className="text-xs text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Adjust the slider to balance model reliance between <strong>Historical Climatological Prior</strong> and <strong>Real-Time Telemetry/NWP Guidance</strong>. Observe the immediate impact on forecast output and output variance ($\sigma^2$).
+            Adjust the slider to balance model reliance between <strong>Historical Climatological Prior</strong> and <strong>Real-Time Telemetry/NWP Guidance</strong>. Observe the immediate impact on forecast output and output variance (σ²).
           </p>
         </div>
 
@@ -380,7 +380,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
         <div className={`bg-slate-950/80 border rounded-xl p-3.5 space-y-1 ${stabilityInfo.cardClass}`}>
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
-              Output Variance ($\sigma^2$)
+              Output Variance (σ²)
             </span>
             <Activity className="w-3.5 h-3.5 text-amber-400" />
           </div>
@@ -401,7 +401,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
         {/* Metric 3: Standard Deviation (σ) & 95% CI */}
         <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3.5 space-y-1">
           <span className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider block">
-            Standard Deviation ($\sigma$)
+            Standard Deviation (σ)
           </span>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black font-mono text-purple-300">
@@ -483,7 +483,10 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
           <div>
             <span className="font-bold text-xs text-white flex items-center gap-1.5">
               <Activity className="w-4 h-4 text-amber-400" />
-              Real-Time Output Variance Sensitivity Curve $\sigma^2(\alpha)$
+              Real-Time Output Variance Sensitivity Curve
+              <span className="px-2 py-0.5 rounded text-[11px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 ml-1 inline-flex items-center">
+                σ²(α)
+              </span>
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">
               Visualizes how output variance evolves as model reliance shifts from 0% (Pure Historical Prior) to 100% (Pure Real-Time NWP).
@@ -502,7 +505,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             <div className="w-px h-4 bg-slate-700/80 mx-1"></div>
             <span className="flex items-center gap-1.5 text-amber-300">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-              Variance $\sigma^2$ (mm²)
+              Variance σ² (mm²)
             </span>
             <span className="flex items-center gap-1.5 text-cyan-300">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
@@ -598,11 +601,11 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-amber-300">
-                          <span>Output Variance ($\sigma^2$):</span>
+                          <span>Output Variance (σ²):</span>
                           <span className="font-mono font-bold">{data.variance} mm²</span>
                         </div>
                         <div className="flex justify-between items-center text-purple-300">
-                          <span>Standard Deviation ($\sigma$):</span>
+                          <span>Standard Deviation (σ):</span>
                           <span className="font-mono font-bold">±{data.stdDev} mm</span>
                         </div>
                         <div className="flex justify-between items-center text-cyan-300">

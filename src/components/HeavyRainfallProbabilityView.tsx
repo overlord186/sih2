@@ -1038,7 +1038,7 @@ export const HeavyRainfallProbabilityView: React.FC<HeavyRainfallProbabilityView
             <thead className="bg-slate-100/80 text-slate-600 font-semibold uppercase tracking-wider text-[11px] border-b border-slate-200">
               <tr>
                 <th className="py-3 px-4">Station & Subdivision</th>
-                <th className="py-3 px-3">Synoptic Regime</th>
+                <th className="py-3 px-3 min-w-[160px] whitespace-nowrap">Synoptic Regime</th>
                 <th className="py-3 px-3">Corrected Forecast</th>
                 <th className="py-3 px-3 text-center bg-indigo-50/60 text-indigo-900 border-x border-indigo-100">
                   ≥ {heavyThresholdMm.toFixed(1)}mm (Custom)
@@ -1073,8 +1073,8 @@ export const HeavyRainfallProbabilityView: React.FC<HeavyRainfallProbabilityView
                         </div>
                         <div className="text-[11px] text-slate-500">{stn.subdivision}, {stn.state}</div>
                       </td>
-                      <td className="py-3 px-3">
-                        <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200">
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold border border-slate-200 whitespace-nowrap leading-none">
                           {stn.synopticRegime}
                         </span>
                       </td>

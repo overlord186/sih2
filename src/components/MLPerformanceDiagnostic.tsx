@@ -339,7 +339,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
   const leadTimeBreakdown = useMemo((): LeadTimeSkillRow[] => {
     const leadTimes = [1, 2, 3];
     return leadTimes.map(lt => {
-      const subset = dataset.filter(d => d.leadTimeDays === lt);
+      const subset = activeData.filter(d => d.leadTimeDays === lt);
       const stats = calculateStats(subset, selectedBaseline);
       return {
         leadTime: lt,
@@ -353,7 +353,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
         rmseSkillScore: stats.rmseSkillScore,
       };
     });
-  }, [dataset, selectedBaseline]);
+  }, [activeData, selectedBaseline]);
 
   // Chart data for Regime comparison
   const chartData = useMemo(() => {

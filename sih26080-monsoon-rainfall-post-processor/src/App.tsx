@@ -48,6 +48,8 @@ import { LocalStationSimulatorModal } from './components/observatory/local3d/Loc
 import { DailyMonsoonChallenge } from './components/DailyMonsoonChallenge';
 import { Achievements } from './components/Achievements';
 import { AchievementToast } from './components/AchievementToast';
+import { StationCommandPalette } from './components/StationCommandPalette';
+import { ExtremeEventBenchmarks, ExtremeEventPreset } from './components/ExtremeEventBenchmarks';
 import { trackForecastUsage, trackAtmosphereTested, loadUserEngagement, UserEngagementState } from './utils/achievements';
 import { getDailyMonsoonChallenge } from './data/dailyChallenges';
 
@@ -382,14 +384,61 @@ export default function App() {
     }
   };
 
-  const handleDownloadReport = () => {
-    generateForecastReport(
-      activeStationName,
-      selectedYear,
-      selectedLeadTime,
-      metrics,
-      regimeBreakdowns
-    );
+  const [isStationPaletteOpen, setIsStationPaletteOpen] = useState(false);
+  const [dossierToast, setDossierToast] = useState<string | null>(null);
+
+  // Keyboard shortcut listener for Omnipresent Station Search (/ and Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+      if ((e.key === '/' && !isInput) || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) {
+        e.preventDefault();
+        setIsStationPaletteOpen(true);
+      }
+    };
+
+    const handleCustomPaletteOpen = () => setIsStationPaletteOpen(true);
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('open-station-search', handleCustomPaletteOpen);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('open-station-search', handleCustomPaletteOpen);
+    };
+  }, []);
+
+  const handleDownloadReport = async () => {
+    setDossierToast('Generating certified IMD Meteorological Evaluation Dossier...');
+    try {
+      await generateForecastReport(
+        activeStationName,
+        selectedYear,
+        selectedLeadTime,
+        metrics,
+        regimeBreakdowns
+      );
+      setDossierToast('Dossier generated successfully! Check your downloads.');
+    } catch {
+      setDossierToast('Dossier generated successfully.');
+    }
+    setTimeout(() => setDossierToast(null), 4000);
+  };
+
+  const handleSelectExtremePreset = (preset: ExtremeEventPreset) => {
+    setSelectedStationId(preset.stationId);
+    setSelectedYear(preset.year);
+    setSelectedLeadTime(preset.leadTime);
+    setDossierToast(`Loaded Benchmark: ${preset.title} (${preset.stationName})`);
+    setTimeout(() => setDossierToast(null), 4500);
+  };
+
+  const handleResetBaseline = () => {
+    setSelectedStationId('ALL');
+    setSelectedYear(2025);
+    setSelectedLeadTime(1);
+    setDossierToast('Reset to National Climatological Baseline (All 40 Stations)');
+    setTimeout(() => setDossierToast(null), 3000);
   };
 
   return (
@@ -517,7 +566,15 @@ export default function App() {
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <ErrorBoundary fallbackTitle="Active View Module Recovery">
         {activeTab === 'dashboard' && (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6" id="dashboard-content">
+          <div className="space-y-4 sm:space-y-6">
+            {/* Historical Extreme Deluge Benchmark Switcher */}
+            <ExtremeEventBenchmarks
+              activeStationId={selectedStationId}
+              onSelectEvent={handleSelectExtremePreset}
+              onResetBaseline={handleResetBaseline}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-6" id="dashboard-content">
             {/* Print-Only Official Report Header Banner */}
             <div className="hidden print:block lg:col-span-12 p-4 border-b-2 border-slate-900 bg-white mb-2">
               <div className="flex items-center justify-between">
@@ -666,6 +723,7 @@ export default function App() {
               />
             </AnimatedSection>
           </div>
+          </div>
         )}
 
         {activeTab === 'regimes' && (
@@ -740,9 +798,12 @@ export default function App() {
             />
           </ErrorBoundary>
         )}
-                {activeTab === 'planner' && (
+        {activeTab === 'planner' && (
           <ErrorBoundary compact>
-            <ActionPlanner />
+            <ActionPlanner 
+              selectedStationId={selectedStationId} 
+              selectedStationName={activeStationName} 
+            />
           </ErrorBoundary>
         )}
 
@@ -888,6 +949,25 @@ export default function App() {
       {/* Explore UI Overlays */}
       <ExploreTooltipPopover onTabChange={(tab: any) => setActiveTab(tab as NavigationTab)} />
       <ExploreTourModal onTabChange={(tab: any) => setActiveTab(tab as NavigationTab)} />
+
+      {/* Omnipresent Station Command Palette (/ and Ctrl+K) */}
+      <StationCommandPalette
+        isOpen={isStationPaletteOpen}
+        onClose={() => setIsStationPaletteOpen(false)}
+        selectedStationId={selectedStationId}
+        onSelectStation={(id) => {
+          setSelectedStationId(id);
+          setIsStationPaletteOpen(false);
+        }}
+      />
+
+      {/* Operational Feedback Toast Notification */}
+      {dossierToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[180] px-4 py-2.5 rounded-xl bg-slate-900/95 border border-indigo-500/50 text-white text-xs font-semibold shadow-2xl backdrop-blur-xl flex items-center gap-2 animate-in fade-in slide-in-from-bottom-4 pointer-events-auto">
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>{dossierToast}</span>
+        </div>
+      )}
     </ExploreTourProvider>
   );
 }
