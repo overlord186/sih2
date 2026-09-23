@@ -15,7 +15,16 @@
 
 - [Overview & Architecture](#-overview--architecture)
 - [Tech Stack & Dependencies](#-tech-stack--dependencies)
+<<<<<<< HEAD
 - [How It Works](#-how-it-works)
+=======
+- [How It Works & Pipeline Flowcharts](#-how-it-works--pipeline-flowcharts)
+  - [1. End-to-End System Data Flowchart](#1-end-to-end-system-data-flowchart)
+  - [2. IMD Synoptic Regime Classification Flowchart](#2-imd-synoptic-regime-classification-flowchart)
+  - [3. Workstation User Navigation & State Flowchart](#3-workstation-user-navigation--state-flowchart)
+  - [4. AI Advisory Generation & PDF Export Flowchart](#4-ai-advisory-generation--pdf-export-flowchart)
+  - [5. 3D WebGL Cloud Physics Simulation Pipeline Flowchart](#5-3d-webgl-cloud-physics-simulation-pipeline-flowchart)
+>>>>>>> e13cd2001f5a103a9375bf8280a6873274854eb2
 - [Detailed Guide to Navigation, Options & Features](#-detailed-guide-to-navigation-options--features)
   - [1. Workstation Navigation Rail](#1-workstation-navigation-rail)
   - [2. Interactive Scenario Scrubber Bar](#2-interactive-scenario-scrubber-bar)
@@ -78,7 +87,42 @@ Raw Numerical Weather Prediction (NWP) models frequently suffer from two persist
 
 ---
 
+<<<<<<< HEAD
 ## ⚙️ How It Works
+=======
+## ⚙️ How It Works & Pipeline Flowcharts
+
+### 1. End-to-End System Data Flowchart
+
+```mermaid
+flowchart TD
+    subgraph Data_Ingestion [Data Ingestion Layer]
+        A1[Raw NWP GFS / ECMWF Model Data] --> B1[Feature Preprocessor]
+        A2[IMD Telemetry Observations] --> B1
+        A3[INSAT-3D Cloud Top Satellite] --> B1
+    end
+
+    subgraph Feature_Engineering [Feature Engineering & Conditioning]
+        B1 --> C1[Moisture Flux Convergence Vector]
+        B1 --> C2[Vertical Wind Shear Index]
+        B1 --> C3[Quantile Anomaly Mapping]
+    end
+
+    subgraph Neural_Core [Regime-Conditioned Neural Core]
+        C1 & C2 & C3 --> D1[IMD Synoptic Regime Classifier]
+        D1 -->|Latent Regime Vector| D2[Physics-Informed Bias Corrector]
+        D2 -->|Mass Balance Loss & Drizzle Masking| D3[Post-Processed Precipitation Vector]
+    end
+
+    subgraph Presentation_Layer [Workstation Presentation Layer]
+        D3 --> E1[Recharts Time Series Chart]
+        D3 --> E2[D3.js Forecast Skill Cards]
+        D3 --> E3[Leaflet GIS Radar Map]
+        D3 --> E4[Three.js 3D WebGL Cloud Engine]
+        D3 --> E5[Express Server -> Gemini AI Advisory API]
+    end
+```
+>>>>>>> e13cd2001f5a103a9375bf8280a6873274854eb2
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -113,11 +157,94 @@ Raw Numerical Weather Prediction (NWP) models frequently suffer from two persist
  (Google Gemini API Route)                                 (Map, Charts, 3D Cloud Engine)
 ```
 
+<<<<<<< HEAD
 1. **Ingestion & Conditioning**: Raw NWP precipitation data is ingested alongside observatory coordinates, seasonal phase, and lead time.
 2. **Regime Classification**: The model determines the prevailing synoptic regime for the selected observatory.
 3. **Post-Processing Transformation**: Regime-specific weight matrices apply bias corrections, stripping out low-probability drizzle noise while inflating smoothed convective spikes.
 4. **Interactive Visualization**: React renders the corrected output across interactive Leaflet maps, Recharts time-series, D3 skill matrices, and 3D WebGL cloud clouds.
 5. **AI Synthesis**: Server-side Gemini API generates human-readable meteorological advisories explaining the physical driver behind the forecast correction.
+=======
+---
+
+### 2. IMD Synoptic Regime Classification Flowchart
+
+```mermaid
+flowchart TD
+    Start[Synoptic Weather Observations] --> Q1{Monsoon Trough Position?}
+    
+    Q1 -- "South of Normal Position" --> Q2{Cyclonic Circulation Present?}
+    Q2 -- "Yes in Bay of Bengal / Arabian Sea" --> R1[IMD Depression / Low Pressure Area]
+    Q2 -- "No" --> R2[Active Monsoon Phase]
+
+    Q1 -- "Shifted North to Himalayan Foothills" --> R3[Monsoon Break Phase]
+
+    Q1 -- "Normal Trough Axis" --> Q3{Low-Level Jet along Malabar Coast?}
+    Q3 -- "Strong Somali Jet (>35 knots)" --> R4[Off-Shore Trough Regime]
+    Q3 -- "Moderate Jet" --> R5[Normal Monsoon State]
+
+    Q1 -- "Anticyclonic Circulation over Rajasthan" --> R6[Monsoon Withdrawal Phase]
+
+    R1 & R2 & R3 & R4 & R5 & R6 --> Weights[Apply Regime-Specific Bias Correction Weight Matrix]
+```
+
+---
+
+### 3. Workstation User Navigation & State Flowchart
+
+```mermaid
+flowchart LR
+    User([Meteorologist User]) --> Action{User Action}
+
+    Action -- "Toggle Station Dropdown" --> S1[Update selectedStationId State]
+    Action -- "Adjust Lead Time Slider" --> S2[Update selectedLeadTime State]
+    Action -- "Select GIS Map Overlay" --> S3[Set Map Layer: Radar / INSAT-3D / Heatmap]
+    Action -- "Click Launch 3D Sim" --> S4[Open Three.js WebGL Cloud Canvas Modal]
+    Action -- "Click Daily Challenge" --> S5[Open Gamified Forecast Prediction Challenge]
+    Action -- "Click Print Report" --> S6[Trigger Print/PDF Evaluation Dossier]
+
+    S1 & S2 & S3 & S4 & S5 & S6 --> Sound[Trigger Web Audio API Radar Ping]
+    S1 & S2 --> Render[Re-render 12-Column Responsive Dashboard Grid]
+```
+
+---
+
+### 4. AI Advisory Generation & PDF Export Flowchart
+
+```mermaid
+flowchart TD
+    A[Click 'Generate AI Synoptic Bulletin'] --> B[React Collects Active Station Telemetry & Metrics]
+    B --> C[POST Request to Express `/api/generate-advisory`]
+    
+    C --> D{Is GEMINI_API_KEY Configured?}
+    
+    D -- "Yes" --> E[Invoke Google Gemini 2.4 AI Model]
+    E --> F[Generate Natural Language Synoptic Discussion & Hazard Warnings]
+    
+    D -- "No / Offline Fallback" --> G[Run Local Synoptic Heuristic Rule Engine]
+    G --> F
+    
+    F --> H[Render Operational Bulletin Modal]
+    H --> I[User Clicks 'Export PDF Dossier']
+    I --> J[jsPDF + html2canvas Compile Print Dossier Document]
+    J --> K[Download PDF Report]
+```
+
+---
+
+### 5. 3D WebGL Cloud Physics Simulation Pipeline Flowchart
+
+```mermaid
+flowchart TD
+    UserInputs[User Control Sliders] --> Controls
+    Controls[Updraft Velocity | Cloud Top Height | Relative Humidity | Wind Shear] --> Hook[React Three Fiber useFrame Hook]
+    
+    Hook --> Uniforms[Update GPU Shader Uniforms]
+    Uniforms --> Mesh[3D Instanced Volumetric Particle Cloud Mesh]
+    
+    Mesh --> Lighting[Directional Sun Vector + Atmospheric Rayleigh Scattering]
+    Lighting --> WebGLCanvas[Render WebGL 60 FPS Canvas Output]
+```
+>>>>>>> e13cd2001f5a103a9375bf8280a6873274854eb2
 
 ---
 
@@ -240,7 +367,11 @@ An interactive modal tab offering a technical breakdown:
 │   │   ├── ScenarioScrubberBar.tsx    # Multi-year season & phase scrubber
 │   │   ├── Local3dAtmosphereSim.tsx   # Three.js 3D WebGL cloud physics simulator
 │   │   ├── DailyMonsoonChallengeModal.tsx # Daily gamified forecasting challenge
+<<<<<<< HEAD
 │   │   ├── AchievementsDrawer.tsx     # Badges & experience level progress
+=======
+   │   ├── AchievementsDrawer.tsx     # Badges & experience level progress
+>>>>>>> e13cd2001f5a103a9375bf8280a6873274854eb2
 │   │   ├── UnifiedGuideModal.tsx      # Technical ML guide & system overview
 │   │   └── OperationalBulletinModal.tsx # AI Weather Advisory Bulletin
 │   ├── data/                   # Meteorological dataset & station metadata
@@ -302,6 +433,14 @@ In the project directory, you can run:
 
 ---
 
+<<<<<<< HEAD
+=======
+## URL 
+https://sih26080-monsoon-rainfall-post-proc.vercel.app/
+
+
+
+>>>>>>> e13cd2001f5a103a9375bf8280a6873274854eb2
 ## 📜 License
 
 Distributed under the MIT License. See `LICENSE` for more information.
