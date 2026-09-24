@@ -112,7 +112,7 @@ flowchart TD
         D3 --> E2[D3.js Forecast Skill Cards]
         D3 --> E3[Leaflet GIS Radar Map]
         D3 --> E4[Three.js 3D WebGL Cloud Engine]
-        D3 --> E5[Express Server -> Gemini AI Advisory API]
+        D3 --> E5["Express Server -> Gemini AI Advisory API"]
     end
 ```
 
@@ -198,7 +198,7 @@ flowchart LR
 ```mermaid
 flowchart TD
     A[Click 'Generate AI Synoptic Bulletin'] --> B[React Collects Active Station Telemetry & Metrics]
-    B --> C[POST Request to Express `/api/generate-advisory`]
+    B --> C["POST Request to Express /api/generate-advisory"]
     
     C --> D{Is GEMINI_API_KEY Configured?}
     
@@ -220,8 +220,8 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    UserInputs[User Control Sliders] --> Controls
-    Controls[Updraft Velocity | Cloud Top Height | Relative Humidity | Wind Shear] --> Hook[React Three Fiber useFrame Hook]
+    UserInputs[User Control Sliders] --> Controls["Updraft Velocity | Cloud Top Height | Relative Humidity | Wind Shear"]
+    Controls --> Hook[React Three Fiber useFrame Hook]
     
     Hook --> Uniforms[Update GPU Shader Uniforms]
     Uniforms --> Mesh[3D Instanced Volumetric Particle Cloud Mesh]

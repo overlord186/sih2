@@ -170,43 +170,64 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
 
       // Tier 2: If backend returned no text, and an API key is present in client, call Google Gemini directly
       const effectiveKey = customApiKey || (typeof window !== 'undefined' ? localStorage.getItem('samvartka_gemini_api_key') : null) || (import.meta as any).env?.VITE_GEMINI_API_KEY;
-      if (!responseText && effectiveKey) {
-        try {
-          const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${effectiveKey}`;
-          const systemInstruction = "You are SAMVARTAKA AI, a senior research meteorologist and synoptic forecaster for the Indian Summer Monsoon. You specialize in regime-aware post-processing, Quantile Regression Forests (QRF), Doppler radar diagnostics (dBZ), orographic convection over the Western Ghats and Himalayas, and WMO statistical verification metrics (CRPS, CSI, Taylor diagram). Provide authoritative, mathematically sound, and insightful explanations.";
-          
-          const gRes = await fetch(geminiEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [
-                ...historyToPass.map(h => ({ role: h.role, parts: [{ text: h.parts[0].text }] })),
-                { role: 'user', parts: [{ text: userMessage.parts[0].text }] }
-              ],
-              systemInstruction: { parts: [{ text: systemInstruction }] },
-              generationConfig: {
-                temperature: 0.4,
-                maxOutputTokens: 1200,
-              }
-            })
-          });
+      let keyNotice = '';
 
-          if (gRes.ok) {
-            const gJson = await gRes.json();
-            const candidateText = gJson.candidates?.[0]?.content?.parts?.[0]?.text;
-            if (candidateText) {
-              responseText = candidateText;
-              isLive = true;
+      if (!responseText && effectiveKey) {
+        const candidateModels = [model, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((m, idx, arr) => arr.indexOf(m) === idx);
+        for (const m of candidateModels) {
+          try {
+            const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${effectiveKey}`;
+            const systemInstruction = "You are SAMVARTAKA AI, a senior research meteorologist and synoptic forecaster for the Indian Summer Monsoon. You specialize in regime-aware post-processing, Quantile Regression Forests (QRF), Doppler radar diagnostics (dBZ), orographic convection over the Western Ghats and Himalayas, and WMO statistical verification metrics (CRPS, CSI, Taylor diagram). Provide authoritative, mathematically sound, practical, and insightful explanations.";
+            
+            const gRes = await fetch(geminiEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [
+                  ...historyToPass.map(h => ({ role: h.role, parts: [{ text: h.parts[0].text }] })),
+                  { role: 'user', parts: [{ text: userMessage.parts[0].text }] }
+                ],
+                systemInstruction: { parts: [{ text: systemInstruction }] },
+                generationConfig: {
+                  temperature: 0.4,
+                  maxOutputTokens: 1600,
+                }
+              })
+            });
+
+            if (gRes.ok) {
+              const gJson = await gRes.json();
+              const candidateText = gJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (candidateText && candidateText.trim()) {
+                responseText = candidateText.trim();
+                isLive = true;
+                break;
+              }
+            } else {
+              const errText = await gRes.text();
+              console.warn(`Direct client Gemini call (${m}) returned status ${gRes.status}:`, errText);
+              if (errText.includes('API_KEY_INVALID') || errText.includes('key not valid')) {
+                keyNotice = '⚠️ **API Key Notice:** The configured Gemini API key appears invalid. Please verify it in the 🔑 settings.';
+                break;
+              } else if (errText.includes('RESOURCE_EXHAUSTED') || gRes.status === 429) {
+                keyNotice = '⚠️ **Quota Notice:** Google Gemini API rate limit reached. Utilizing offline Synoptic Intelligence.';
+                break;
+              }
             }
+          } catch (directErr) {
+            console.warn(`Direct client Gemini API request encountered error on ${m}:`, directErr);
           }
-        } catch (directErr) {
-          console.warn("Direct client Gemini API request encountered error:", directErr);
         }
       }
 
       // Tier 3: Resilient high-fidelity meteorological intelligence engine
       if (!responseText) {
-        responseText = generateMeteorologicalResponse(userMessage.parts[0].text);
+        const synopticText = generateMeteorologicalResponse(userMessage.parts[0].text);
+        if (keyNotice) {
+          responseText = `${keyNotice}\n\n---\n\n${synopticText}`;
+        } else {
+          responseText = synopticText;
+        }
       }
       
       setEngineStatus(isLive ? 'live' : 'synoptic');

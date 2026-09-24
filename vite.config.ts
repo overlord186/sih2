@@ -75,6 +75,13 @@ export default defineConfig(() => {
       hmr: false,
       ws: false as const,
       watch: null,
+      proxy: {
+        '/api': {
+          target: 'http://localhost:3000',
+          changeOrigin: true,
+          secure: false,
+        }
+      }
     },
   };
 });

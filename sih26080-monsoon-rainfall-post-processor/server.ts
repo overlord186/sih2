@@ -4,7 +4,7 @@ import path from "path";
 import fs from "fs";
 
 import { GoogleGenAI } from "@google/genai";
-import { generateMeteorologicalResponse } from "./src/utils/meteorologicalChatEngine";
+import { generateMeteorologicalResponse, generateMeteorologicalPlan } from "./src/utils/meteorologicalChatEngine";
 
 import http from "http";
 
@@ -35,51 +35,17 @@ async function startServer() {
     return sanitized.replace(/key=[A-Za-z0-9_\-]+/g, 'key=[REDACTED]');
   };
 
-  // Domain fallback engine when Google upstream API experiences temporary high demand
+  // Domain fallback engine when Google upstream API experiences temporary high demand or no key
   function generateMeteorologicalFallback(contents: any[], baseConfig: any, promptType: 'chat' | 'plan', extraContext?: any): string {
     const lastUserText = Array.isArray(contents) && contents.length > 0 
       ? contents[contents.length - 1]?.parts?.[0]?.text || "" 
       : "";
-    const lower = lastUserText.toLowerCase().trim();
 
     if (promptType === 'plan') {
-      const loc = extraContext?.location || 'Mumbai';
-      const occ = extraContext?.occupation || 'Farmer';
+      const loc = extraContext?.location || 'Nagpur (Sonegaon)';
+      const occ = extraContext?.occupation || 'Farmer & Agricultural Producer';
       const rawWeather = extraContext?.weatherContext;
-      const wCtx = typeof rawWeather === 'string' 
-        ? rawWeather 
-        : (rawWeather ? JSON.stringify(rawWeather) : '');
-
-      return `### 🌦️ Synoptic Action & Resilience Plan: ${loc}
-**Target Sector:** ${occ}  
-**Meteorological Engine:** SAMVARTAKA Synoptic Intelligence (Active)
-
----
-
-#### 1. Synoptic Risk Profile (${loc})
-* **Regime Classification:** Convective moisture convergence with localized precipitation volatility.
-* **Atmospheric Drivers:** Boundary-layer shear along with low-level moisture advection from maritime corridors.
-${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* **Hydrological Vulnerability:** High surface run-off probability during peak cloudburst bursts (>20 mm/hr).'}
-
-#### 2. Sector Impact & Hazard Mitigation (${occ})
-* **Operational Sensitivity:** Direct exposure to rapid downpours, localized flash flooding, and severe visibility attenuation.
-* **Asset Exposure:** Supply lines, field operations, and electrical/drainage infrastructure vulnerable to localized pooling.
-
-#### 3. Phased Tactical Action Plan
-* **T-48h to T-24h (Readiness Phase):**
-  * Clear stormwater grates, inspect retention sumps, and elevate critical inventory 30 cm above baseline floor level.
-  * Continuously check SAMVARTAKA regime updates and localized Doppler radar reflectivity (dBZ > 45).
-* **T-0h (Precipitation Peak / Synoptic Event):**
-  * Restrict non-emergency transit and field deployments during sustained high-intensity convective episodes.
-  * Switch to auxiliary drainage systems and enforce flood buffer perimeters.
-* **Post-Event (Recovery & Assessment):**
-  * Conduct immediate structural subsidence checks and verify runoff dispersal across perimeter channels.
-  * Log recorded peak rainfall data to refine localized bias correction weights.
-
-#### 4. Safety & Operational Safeguards
-* [x] Real-time synoptic alerts enabled across primary mobile channels.
-* [x] Primary and secondary egress corridors verified clear of flood obstructions.
-* [x] Emergency reserves and standby pump apparatus tested.`;
+      return generateMeteorologicalPlan(loc, occ, rawWeather);
     }
 
     return generateMeteorologicalResponse(lastUserText);
@@ -279,22 +245,22 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
         apiKey: apiKey.trim(),
         httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }
       });
-      const modelName = modelConfig?.model || "gemini-2.0-flash";
+      const modelName = modelConfig?.model || "gemini-2.5-flash";
       const config: any = {
-        systemInstruction: "You are an expert AI meteorological advisor. Based on the user's location and occupation, analyze likely upcoming weather patterns (specifically focusing on monsoon/heavy rain/extreme weather if applicable) and formulate a practical, actionable plan to help them prepare, stay safe, and minimize disruption to their work. Format your response cleanly using Markdown."
+        systemInstruction: "You are an elite research meteorologist and operational disaster resilience advisor embedded inside SAMVARTAKA (India Monsoon Rainfall Post-Processor). Formulate a crisp, highly structured, authoritative, and sector-tailored Synoptic Action & Resilience Plan. Format your output strictly in professional GitHub Markdown with these exact sections:\n\n### 🌦️ Synoptic Action & Resilience Plan: [Location]\n**Target Sector:** [Occupation]  \n**Meteorological Engine:** SAMVARTAKA Synoptic Intelligence (Active Live AI)  \n**IMD Alert Classification:** [🟢 Green / 🟡 Yellow / 🟠 Orange / 🔴 Red Alert with exact quantitative mm/24h threshold]\n\n---\n\n#### 1. 🛰️ Synoptic Risk Profile & Agro-Ecological State\n- Atmospheric regime classification, moisture convergence, low-level jet velocity, and local topographic dynamics.\n- Numerical weather telemetry synthesis: 7-day expected precipitation total (mm), peak rain date and single-day max rain (mm), rain probability %, and peak wind gusts.\n\n#### 2. 🎯 Sector Hazard Matrix & Asset Impact ([Occupation])\n- Specific operational vulnerabilities (e.g. for Farmers: specific crops like Cotton, Soybean, Pulses, Oranges, Vertisol/black-cotton soil drainage, fertilizer/pesticide wash-off; for Construction: crane wind limit, trench slumping; for Logistics: highway choke points, container sealing).\n\n#### 3. ⏱️ Phased Tactical Action Protocol\n- T-48h to T-24h (Readiness Phase): Concrete preventative actions.\n- T-12h to T-0h (Active Storm Event): Operational stoppage triggers and live protection.\n- Post-Event (Recovery & Assessment): Field drainage, structural checks, crop/asset revival.\n\n#### 4. 🛡️ Critical Go / No-Go Decision Matrix\n- Explicit quantitative threshold triggers (e.g. wind speed cutoff, rainfall intensity mm/hr, standing water limits).\n\n#### 5. ✅ Immediate Tactical Readiness Checklist\n- Actionable checkboxes [ ] for rapid operational sign-off."
       };
       
-      let promptText = `I live in ${location || 'Mumbai'} and my occupation is ${occupation || 'Farmer'}. Please predict future weather patterns and formulate an action plan for me.`;
+      let promptText = `Generate a crisp, operational, sector-tailored Synoptic Action & Resilience Plan for location: "${location || 'Nagpur (Sonegaon)'}", target sector: "${occupation || 'Farmer & Agricultural Producer'}".`;
       
       if (weatherContext) {
         const weatherStr = typeof weatherContext === 'string' ? weatherContext : JSON.stringify(weatherContext);
-        promptText += `\n\nHere is the real-time 7-day weather forecast data for my location:\n${weatherStr}\n\nPlease base your predictions heavily on this live forecast data.`;
+        promptText += `\n\nReal-time 7-day numerical weather telemetry:\n${weatherStr}\n\nBase your quantitative risk assessment directly on this forecast data.`;
       }
       
       const contents = [{ role: "user", parts: [{ text: promptText }] }];
       
       const result = await generateWithFallback(ai, modelName, contents, config, 'plan', { location, occupation, weatherContext });
-      return res.json({ text: result.text, modelUsed: result.modelUsed });
+      return res.json({ text: result.text, modelUsed: result.modelUsed, isLive: result.isLive });
     } catch (error: any) {
       console.warn("Plan API error caught, utilizing synoptic fallback:", sanitizeLog(error?.message || error));
       const { location, occupation, weatherContext } = req.body || {};
@@ -316,10 +282,36 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
     const vitePkg = "vite";
     const { createServer: createViteServer } = await import(/* @vite-ignore */ vitePkg);
     const vite = await createViteServer({
-      server: { middlewareMode: true },
+      server: {
+        middlewareMode: true,
+        hmr: {
+          server: server,
+        },
+      },
       appType: "spa",
     });
     app.use(vite.middlewares);
+
+    // Explicit fallback for SPA routes in dev mode
+    app.use('*', async (req, res, next) => {
+      if (req.originalUrl.startsWith('/api/')) {
+        return next();
+      }
+      try {
+        const url = req.originalUrl;
+        const rootIndexPath = path.join(process.cwd(), 'index.html');
+        if (fs.existsSync(rootIndexPath)) {
+          let template = fs.readFileSync(rootIndexPath, 'utf-8');
+          template = await vite.transformIndexHtml(url, template);
+          res.setHeader('Content-Type', 'text/html; charset=utf-8');
+          return res.status(200).end(template);
+        }
+        next();
+      } catch (e: any) {
+        if (vite.ssrFixStacktrace) vite.ssrFixStacktrace(e);
+        next(e);
+      }
+    });
   } else {
     const distPath = path.join(process.cwd(), 'dist');
     app.use(express.static(distPath, {
@@ -364,15 +356,6 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
     res.status(200).json({ status: "ok", text: "Atmospheric synoptic post-processing services active." });
   });
 
-  server.on('upgrade', (req, socket) => {
-    try {
-      socket.write('HTTP/1.1 426 Upgrade Required\r\nConnection: close\r\nContent-Type: text/plain\r\n\r\nUpgrade not supported\r\n');
-      socket.end();
-    } catch {
-      socket.destroy();
-    }
-  });
-
   server.on('error', (err: any) => {
     if (err.code === 'EADDRINUSE') {
       console.error(`Primary port ${PORT} is already in use.`);
@@ -394,6 +377,9 @@ ${wCtx ? `* **Operational Forecast Telemetry:** ${wCtx.slice(0, 220)}...` : '* *
     const secondaryServer = http.createServer(app);
     secondaryServer.on('error', (err: any) => {
       console.log(`Alternate port ${SECONDARY_PORT} unavailable (${err.message}), continuing on port ${PORT}.`);
+    });
+    secondaryServer.on('upgrade', (req, socket, head) => {
+      server.emit('upgrade', req, socket, head);
     });
     secondaryServer.listen(SECONDARY_PORT, () => {
       console.log(`  > Alternate: http://localhost:${SECONDARY_PORT}`);

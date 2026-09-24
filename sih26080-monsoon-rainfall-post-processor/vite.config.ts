@@ -72,16 +72,16 @@ export default defineConfig(() => {
       },
     },
     server: {
-      port: 5173,
+      hmr: false,
+      ws: false as const,
+      watch: null,
       proxy: {
         '/api': {
           target: 'http://localhost:3000',
           changeOrigin: true,
-        },
-      },
-      hmr: false,
-      ws: false as const,
-      watch: null,
+          secure: false,
+        }
+      }
     },
   };
 });
