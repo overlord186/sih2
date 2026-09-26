@@ -303,7 +303,7 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
             )}
 
             {/* 3D Waypoint Callout Chip & Hover Telemetry */}
-            <Html occlude distanceFactor={10} position={[0, 0.065, 0]} zIndexRange={[120, 0]}>
+            <Html distanceFactor={10} position={[0, 0.065, 0]} zIndexRange={[120, 0]}>
               <div 
                 onClick={(e) => {
                   e.stopPropagation();
@@ -431,7 +431,7 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
         </mesh>
 
         {/* 6. Floating 3D Storm Telemetry HUD Card */}
-        <Html occlude distanceFactor={10} position={[0, 0.24, 0]} zIndexRange={[120, 0]}>
+        <Html distanceFactor={10} position={[0, 0.24, 0]} zIndexRange={[120, 0]}>
           <div className="bg-slate-950/95 backdrop-blur-xl border border-cyan-500/70 p-2.5 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.3)] text-white select-none whitespace-nowrap min-w-[210px] transform -translate-x-1/2 pointer-events-none font-mono">
             {/* Header Line */}
             <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-1.5">

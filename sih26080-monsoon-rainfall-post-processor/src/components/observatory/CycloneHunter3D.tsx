@@ -234,7 +234,7 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
 
         {/* Floating Callout Label */}
         {showAircraftLabel && (
-          <Html occlude distanceFactor={10} position={[0, 0.16, 0]}>
+          <Html distanceFactor={10} position={[0, 0.16, 0]}>
             <div 
               onClick={(e) => {
                 e.stopPropagation();
@@ -300,7 +300,7 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
             </mesh>
 
             {/* Clickable Hover Tag */}
-            <Html occlude distanceFactor={10} position={[0, 0.06, 0]}>
+            <Html distanceFactor={10} position={[0, 0.06, 0]}>
               <div
                 className={`px-1.5 py-0.5 rounded border text-[8px] font-mono cursor-pointer transition-transform hover:scale-110 flex items-center gap-1 whitespace-nowrap shadow-md ${
                   isSplashed

@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs && node -e \"fs.rmSync('build', {recursive: true, force: true}); fs.cpSync('dist', 'build', {recursive: true});\"",
+    "build": "vite build && esbuild server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
     "preview": "vite preview",
-    "clean": "node -e \"fs.rmSync('dist', {recursive: true, force: true}); fs.rmSync('build', {recursive: true, force: true});\"",
+    "clean": "node -e \"const fs=require('fs'); fs.rmSync('dist', {recursive:true, force:true}); fs.rmSync('build', {recursive:true, force:true});\"",
     "lint": "tsc --noEmit"
   },
   "dependencies": {

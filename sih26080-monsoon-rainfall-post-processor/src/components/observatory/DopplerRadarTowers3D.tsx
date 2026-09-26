@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
@@ -140,7 +140,6 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
   isPaused,
 }) => {
   const sweepBeamsRef = useRef<{ [id: string]: THREE.Mesh | null }>({});
-  const [hoveredRadarId, setHoveredRadarId] = useState<string | null>(null);
 
   useFrame((state, delta) => {
     if (isPaused) return;
@@ -177,13 +176,6 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
             onClick={(e) => {
               e.stopPropagation();
               onSelectRadar(radar);
-            }}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHoveredRadarId(radar.id);
-            }}
-            onPointerOut={() => {
-              setHoveredRadarId(null);
             }}
           >
             {/* Ground Radar Pedestal Dome */}
@@ -247,25 +239,23 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
               </group>
             )}
 
-            {/* Station Callout Tag - occluded and visible on hover or selection */}
-            {(isSelected || hoveredRadarId === radar.id) && (
-              <Html occlude distanceFactor={10} position={[0, colHeight + 0.04, 0]}>
-                <div
-                  className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap shadow-xl select-none ${
-                    isSelected
-                      ? 'bg-rose-950/95 text-rose-300 border-rose-400 font-bold scale-110 shadow-rose-900/50'
-                      : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
-                  }`}
-                >
-                  <Radio className="w-2.5 h-2.5 text-rose-400" />
-                  <span>{radar.code}</span>
-                  <span className={`text-[8px] px-1 rounded ${radar.maxDbz > 55 ? 'bg-rose-900 text-rose-200' : 'bg-amber-900 text-amber-200'}`}>
-                    {radar.maxDbz} dBZ
-                  </span>
-                  <span className="text-[8px] text-slate-400">ET {radar.echoTopKm}km</span>
-                </div>
-              </Html>
-            )}
+            {/* Station Callout Tag */}
+            <Html distanceFactor={10} position={[0, colHeight + 0.04, 0]}>
+              <div
+                className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap shadow-xl select-none ${
+                  isSelected
+                    ? 'bg-rose-950/95 text-rose-300 border-rose-400 font-bold scale-110 shadow-rose-900/50'
+                    : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
+                }`}
+              >
+                <Radio className="w-2.5 h-2.5 text-rose-400" />
+                <span>{radar.code}</span>
+                <span className={`text-[8px] px-1 rounded ${radar.maxDbz > 55 ? 'bg-rose-900 text-rose-200' : 'bg-amber-900 text-amber-200'}`}>
+                  {radar.maxDbz} dBZ
+                </span>
+                <span className="text-[8px] text-slate-400">ET {radar.echoTopKm}km</span>
+              </div>
+            </Html>
           </group>
         );
       })}

@@ -1700,7 +1700,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
           <ringGeometry args={[0.14, 0.16, 32]} />
           <meshBasicMaterial color="#f59e0b" side={THREE.DoubleSide} transparent opacity={0.45} />
         </mesh>
-        <Html occlude distanceFactor={10} position={[0, 0.16, 0]} zIndexRange={[150, 0]}>
+        <Html distanceFactor={10} position={[0, 0.16, 0]} zIndexRange={[150, 0]}>
           <div className="bg-slate-950/95 backdrop-blur-xl text-white px-3 py-1.5 rounded-xl border border-amber-400 shadow-2xl text-[10px] font-mono whitespace-nowrap flex flex-col gap-0.5 pointer-events-none select-none min-w-[170px]">
             <div className="flex items-center gap-1.5 text-amber-300 font-bold border-b border-slate-800 pb-0.5">
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
@@ -1730,7 +1730,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               <ringGeometry args={[0.06, 0.10, 32]} />
               <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.6} />
             </mesh>
-            <Html occlude distanceFactor={11} position={[0, 0.08, 0]} zIndexRange={[90, 0]}>
+            <Html distanceFactor={11} position={[0, 0.08, 0]} zIndexRange={[90, 0]}>
               <div className="px-1.5 py-0.5 rounded bg-slate-900/90 text-cyan-300 border border-cyan-500/60 text-[8px] font-mono whitespace-nowrap pointer-events-none">
                 🔵 Probe ({trig.lat.toFixed(1)}°, {trig.lon.toFixed(1)}°)
               </div>
@@ -1782,23 +1782,25 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               />
             </mesh>
 
-            {/* 3D Observatory Chip & Hover Card - occluded and visible on hover */}
-            {isHovered && (
-              <Html occlude distanceFactor={10} position={[0, 0.07, 0]} zIndexRange={[110, 0]}>
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSelectTarget(target);
-                  }}
-                  className="font-mono transition-all transform -translate-x-1/2 cursor-pointer select-none scale-105 z-50"
-                >
-                  <div className="px-2 py-0.5 rounded-lg flex items-center gap-1.5 text-[9px] border border-cyan-400/80 bg-slate-950/90 text-cyan-300 backdrop-blur-md shadow-lg">
-                    <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                    <span className="font-bold whitespace-nowrap">{target.name}</span>
-                    <span className="text-[8px] text-slate-400">({target.country})</span>
-                  </div>
+            {/* 3D Permanent Observatory Chip & Hover Card */}
+            <Html distanceFactor={10} position={[0, 0.07, 0]} zIndexRange={[110, 0]}>
+              <div 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSelectTarget(target);
+                }}
+                className={`font-mono transition-all transform -translate-x-1/2 cursor-pointer select-none ${
+                  isHovered ? 'scale-105 z-50' : 'opacity-85 hover:opacity-100 scale-90'
+                }`}
+              >
+                <div className="px-2 py-0.5 rounded-lg flex items-center gap-1.5 text-[9px] border border-cyan-400/80 bg-slate-950/90 text-cyan-300 backdrop-blur-md shadow-lg">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="font-bold whitespace-nowrap">{target.name}</span>
+                  <span className="text-[8px] text-slate-400">({target.country})</span>
+                </div>
 
-                  {/* Hover Telemetry Card */}
+                {/* Hover Telemetry Card */}
+                {isHovered && (
                   <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 p-2.5 rounded-xl bg-slate-950/95 border border-cyan-400 text-white text-[9px] shadow-2xl min-w-[210px] pointer-events-none">
                     <div className="font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-1 mb-1">
                       <span>🔵 Synoptic Weather Station</span>
@@ -1812,9 +1814,9 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
                       Continuous surface barometric, moisture & wind monitoring node.
                     </div>
                   </div>
-                </div>
-              </Html>
-            )}
+                )}
+              </div>
+            </Html>
           </group>
         );
       })}
@@ -1833,7 +1835,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
           </mesh>
 
           {/* 3D Floating Hover-Card Tooltip */}
-          <Html occlude distanceFactor={11} zIndexRange={[200, 0]} style={{ pointerEvents: 'auto' }}>
+          <Html distanceFactor={11} zIndexRange={[200, 0]} style={{ pointerEvents: 'auto' }}>
             <div className="w-72 sm:w-80 bg-slate-950/95 backdrop-blur-xl border border-cyan-500/70 rounded-xl p-3.5 shadow-[0_16px_50px_rgba(0,0,0,0.9),0_0_25px_rgba(56,189,248,0.3)] text-white transform -translate-x-1/2 -translate-y-full mb-3 select-none animate-in fade-in zoom-in-95 duration-150">
               {/* Header */}
               <div className="flex items-start justify-between gap-2 pb-2 mb-2 border-b border-slate-800">
@@ -1986,7 +1988,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
   const [lastLiveApiTime, setLastLiveApiTime] = useState<string>('');
 
   // 1. Cyclone Hunter Recon Flight Mode
-  const [enableCycloneHunter, setEnableCycloneHunter] = useState<boolean>(false);
+  const [enableCycloneHunter, setEnableCycloneHunter] = useState<boolean>(true);
   const [dropsondes, setDropsondes] = useState<Dropsonde[]>([]);
   const [selectedDropsonde, setSelectedDropsonde] = useState<Dropsonde | null>(null);
 
@@ -2001,7 +2003,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
   const [activeWindFeatureId, setActiveWindFeatureId] = useState<string | 'ALL'>('ALL');
 
   // 4. Volumetric Doppler Radar Towers
-  const [enableDopplerRadar, setEnableDopplerRadar] = useState<boolean>(false);
+  const [enableDopplerRadar, setEnableDopplerRadar] = useState<boolean>(true);
   const [showRadarColumns, setShowRadarColumns] = useState<boolean>(true);
   const [selectedRadar, setSelectedRadar] = useState<DopplerRadarTower | null>(null);
 
@@ -2139,7 +2141,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
   const [perspectiveTrackingCoord, setPerspectiveTrackingCoord] = useState<{ lat: number; lon: number } | undefined>(undefined);
 
   // 3D Planetary Marker Legend & Inspector State
-  const [showMarkerLegendHUD, setShowMarkerLegendHUD] = useState<boolean>(false);
+  const [showMarkerLegendHUD, setShowMarkerLegendHUD] = useState<boolean>(true);
   const [markerLegendTab, setMarkerLegendTab] = useState<'ALL' | 'BLUE' | 'YELLOW' | 'RED'>('ALL');
 
   const focusTargetObservatory = (target: LocationTarget) => {
@@ -3482,7 +3484,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                 )}
 
                 {/* 6. Storm Tracking 3D Layer (Active Cyclones, Eyewall Vortex, Cone of Uncertainty) */}
-                {perspectiveState.mode === 'STORM_TRACKING' && (
+                {(perspectiveState.mode === 'STORM_TRACKING' || perspectiveState.activeStormId) && (
                   <StormTrackingLayer3D
                     storm={ACTIVE_STORM_SYSTEMS.find((s) => s.id === perspectiveState.activeStormId) || ACTIVE_STORM_SYSTEMS[0]}
                     globeRadius={2.4}

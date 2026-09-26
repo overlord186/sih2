@@ -1,6 +1,7 @@
 import React, { useRef, useMemo, useEffect, useState, Component, ReactNode, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Points, PointMaterial, OrbitControls } from '@react-three/drei';
+import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 import { AtmosphereMode } from './AtmosphereWidget';
 import { WaterfallPhysics } from './WaterfallPhysics';
@@ -691,7 +692,7 @@ interface CameraControllerProps {
 
 const CameraController: React.FC<CameraControllerProps> = ({ isLocked, onToggleLock }) => {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  const controlsRef = useRef<OrbitControlsImpl>(null);
   const keysRef = useRef<Record<string, boolean>>({});
   const panVelocityRef = useRef<THREE.Vector3>(new THREE.Vector3());
 

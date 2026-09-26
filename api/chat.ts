@@ -12,6 +12,32 @@ const sanitizeLog = (str: string): string => {
   return sanitized.replace(/key=[A-Za-z0-9_\-]+/g, 'key=[REDACTED]');
 };
 
+async function parseBody(req: any): Promise<any> {
+  if (req.body) {
+    if (typeof req.body === 'string') {
+      try {
+        return JSON.parse(req.body);
+      } catch {
+        return {};
+      }
+    }
+    return req.body;
+  }
+  if (typeof req.on === 'function') {
+    try {
+      const buffers: any[] = [];
+      for await (const chunk of req) {
+        buffers.push(chunk);
+      }
+      const raw = Buffer.concat(buffers).toString('utf-8');
+      if (raw) return JSON.parse(raw);
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+
 export default async function handler(req: any, res: any) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -27,15 +53,7 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try {
-      body = JSON.parse(body);
-    } catch {
-      body = {};
-    }
-  }
-
+  const body = await parseBody(req);
   const { history, message, modelConfig, apiKey: clientApiKey } = body || {};
   const headerKey = req.headers ? (req.headers['x-gemini-api-key'] as string | undefined) : undefined;
   const apiKey = clientApiKey || headerKey || process.env.GEMINI_API_KEY || process.env.API_KEY || process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENAI_API_KEY;

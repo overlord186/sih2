@@ -1,4 +1,4 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
@@ -88,7 +88,6 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
   showSwaths,
 }) => {
   const satRefs = useRef<{ [id: string]: THREE.Group | null }>({});
-  const [hoveredSatId, setHoveredSatId] = useState<string | null>(null);
 
   // Compute orbital spline paths for each satellite
   const orbitSplines = useMemo(() => {
@@ -165,13 +164,6 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
               e.stopPropagation();
               onSelectSatellite(sat);
             }}
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setHoveredSatId(sat.id);
-            }}
-            onPointerOut={() => {
-              setHoveredSatId(null);
-            }}
           >
             {/* Satellite Body: Gold/Thermal Foil Cube Bus */}
             <mesh>
@@ -231,22 +223,20 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
               </group>
             )}
 
-            {/* Callout Label Tag - occluded and visible on hover or selection */}
-            {(isSelected || hoveredSatId === sat.id) && (
-              <Html occlude distanceFactor={11} position={[0, 0.12, 0]}>
-                <div
-                  className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1 whitespace-nowrap shadow-lg select-none ${
-                    isSelected
-                      ? 'bg-amber-950/90 text-amber-300 border-amber-400 font-bold scale-110'
-                      : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
-                  }`}
-                >
-                  <Satellite className="w-2.5 h-2.5 text-cyan-400" />
-                  <span>{sat.code}</span>
-                  <span className="text-[8px] text-slate-400">({sat.sensorType.slice(0, 12)}...)</span>
-                </div>
-              </Html>
-            )}
+            {/* Callout Label Tag */}
+            <Html distanceFactor={11} position={[0, 0.12, 0]}>
+              <div
+                className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1 whitespace-nowrap shadow-lg select-none ${
+                  isSelected
+                    ? 'bg-amber-950/90 text-amber-300 border-amber-400 font-bold scale-110'
+                    : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
+                }`}
+              >
+                <Satellite className="w-2.5 h-2.5 text-cyan-400" />
+                <span>{sat.code}</span>
+                <span className="text-[8px] text-slate-400">({sat.sensorType.slice(0, 12)}...)</span>
+              </div>
+            </Html>
           </group>
         );
       })}

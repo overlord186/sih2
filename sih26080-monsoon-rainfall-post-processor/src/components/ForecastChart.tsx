@@ -2793,7 +2793,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
             {/* Day-by-Day Detailed Table */}
             <div className="flex-1 overflow-y-auto p-4 space-y-2">
               {reportDataset.length > 0 ? (
-                <div className="border rounded-xl overflow-x-auto shadow-inner">
+                <div className="border rounded-xl overflow-hidden shadow-inner">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className={`font-mono text-[11px] uppercase tracking-wider sticky top-0 z-10 border-b ${
                       isDark ? 'bg-slate-950 text-cyan-300 border-slate-800' : 'bg-slate-100 text-slate-800 font-bold border-slate-300'

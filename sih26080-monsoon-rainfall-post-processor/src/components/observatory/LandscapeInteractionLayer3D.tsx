@@ -341,7 +341,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                   </mesh>
 
                   {/* 3D Crest Label */}
-                  <Html occlude distanceFactor={8} position={[0, 0.06, 0]} zIndexRange={[100, 0]}>
+                  <Html distanceFactor={8} position={[0, 0.06, 0]} zIndexRange={[100, 0]}>
                     <div className="bg-slate-950/95 backdrop-blur-md border border-amber-500/70 px-2 py-1 rounded-lg text-white font-mono text-[10px] whitespace-nowrap shadow-lg flex items-center gap-1.5 pointer-events-none transform -translate-x-1/2">
                       <Mountain className="w-3 h-3 text-amber-400" />
                       <span className="font-bold text-amber-300">{r.barrier.peakName}</span>
@@ -443,7 +443,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
               </mesh>
 
               {/* Compact 3D Label Badge */}
-              <Html occlude distanceFactor={8} position={[0, 0.045, 0]} zIndexRange={[90, 0]}>
+              <Html distanceFactor={8} position={[0, 0.045, 0]} zIndexRange={[90, 0]}>
                 <div
                   onClick={(e) => {
                     e.stopPropagation();
@@ -473,7 +473,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
 
               {/* Station Label & Telemetry Popup */}
               {isSelected && (
-                <Html occlude distanceFactor={7} position={[0, 0.08, 0]} zIndexRange={[120, 0]}>
+                <Html distanceFactor={7} position={[0, 0.08, 0]} zIndexRange={[120, 0]}>
                   <div className="bg-slate-950/95 backdrop-blur-xl border border-cyan-500/80 p-2.5 rounded-xl text-white font-mono text-[10px] whitespace-nowrap shadow-2xl min-w-[200px] transform -translate-x-1/2 select-none z-50">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
                       <div className="flex items-center gap-1.5">

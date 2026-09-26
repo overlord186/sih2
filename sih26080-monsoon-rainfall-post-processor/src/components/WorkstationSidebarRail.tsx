@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Gauge,
   Compass,
@@ -57,16 +57,6 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
   isExpanded,
   onToggleExpanded,
 }) => {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-
-  useEffect(() => {
-    const handleChatState = (e: any) => {
-      setIsChatOpen(Boolean(e.detail?.isOpen));
-    };
-    window.addEventListener('chat-assistant-state' as any, handleChatState);
-    return () => window.removeEventListener('chat-assistant-state' as any, handleChatState);
-  }, []);
-
   const navItems: NavRailItem[] = [
     {
       id: 'dashboard',
@@ -353,26 +343,20 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
         <div className="relative group w-full flex justify-center">
           <button
             onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
-            className={`transition-all cursor-pointer flex items-center ${
-              isChatOpen 
-                ? 'text-blue-300 bg-blue-900/60 ring-2 ring-blue-500/60 shadow-[0_0_15px_rgba(59,130,246,0.35)]' 
-                : 'text-slate-400 hover:text-blue-300 hover:bg-blue-950/40'
-            } ${
+            className={`transition-colors cursor-pointer flex items-center text-slate-400 hover:text-blue-300 hover:bg-blue-950/40 ${
               isExpanded
                 ? 'w-full gap-3 px-3 py-2 rounded-xl text-xs'
                 : 'w-11 h-11 rounded-xl justify-center'
             }`}
-            title={!isExpanded ? (isChatOpen ? 'Close AI Meteorologist' : 'Ask AI Meteorologist (Copilot)') : undefined}
+            title={!isExpanded ? 'Launch AI Meteorologist Copilot' : undefined}
           >
             <div className="shrink-0 flex items-center justify-center relative">
-              <Bot className={`w-5 h-5 ${isChatOpen ? 'text-blue-300 animate-pulse' : 'text-blue-400 group-hover:text-blue-300'}`} />
+              <Bot className="w-5 h-5 text-blue-400 group-hover:text-blue-300" />
               <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-400 animate-pulse ring-2 ring-slate-950" />
             </div>
             {isExpanded && (
               <div className="flex-1 text-left min-w-0">
-                <div className={`text-xs font-medium truncate ${isChatOpen ? 'text-blue-200 font-semibold' : 'text-slate-200'}`}>
-                  AI Copilot
-                </div>
+                <div className="text-xs font-medium text-slate-200 truncate">AI Copilot</div>
               </div>
             )}
           </button>
