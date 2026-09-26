@@ -419,11 +419,6 @@ In the project directory, you can run:
 
 ---
 
-## 🌐 Live Deployment
-
-- **Application URL**: [https://sih26080-monsoon-rainfall-post-proc.vercel.app/](https://sih26080-monsoon-rainfall-post-proc.vercel.app/)
-
----
 
 ## 📜 License
 
