@@ -698,7 +698,7 @@ export const TaylorDiagram: React.FC<TaylorDiagramProps> = ({ stats }) => {
             </div>
             <div className="flex justify-between">
               <span className="text-slate-400">Cent-RMSE (E&apos;):</span>
-              <strong className="text-cyan-300 font-bold">{safeStats.aiCorrected.crmse.toFixed(1)} mm</strong>
+              <strong className="text-sky-300 font-bold">{safeStats.aiCorrected.crmse.toFixed(1)} mm</strong>
             </div>
           </div>
         </div>

@@ -232,7 +232,7 @@ ${bulletinData.yellowDistricts.length > 0 ? bulletinData.yellowDistricts.map(d =
               onClick={() => window.print()}
               className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
             >
-              <Printer className="w-4 h-4 text-cyan-400" />
+              <Printer className="w-4 h-4 text-sky-400" />
               <span>Print Bulletin</span>
             </button>
 

@@ -310,7 +310,7 @@ export const VerificationReportView: React.FC<VerificationReportViewProps> = ({ 
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-md">
           <div className="flex items-center gap-2">
-            <Compass className="w-5 h-5 text-cyan-400" />
+            <Compass className="w-5 h-5 text-sky-400" />
             <div>
               <h3 className="text-sm font-bold text-white">Meteorological Performance & Statistical Geometry Diagrams</h3>
               <p className="text-xs text-slate-400">

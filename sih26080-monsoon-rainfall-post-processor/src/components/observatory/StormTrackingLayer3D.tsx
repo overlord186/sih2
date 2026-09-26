@@ -62,6 +62,7 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
   const pulseRingRef = useRef<THREE.Mesh>(null);
   const spiralParticlesRef = useRef<THREE.Points>(null);
   const [hoveredStep, setHoveredStep] = useState<number | null>(null);
+  const [isVortexHovered, setIsVortexHovered] = useState<boolean>(false);
 
   // Active position: either currently scrubbed track step or real-time latest step
   const activePoint = useMemo(() => {
@@ -302,54 +303,54 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
               </mesh>
             )}
 
-            {/* 3D Waypoint Callout Chip & Hover Telemetry */}
-            <Html distanceFactor={10} position={[0, 0.065, 0]} zIndexRange={[120, 0]}>
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectTrackStep(pt.step);
-                }}
-                className={`font-mono transition-all transform -translate-x-1/2 cursor-pointer select-none ${
-                  isHovered || isSelected ? 'scale-110 z-50' : 'opacity-85 hover:opacity-100 scale-95'
-                }`}
-              >
-                {/* Compact Permanent Badge */}
-                <div className={`px-1.5 py-0.5 rounded flex items-center gap-1 text-[9px] border backdrop-blur-md shadow-lg ${
-                  isYellowForecast
-                    ? 'bg-amber-950/90 text-amber-300 border-amber-500/80 shadow-amber-950/50'
-                    : 'bg-cyan-950/90 text-cyan-300 border-cyan-500/80 shadow-cyan-950/50'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${isYellowForecast ? 'bg-amber-400' : 'bg-cyan-400'}`} />
-                  <span className="font-bold whitespace-nowrap">
-                    {pt.timeLabel}
-                  </span>
-                  <span className="text-[8px] text-slate-300 opacity-80">
-                    {pt.windKmh}km/h
-                  </span>
-                </div>
-
-                {/* Expanded Tooltip Card on Hover */}
-                {isHovered && !isSelected && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 p-2 rounded-lg bg-slate-950/95 border border-slate-700 text-white text-[9px] whitespace-nowrap shadow-2xl min-w-[190px]">
-                    <div className="font-bold flex items-center justify-between border-b border-slate-800 pb-1 mb-1">
-                      <span className={isYellowForecast ? 'text-amber-400' : 'text-cyan-400'}>
-                        {isYellowForecast ? '🟡 Forecast Model Track' : '🔵 Observed Doppler Fix'}
-                      </span>
-                      <span className="text-slate-400">{pt.timeLabel}</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1 text-slate-300">
-                      <div>Wind: <strong className="text-white">{pt.windKmh} km/h</strong></div>
-                      <div>Baro: <strong className="text-rose-400">{pt.pressureHpa} hPa</strong></div>
-                    </div>
-                    <div className="mt-1 text-[8px] text-slate-400 italic">
-                      {isYellowForecast 
-                        ? 'Projected numerical ensemble trajectory' 
-                        : 'Verified satellite & radar observation fix'}
-                    </div>
+            {/* 3D Waypoint Callout Chip & Hover Telemetry (Only on hover or active selection to prevent screen clutter) */}
+            {(isHovered || isSelected) && (
+              <Html distanceFactor={10} position={[0, 0.065, 0]} zIndexRange={[120, 0]}>
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectTrackStep(pt.step);
+                  }}
+                  className="font-sans transition-all transform -translate-x-1/2 cursor-pointer select-none scale-105 z-50"
+                >
+                  {/* Compact Badge */}
+                  <div className={`px-2 py-0.5 rounded-full flex items-center gap-1.5 text-[9px] border backdrop-blur-md shadow-lg ${
+                    isYellowForecast
+                      ? 'bg-slate-900/95 text-amber-300 border-amber-500/50 shadow-black/60'
+                      : 'bg-slate-900/95 text-sky-300 border-sky-500/50 shadow-black/60'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${isYellowForecast ? 'bg-amber-400' : 'bg-sky-400'}`} />
+                    <span className="font-semibold whitespace-nowrap">
+                      {pt.timeLabel}
+                    </span>
+                    <span className="text-[8px] text-slate-400 font-mono">
+                      {pt.windKmh} km/h
+                    </span>
                   </div>
-                )}
-              </div>
-            </Html>
+
+                  {/* Expanded Tooltip Card on Hover */}
+                  {isHovered && !isSelected && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2.5 rounded-xl bg-slate-950/95 border border-slate-700/80 text-white text-[10px] whitespace-nowrap shadow-2xl min-w-[190px]">
+                      <div className="font-semibold flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
+                        <span className={isYellowForecast ? 'text-amber-400' : 'text-sky-400'}>
+                          {isYellowForecast ? 'Forecast Trajectory' : 'Doppler Observation Fix'}
+                        </span>
+                        <span className="text-slate-400 font-mono text-[9px]">{pt.timeLabel}</span>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-slate-300 font-mono text-[9px]">
+                        <div>Wind: <strong className="text-white">{pt.windKmh} km/h</strong></div>
+                        <div>Baro: <strong className="text-rose-400">{pt.pressureHpa} hPa</strong></div>
+                      </div>
+                      <div className="mt-1 text-[8px] text-slate-400 italic">
+                        {isYellowForecast 
+                          ? 'Projected numerical ensemble trajectory' 
+                          : 'Verified satellite & radar observation fix'}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </Html>
+            )}
           </group>
         );
       })}
@@ -430,59 +431,83 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
           />
         </mesh>
 
-        {/* 6. Floating 3D Storm Telemetry HUD Card */}
-        <Html distanceFactor={10} position={[0, 0.24, 0]} zIndexRange={[120, 0]}>
-          <div className="bg-slate-950/95 backdrop-blur-xl border border-cyan-500/70 p-2.5 rounded-xl shadow-[0_12px_40px_rgba(0,0,0,0.9),0_0_20px_rgba(6,182,212,0.3)] text-white select-none whitespace-nowrap min-w-[210px] transform -translate-x-1/2 pointer-events-none font-mono">
-            {/* Header Line */}
-            <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-1.5">
-              <div className="flex items-center gap-1.5">
-                <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-                <span className="text-[11px] font-black uppercase text-cyan-300 truncate max-w-[140px]">
-                  {storm.name}
+        {/* 6. Sleek Storm Telemetry Badge (Compact by default, expandable on hover) */}
+        <Html distanceFactor={10} position={[0, 0.20, 0]} zIndexRange={[120, 0]}>
+          <div
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              setIsVortexHovered(true);
+            }}
+            onPointerOut={() => setIsVortexHovered(false)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsVortexHovered((prev) => !prev);
+            }}
+            className="transform -translate-x-1/2 cursor-pointer select-none transition-all duration-200 pointer-events-auto"
+          >
+            {!isVortexHovered ? (
+              <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700/80 shadow-xl text-slate-200 text-[10px] font-sans flex items-center gap-2 hover:border-slate-500 hover:bg-slate-800 transition-all">
+                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                <span className="font-semibold text-white tracking-wide">{storm.name.split(' (')[0]}</span>
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-medium bg-rose-950/90 text-rose-300 border border-rose-800/60">
+                  {storm.type}
                 </span>
+                <span className="text-slate-400 font-mono text-[9px]">{activePoint.pressureHpa} hPa</span>
               </div>
-              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold bg-rose-950/90 text-rose-300 border border-rose-700/60">
-                {storm.type}
-              </span>
-            </div>
+            ) : (
+              <div className="bg-slate-950/95 backdrop-blur-xl border border-slate-700/80 p-3 rounded-2xl shadow-2xl text-slate-200 font-sans min-w-[220px]">
+                {/* Header Line */}
+                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                    <span className="text-[11px] font-bold text-white truncate max-w-[140px]">
+                      {storm.name}
+                    </span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-rose-950/90 text-rose-300 border border-rose-700/60">
+                    {storm.type}
+                  </span>
+                </div>
 
-            {/* Core Metrics Grid */}
-            <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-1.5">
-              <div className="bg-slate-900/80 px-2 py-1 rounded border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Gauge className="w-3 h-3 text-cyan-400" /> Min Baro:
-                </span>
-                <span className="font-bold text-rose-400 font-mono">
-                  {activePoint.pressureHpa} hPa
-                </span>
+                {/* Core Metrics Grid */}
+                <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-2 font-mono">
+                  <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Gauge className="w-3 h-3 text-sky-400" /> Baro:
+                    </span>
+                    <span className="font-bold text-rose-400">
+                      {activePoint.pressureHpa} hPa
+                    </span>
+                  </div>
+                  <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between">
+                    <span className="text-slate-400 flex items-center gap-1">
+                      <Wind className="w-3 h-3 text-sky-400" /> Sust:
+                    </span>
+                    <span className="font-bold text-amber-300">
+                      {activePoint.windKmh} km/h
+                    </span>
+                  </div>
+                </div>
+
+                {/* Coordinates and Heading */}
+                <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800/80 pt-1.5">
+                  <span className="flex items-center gap-1 font-mono">
+                    <Navigation className="w-2.5 h-2.5 text-sky-400" />
+                    {Math.abs(activePoint.lat).toFixed(1)}°{activePoint.lat >= 0 ? 'N' : 'S'}, {Math.abs(activePoint.lon).toFixed(1)}°{activePoint.lon >= 0 ? 'E' : 'W'}
+                  </span>
+                  <span className="text-sky-300 font-medium">
+                    {storm.movementHeading} @ {storm.forwardSpeedKmh} km/h
+                  </span>
+                </div>
+
+                {/* Time label badge */}
+                <div className="mt-1.5 text-center">
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    Track Point: <span className="text-amber-300 font-mono">{activePoint.timeLabel}</span>
+                  </span>
+                </div>
               </div>
-              <div className="bg-slate-900/80 px-2 py-1 rounded border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 flex items-center gap-1">
-                  <Wind className="w-3 h-3 text-sky-400" /> Max Sust:
-                </span>
-                <span className="font-bold text-amber-300 font-mono">
-                  {activePoint.windKmh} km/h
-                </span>
-              </div>
-            </div>
-
-            {/* Coordinates and Heading */}
-            <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800/70 pt-1">
-              <span className="flex items-center gap-1">
-                <Navigation className="w-2.5 h-2.5 text-cyan-400" />
-                {Math.abs(activePoint.lat).toFixed(1)}°{activePoint.lat >= 0 ? 'N' : 'S'}, {Math.abs(activePoint.lon).toFixed(1)}°{activePoint.lon >= 0 ? 'E' : 'W'}
-              </span>
-              <span className="text-cyan-300 font-bold">
-                {storm.movementHeading} @ {storm.forwardSpeedKmh} km/h
-              </span>
-            </div>
-
-            {/* Time label badge */}
-            <div className="mt-1 text-center">
-              <span className="text-[8px] uppercase tracking-wider text-slate-400 font-bold">
-                Track Point: <span className="text-amber-300">{activePoint.timeLabel}</span>
-              </span>
-            </div>
+            )}
           </div>
         </Html>
       </group>

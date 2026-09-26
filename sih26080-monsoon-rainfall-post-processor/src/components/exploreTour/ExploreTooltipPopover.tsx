@@ -148,13 +148,13 @@ export const ExploreTooltipPopover: React.FC<{
             isMouseInsideTooltipRef.current = false;
             unhoverItem();
           }}
-          className="pointer-events-auto bg-slate-900/95 border border-cyan-500/40 text-slate-100 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_25px_rgba(6,182,212,0.25)] backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto select-text font-sans"
+          className="pointer-events-auto bg-slate-900/95 border border-sky-500/40 text-slate-100 rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8),0_0_25px_rgba(6,182,212,0.25)] backdrop-blur-xl p-4 sm:p-5 flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto select-text font-sans"
         >
           {/* Header Bar */}
           <div className="flex items-start justify-between gap-3 border-b border-slate-800 pb-3">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-blue-600/30 to-cyan-500/30 border border-cyan-500/40 text-cyan-300 font-bold text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-cyan-400 animate-pulse" />
+              <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-blue-600/30 to-cyan-500/30 border border-sky-500/40 text-sky-300 font-bold text-[10px] uppercase font-mono tracking-wider flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-sky-400 animate-pulse" />
                 <span>Explore UI • Synoptic Tour</span>
               </span>
 
@@ -180,14 +180,14 @@ export const ExploreTooltipPopover: React.FC<{
 
           {/* Title and Icon */}
           <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-blue-600/30 to-indigo-600/20 border border-cyan-500/30 flex items-center justify-center text-cyan-300 shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500/20 via-blue-600/30 to-indigo-600/20 border border-sky-500/30 flex items-center justify-center text-sky-300 shrink-0 shadow-sm">
               <IconComponent className="w-5 h-5" />
             </div>
             <div>
               <h3 className="font-bold text-base text-white tracking-tight leading-snug">
                 {activeItem.title}
               </h3>
-              <p className="text-xs text-cyan-300/90 font-mono mt-0.5">
+              <p className="text-xs text-sky-300/90 font-mono mt-0.5">
                 {activeItem.meteorologicalSignificance.primaryAtmosphericLaw}
               </p>
             </div>
@@ -201,8 +201,8 @@ export const ExploreTooltipPopover: React.FC<{
           {/* Meteorological Significance Section */}
           <div className="space-y-2 text-xs">
             <div>
-              <h4 className="font-bold text-cyan-300 text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-1 font-mono">
-                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+              <h4 className="font-bold text-sky-300 text-[11px] uppercase tracking-wider flex items-center gap-1.5 mb-1 font-mono">
+                <BookOpen className="w-3.5 h-3.5 text-sky-400" />
                 <span>Atmospheric Physics & Dynamics:</span>
               </h4>
               <p className="text-slate-300 text-[12px] leading-relaxed">
@@ -231,7 +231,7 @@ export const ExploreTooltipPopover: React.FC<{
 
           {/* Interaction Tip */}
           <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-start gap-1.5">
-            <span className="font-bold text-cyan-400 uppercase tracking-wider text-[10px] font-mono shrink-0">Tip:</span>
+            <span className="font-bold text-sky-400 uppercase tracking-wider text-[10px] font-mono shrink-0">Tip:</span>
             <span>{activeItem.interactionHint}</span>
           </div>
 
@@ -241,7 +241,7 @@ export const ExploreTooltipPopover: React.FC<{
               <button
                 type="button"
                 onClick={openTourModal}
-                className="text-[11px] text-cyan-400 hover:text-cyan-300 underline font-medium cursor-pointer flex items-center gap-1"
+                className="text-[11px] text-sky-400 hover:text-sky-300 underline font-medium cursor-pointer flex items-center gap-1"
               >
                 <span>Tour Directory</span>
                 <ExternalLink className="w-3 h-3" />
@@ -283,7 +283,7 @@ export const ExploreTooltipPopover: React.FC<{
                 className={`px-3 py-1.5 rounded-xl font-bold text-xs transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95 ${
                   isExplored
                     ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black shadow-cyan-500/20'
+                    : 'bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black shadow-sky-500/20'
                 }`}
               >
                 <CheckCircle2 className="w-3.5 h-3.5" />

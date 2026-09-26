@@ -660,7 +660,7 @@ export const SynopticSimulator: React.FC<SynopticSimulatorProps> = ({ onApplySte
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
               }`}
             >
-              <Box className="w-3.5 h-3.5 text-cyan-300" />
+              <Box className="w-3.5 h-3.5 text-sky-300" />
               <span>3D World</span>
             </button>
             <button

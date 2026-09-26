@@ -458,11 +458,11 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                       isCrest
                         ? 'bg-amber-950/90 text-amber-300 border-amber-500/80'
                         : isWindward
-                        ? 'bg-cyan-950/90 text-cyan-300 border-cyan-500/80'
+                        ? 'bg-sky-950/90 text-sky-300 border-sky-500/80'
                         : 'bg-rose-950/90 text-rose-300 border-rose-500/80'
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isCrest ? 'bg-amber-400' : isWindward ? 'bg-cyan-400' : 'bg-rose-400'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full ${isCrest ? 'bg-amber-400' : isWindward ? 'bg-sky-400' : 'bg-rose-400'}`} />
                     <span className="font-bold whitespace-nowrap">{station.name}</span>
                     <span className="text-[7px] text-slate-300 opacity-80">
                       {isCrest ? `${station.elevationM}m` : isWindward ? 'Windward' : 'Leeward'}
@@ -474,7 +474,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
               {/* Station Label & Telemetry Popup */}
               {isSelected && (
                 <Html distanceFactor={7} position={[0, 0.08, 0]} zIndexRange={[120, 0]}>
-                  <div className="bg-slate-950/95 backdrop-blur-xl border border-cyan-500/80 p-2.5 rounded-xl text-white font-mono text-[10px] whitespace-nowrap shadow-2xl min-w-[200px] transform -translate-x-1/2 select-none z-50">
+                  <div className="bg-slate-950/95 backdrop-blur-xl border border-sky-500/80 p-2.5 rounded-xl text-white font-mono text-[10px] whitespace-nowrap shadow-2xl min-w-[200px] transform -translate-x-1/2 select-none z-50">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
                       <div className="flex items-center gap-1.5">
                         <span
@@ -482,7 +482,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                             isCrest
                               ? 'bg-amber-400'
                               : isWindward
-                              ? 'bg-cyan-400'
+                              ? 'bg-sky-400'
                               : 'bg-rose-400'
                           }`}
                         />
@@ -500,7 +500,7 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                       </div>
                       <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
                         <span className="text-slate-400 block">Regime Rainfall:</span>
-                        <span className="font-bold text-cyan-300">{station.regimeRainfallMmDay} mm/day</span>
+                        <span className="font-bold text-sky-300">{station.regimeRainfallMmDay} mm/day</span>
                       </div>
                     </div>
 

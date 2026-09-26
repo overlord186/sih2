@@ -137,7 +137,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: 'District Products',
       description: 'Sub-division & district level rainfall projections',
       icon: Layers,
-      accentColor: 'text-cyan-400',
+      accentColor: 'text-sky-400',
     },
     {
       id: 'verification',
@@ -169,7 +169,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: '3D Earth Observatory',
       description: 'Global 3D Earth, cyclone tracks & live station telemetry',
       icon: Globe,
-      accentColor: 'text-cyan-300',
+      accentColor: 'text-sky-300',
       badge: '3D WebGL',
     },
     {
@@ -247,7 +247,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: 'Interactive UI Tour',
       description: 'Guided walkthrough of key meteorological visualizations',
       icon: Compass,
-      accentColor: 'text-cyan-400',
+      accentColor: 'text-sky-400',
       action: () => {
         if (onOpenTrainingGuide) onOpenTrainingGuide('explore');
         onClose();
@@ -277,7 +277,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       label: 'Glassmorphic UI Spec',
       description: 'Architecture specifications and styling blueprints',
       icon: Sparkles,
-      accentColor: 'text-cyan-300',
+      accentColor: 'text-sky-300',
       action: () => {
         if (onOpenTrainingGuide) onOpenTrainingGuide('ui_spec');
         onClose();
@@ -338,7 +338,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
             <div className="p-4 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-md shadow-blue-500/30">
-                  <SlidersHorizontal className="w-5 h-5 text-cyan-300" />
+                  <SlidersHorizontal className="w-5 h-5 text-sky-300" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
@@ -350,7 +350,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     </span>
                   </div>
                   <p className="text-[11px] text-slate-400">
-                    Active: <strong className="text-cyan-300 font-mono capitalize">{activeTab}</strong>
+                    Active: <strong className="text-sky-300 font-mono capitalize">{activeTab}</strong>
                   </p>
                 </div>
               </div>
@@ -459,8 +459,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                                 {item.label}
                               </span>
                               {isActive ? (
-                                <span className="flex items-center gap-1 text-[10px] text-cyan-300 font-mono font-semibold">
-                                  <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                                <span className="flex items-center gap-1 text-[10px] text-sky-300 font-mono font-semibold">
+                                  <CheckCircle2 className="w-3 h-3 text-sky-400" />
                                   Active
                                 </span>
                               ) : (
@@ -524,8 +524,8 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                                 {item.label}
                               </span>
                               {isActive ? (
-                                <span className="flex items-center gap-1 text-[10px] text-cyan-300 font-mono font-semibold">
-                                  <CheckCircle2 className="w-3 h-3 text-cyan-400" />
+                                <span className="flex items-center gap-1 text-[10px] text-sky-300 font-mono font-semibold">
+                                  <CheckCircle2 className="w-3 h-3 text-sky-400" />
                                   Active
                                 </span>
                               ) : (
@@ -610,10 +610,10 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                   <span className="text-[11px] text-slate-300 font-medium">Radar Station:</span>
-                  <span className="text-[11px] font-mono text-cyan-300 font-bold uppercase">{selectedStationId || 'VVPZ'}</span>
+                  <span className="text-[11px] font-mono text-sky-300 font-bold uppercase">{selectedStationId || 'VVPZ'}</span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] font-mono bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded text-blue-300">
-                  <Activity className="w-3 h-3 text-cyan-400 animate-pulse" />
+                  <Activity className="w-3 h-3 text-sky-400 animate-pulse" />
                   <span>LIVE 250KM</span>
                 </div>
               </div>
@@ -707,7 +707,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                     }}
                     className="p-2 rounded-xl bg-slate-950/60 hover:bg-slate-800 border border-slate-800 text-left transition-all cursor-pointer flex items-center gap-2 group"
                   >
-                    <Printer className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <Printer className="w-4 h-4 text-sky-400 shrink-0" />
                     <div className="min-w-0">
                       <div className="text-xs font-bold text-white truncate">Print Report</div>
                       <div className="text-[10px] text-slate-400">Save PDF / Print</div>

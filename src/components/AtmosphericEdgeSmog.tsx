@@ -35,8 +35,8 @@ export const AtmosphericEdgeSmog: React.FC<AtmosphericEdgeSmogProps> = ({
           transition={{ duration: 0.55, ease: 'easeOut' }}
           className="flex flex-col items-center gap-2"
         >
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/90 border border-cyan-400/50 shadow-[0_8px_30px_rgba(0,0,0,0.8)] backdrop-blur-xl">
-            <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-950/90 border border-sky-400/50 shadow-[0_8px_30px_rgba(0,0,0,0.8)] backdrop-blur-xl">
+            <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping" />
             <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-white uppercase">
               GRID INITIALIZED • SAMVARTAKA AI
             </span>

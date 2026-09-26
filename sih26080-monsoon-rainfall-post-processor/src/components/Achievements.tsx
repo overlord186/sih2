@@ -90,7 +90,7 @@ export const Achievements: React.FC<AchievementsProps> = ({
     if (!unlocked) return 'border-slate-300 bg-slate-100 text-slate-400';
     switch (tier) {
       case 'DIAMOND':
-        return 'border-cyan-400/80 bg-gradient-to-r from-cyan-900/50 to-blue-900/50 text-cyan-200 shadow-[0_0_15px_rgba(6,182,212,0.3)]';
+        return 'border-sky-400/80 bg-gradient-to-r from-cyan-900/50 to-blue-900/50 text-sky-200 shadow-[0_0_15px_rgba(6,182,212,0.3)]';
       case 'GOLD':
         return 'border-amber-400/80 bg-gradient-to-r from-amber-900/40 to-yellow-900/40 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.25)]';
       case 'SILVER':

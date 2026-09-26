@@ -179,14 +179,14 @@ export const AtmosphericEntranceTransition: React.FC<AtmosphericEntranceTransiti
           transition={{ duration: 0.8, times: [0, 0.2, 0.7, 1], ease: 'easeOut' }}
           className="flex flex-col items-center gap-2.5"
         >
-          <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-950/95 border border-cyan-400/70 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(6,182,212,0.35)] backdrop-blur-xl">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+          <div className="flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-950/95 border border-sky-400/70 shadow-[0_10px_35px_rgba(0,0,0,0.85),0_0_25px_rgba(6,182,212,0.35)] backdrop-blur-xl">
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-400 animate-ping" />
             <div className="flex flex-col text-left">
               <span className="text-[11px] font-mono font-black tracking-[0.22em] text-white uppercase flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                <Sparkles className="w-3.5 h-3.5 text-sky-400" />
                 SURFACE LOCK • SAMVARTAKA AI
               </span>
-              <span className="text-[8.5px] font-mono text-cyan-300/80 tracking-wider">
+              <span className="text-[8.5px] font-mono text-sky-300/80 tracking-wider">
                 CALIBRATING SENSORS • 12 METEOROLOGICAL STATIONS ACTIVE
               </span>
             </div>

@@ -282,7 +282,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
               <div className="flex items-center gap-1.5">
                 <h3 className="font-bold text-[14.5px] tracking-wide text-white">AI Meteorologist</h3>
                 <span className="text-[9.5px] px-2 py-0.5 rounded-full font-medium bg-white/15 text-blue-100 border border-white/20 flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
                   Synoptic Core
                 </span>
               </div>
@@ -461,11 +461,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
       <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 bg-slate-950/70 relative z-10">
         {messages.map((msg, idx) => (
           <div key={idx} className={`flex gap-3 max-w-[88%] ${msg.role === 'user' ? 'ml-auto flex-row-reverse' : ''} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-cyan-300 border border-cyan-500/30'}`}>
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white' : 'bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-sky-300 border border-sky-500/30'}`}>
               {msg.role === 'user' ? <User size={15} /> : <Bot size={15} />}
             </div>
             <div className={`px-4 py-3 rounded-2xl text-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md' : 'bg-slate-900 text-slate-100 shadow-sm border border-slate-800 rounded-tl-sm'}`}>
-              <div className={`markdown-body ${msg.role === 'user' ? 'text-white' : 'text-slate-100 prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-indigo-300 prose-a:text-cyan-400 prose-code:text-cyan-300 prose-code:bg-slate-950 prose-code:px-1 prose-code:rounded'}`}>
+              <div className={`markdown-body ${msg.role === 'user' ? 'text-white' : 'text-slate-100 prose prose-sm prose-invert max-w-none prose-p:leading-relaxed prose-headings:font-bold prose-headings:text-indigo-300 prose-a:text-sky-400 prose-code:text-sky-300 prose-code:bg-slate-950 prose-code:px-1 prose-code:rounded'}`}>
                 {msg.role === 'user' ? (
                   msg.parts[0].text
                 ) : (
@@ -479,7 +479,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
                             setInput(lastUserMsg.parts[0].text);
                           }
                         }}
-                        className="mt-2.5 text-xs text-cyan-400 font-semibold hover:text-cyan-300 flex items-center gap-1.5 transition-colors border-t border-slate-800 pt-2"
+                        className="mt-2.5 text-xs text-sky-400 font-semibold hover:text-sky-300 flex items-center gap-1.5 transition-colors border-t border-slate-800 pt-2"
                       >
                         <RotateCcw size={12} /> Retry this question
                       </button>
@@ -506,7 +506,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
                   className="text-left px-3 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/50 text-slate-300 hover:text-white text-xs font-medium transition-all shadow-xs flex items-center justify-between group cursor-pointer"
                 >
                   <span className="truncate">{qp.label}</span>
-                  <Zap size={11} className="text-slate-500 group-hover:text-cyan-400 shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <Zap size={11} className="text-slate-500 group-hover:text-sky-400 shrink-0 ml-1 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
               ))}
             </div>
@@ -515,11 +515,11 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
 
         {isLoading && (
           <div className="flex gap-3 max-w-[85%] animate-in fade-in duration-300">
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-cyan-300 border border-cyan-500/30 shadow-sm">
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 bg-gradient-to-br from-blue-500/20 to-indigo-500/20 text-sky-300 border border-sky-500/30 shadow-sm">
               <Bot size={15} />
             </div>
             <div className="px-4 py-3 rounded-2xl bg-slate-900 border border-slate-800 rounded-tl-sm shadow-sm flex items-center gap-2">
-              <Loader2 size={16} className="animate-spin text-cyan-400" />
+              <Loader2 size={16} className="animate-spin text-sky-400" />
               <span className="text-xs text-slate-400 font-medium">Analyzing synoptic patterns...</span>
             </div>
           </div>

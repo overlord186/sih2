@@ -192,10 +192,10 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
             <button
               onClick={() => setMapMode('neon-dark')}
               className={`px-2 py-1 rounded font-medium transition-colors flex items-center gap-1 ${
-                mapMode === 'neon-dark' ? 'bg-cyan-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400 hover:text-white'
+                mapMode === 'neon-dark' ? 'bg-sky-500 text-slate-950 font-bold shadow-sm' : 'text-slate-400 hover:text-white'
               }`}
             >
-              <span className="w-2 h-2 rounded-full bg-cyan-400 inline-block shadow-[0_0_6px_#22d3ee]" />
+              <span className="w-2 h-2 rounded-full bg-sky-400 inline-block shadow-[0_0_6px_#22d3ee]" />
               Black & Blue
             </button>
             <button
@@ -266,7 +266,7 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
-                      isSelected ? 'bg-cyan-300 animate-pulse' : 'bg-slate-500'
+                      isSelected ? 'bg-sky-300 animate-pulse' : 'bg-slate-500'
                     }`}
                   />
                   <span>{node.name.split(' ')[0]}</span>
@@ -298,10 +298,10 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
             <button
               onClick={() => setShowWindVectors(!showWindVectors)}
               className={`px-2 py-1 rounded text-[11px] font-medium flex items-center gap-1 transition-colors ${
-                showWindVectors ? 'bg-cyan-600/30 text-cyan-300 border border-cyan-500/50' : 'bg-slate-800 text-slate-400 border border-slate-700'
+                showWindVectors ? 'bg-sky-600/30 text-sky-300 border border-sky-500/50' : 'bg-slate-800 text-slate-400 border border-slate-700'
               }`}
             >
-              <Wind className="w-3 h-3 text-cyan-400" />
+              <Wind className="w-3 h-3 text-sky-400" />
               SW Monsoonal Streams
             </button>
 
@@ -898,13 +898,13 @@ export const IndiaRegionMapSimulator: React.FC<IndiaRegionMapSimulatorProps> = (
                   <span className="shrink-0 font-bold text-slate-300">Rain Footprint Scale:</span>
                   <div className="flex-1 flex h-2 rounded overflow-hidden">
                     <div className="flex-1 bg-amber-400/80" title="Dry / Trace (0 - 2.4 mm)" />
-                    <div className="flex-1 bg-cyan-400/80" title="Light (2.5 - 15.5 mm)" />
+                    <div className="flex-1 bg-sky-400/80" title="Light (2.5 - 15.5 mm)" />
                     <div className="flex-1 bg-blue-500/90" title="Moderate (15.6 - 64.4 mm)" />
                     <div className="flex-1 bg-rose-500" title="Heavy / Extreme (>= 64.5 mm)" />
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <span className="text-amber-400">Dry</span>
-                    <span className="text-cyan-400">Light</span>
+                    <span className="text-sky-400">Light</span>
                     <span className="text-blue-400">Moderate</span>
                     <span className="text-rose-400 font-bold">Heavy</span>
                   </div>

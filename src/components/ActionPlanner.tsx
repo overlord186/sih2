@@ -317,7 +317,7 @@ Formulate a crisp, highly structured, authoritative, and sector-tailored Synopti
               className="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500 focus:ring-offset-slate-900 cursor-pointer"
             />
             <div className="flex items-center gap-2">
-              <CloudRain className="w-4 h-4 text-cyan-400" />
+              <CloudRain className="w-4 h-4 text-sky-400" />
               <span className="text-sm font-semibold text-slate-200">
                 Incorporate Real-Time 7-Day Numerical Weather Telemetry
               </span>
@@ -369,7 +369,7 @@ Formulate a crisp, highly structured, authoritative, and sector-tailored Synopti
         <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 shadow-xl backdrop-blur-xl animate-in fade-in duration-500">
           <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
             <div className="flex items-center gap-2.5">
-              <CloudRain className="w-5 h-5 text-cyan-400" />
+              <CloudRain className="w-5 h-5 text-sky-400" />
               <h4 className="font-bold text-white text-base">
                 7-Day Real-Time Atmospheric Telemetry for {location}
               </h4>
@@ -421,7 +421,7 @@ Formulate a crisp, highly structured, authoritative, and sector-tailored Synopti
                 <div className="flex items-center gap-2 flex-wrap">
                   <h4 className="font-bold text-white text-lg">Customized Sector Action Plan</h4>
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30">
-                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    <Sparkles className="w-3 h-3 text-sky-400" />
                     Synoptic Core
                   </span>
                 </div>

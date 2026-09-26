@@ -1202,10 +1202,10 @@ export const InteractivePredictor: React.FC = () => {
             <div className="mt-4 p-3 rounded-lg bg-slate-900 text-white space-y-2 text-xs">
               <div className="flex justify-between items-center">
                 <span className="font-bold text-slate-300 flex items-center gap-1">
-                  <BarChart2 className="w-3.5 h-3.5 text-cyan-400" />
+                  <BarChart2 className="w-3.5 h-3.5 text-sky-400" />
                   Uncertainty Quantile Spread (p10 &mdash; p90):
                 </span>
-                <span className="font-mono font-bold text-cyan-300">
+                <span className="font-mono font-bold text-sky-300">
                   {modelOutputs.p10}mm to {modelOutputs.p90}mm
                 </span>
               </div>
@@ -1222,7 +1222,7 @@ export const InteractivePredictor: React.FC = () => {
               </div>
               <div className="flex justify-between text-[10px] font-mono text-slate-400">
                 <span>p10: {modelOutputs.p10}mm</span>
-                <span className="text-cyan-300 font-bold">p50 Median: {modelOutputs.p50}mm</span>
+                <span className="text-sky-300 font-bold">p50 Median: {modelOutputs.p50}mm</span>
                 <span>p90 Extreme: {modelOutputs.p90}mm</span>
               </div>
             </div>
@@ -1284,7 +1284,7 @@ export const InteractivePredictor: React.FC = () => {
                     onClick={() => setShowIsotherms(!showIsotherms)}
                     className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all flex items-center gap-1 cursor-pointer ${
                       showIsotherms
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-xs'
+                        ? 'bg-sky-500/20 text-sky-300 border border-sky-500/50 shadow-xs'
                         : 'bg-slate-800 text-slate-500 border border-slate-700'
                     }`}
                   >
@@ -1692,7 +1692,7 @@ export const InteractivePredictor: React.FC = () => {
 
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase block">Uncertainty (p10-p90)</span>
-                  <span className="text-xl font-bold text-cyan-300">{modelOutputs.p10} - {modelOutputs.p90} mm</span>
+                  <span className="text-xl font-bold text-sky-300">{modelOutputs.p10} - {modelOutputs.p90} mm</span>
                 </div>
               </div>
 

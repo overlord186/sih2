@@ -209,13 +209,13 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
           </div>
 
           {/* Real-Time Reliance (Right) */}
-          <div className="p-2.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+          <div className="p-2.5 rounded-lg bg-sky-950/40 border border-sky-500/30 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded bg-cyan-500/20 text-cyan-300">
+              <div className="p-1.5 rounded bg-sky-500/20 text-sky-300">
                 <Zap className="w-4 h-4" />
               </div>
               <div>
-                <span className="text-[11px] font-semibold text-cyan-200 block">
+                <span className="text-[11px] font-semibold text-sky-200 block">
                   Real-Time NWP Reliance
                 </span>
                 <span className="text-[10px] text-slate-400 font-mono">
@@ -224,10 +224,10 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
               </div>
             </div>
             <div className="text-right">
-              <span className="font-mono text-base font-extrabold text-cyan-300">
+              <span className="font-mono text-base font-extrabold text-sky-300">
                 {Math.round(wReal * 100)}%
               </span>
-              <span className="text-[9px] block text-cyan-400/80 font-mono">
+              <span className="text-[9px] block text-sky-400/80 font-mono">
                 w_real = {wReal.toFixed(2)}
               </span>
             </div>
@@ -243,7 +243,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             <span className="font-mono text-[11px] font-bold px-2 py-0.5 rounded bg-slate-800 text-slate-200 border border-slate-700">
               Current Split: {Math.round(wHist * 100)}% Hist / {Math.round(wReal * 100)}% Real-Time
             </span>
-            <span className="flex items-center gap-1 font-medium text-cyan-300">
+            <span className="flex items-center gap-1 font-medium text-sky-300">
               100% Real-Time Telemetry <Zap className="w-3.5 h-3.5" />
             </span>
           </div>
@@ -272,7 +272,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
               className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 pointer-events-none transition-transform duration-75 flex flex-col items-center"
               style={{ left: `${alpha * 100}%` }}
             >
-              <div className="w-6 h-6 rounded-full bg-white border-2 border-cyan-400 shadow-lg shadow-cyan-500/50 flex items-center justify-center animate-pulse">
+              <div className="w-6 h-6 rounded-full bg-white border-2 border-sky-400 shadow-lg shadow-sky-500/50 flex items-center justify-center animate-pulse">
                 <div className="w-2 h-2 rounded-full bg-slate-900" />
               </div>
             </div>
@@ -350,8 +350,8 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
               onClick={() => onChangeRealtimeWeight(0.95)}
               className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-all ${
                 Math.abs(alpha - 0.95) < 0.03
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs'
-                  : 'bg-slate-800 text-cyan-300 hover:bg-slate-700'
+                  ? 'bg-sky-500 text-slate-950 font-bold shadow-xs'
+                  : 'bg-slate-800 text-sky-300 hover:bg-slate-700'
               }`}
               title="5% Historical / 95% Real-Time Sensor Telemetry"
             >
@@ -369,7 +369,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             Blended Forecast Output
           </span>
           <div className="flex items-baseline gap-1.5">
-            <span className="text-2xl font-black font-mono text-cyan-300">
+            <span className="text-2xl font-black font-mono text-sky-300">
               {blendedOutput}
             </span>
             <span className="text-xs text-slate-400 font-medium">mm/24h</span>
@@ -464,7 +464,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             {wHist >= 0.15 && `${(wHist * historicalClimatologyMm).toFixed(1)}mm (${Math.round(wHist * 100)}%)`}
           </div>
           <div
-            className="h-full bg-cyan-500 rounded-r transition-all duration-150 relative group flex items-center justify-center text-[10px] font-mono font-bold text-slate-950 overflow-hidden"
+            className="h-full bg-sky-500 rounded-r transition-all duration-150 relative group flex items-center justify-center text-[10px] font-mono font-bold text-slate-950 overflow-hidden"
             style={{ width: `${Math.max(8, wReal * 100)}%` }}
             title={`Real-Time Contribution: ${(wReal * realtimePredictionMm).toFixed(1)} mm (${Math.round(wReal * 100)}%)`}
           >
@@ -477,8 +477,8 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
             <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
             <span>Historical Climatology Contribution: <strong>{(wHist * historicalClimatologyMm).toFixed(1)} mm</strong></span>
           </div>
-          <div className="flex items-center gap-1.5 text-cyan-300">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-500" />
+          <div className="flex items-center gap-1.5 text-sky-300">
+            <span className="w-2.5 h-2.5 rounded-full bg-sky-500" />
             <span>Real-Time Model Signal Contribution: <strong>{(wReal * realtimePredictionMm).toFixed(1)} mm</strong></span>
           </div>
         </div>
@@ -514,8 +514,8 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
               Variance σ² (mm²)
             </span>
-            <span className="flex items-center gap-1.5 text-cyan-300">
-              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
+            <span className="flex items-center gap-1.5 text-sky-300">
+              <span className="w-2.5 h-2.5 rounded-full bg-sky-400" />
               Predicted Output (mm)
             </span>
           </div>
@@ -603,7 +603,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
                       <div className="bg-slate-900/95 border border-slate-700 rounded-lg p-2.5 text-xs text-white shadow-xl space-y-1">
                         <div className="font-bold text-slate-200 border-b border-slate-700 pb-1 flex justify-between gap-3">
                           <span>Reliance Split:</span>
-                          <span className="font-mono text-cyan-300">
+                          <span className="font-mono text-sky-300">
                             {100 - data.weightPct}% Hist / {data.weightPct}% Real-Time
                           </span>
                         </div>
@@ -615,7 +615,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
                           <span>Standard Deviation (σ):</span>
                           <span className="font-mono font-bold">±{data.stdDev} mm</span>
                         </div>
-                        <div className="flex justify-between items-center text-cyan-300">
+                        <div className="flex justify-between items-center text-sky-300">
                           <span>Blended Output:</span>
                           <span className="font-mono font-bold">{data.predicted} mm</span>
                         </div>

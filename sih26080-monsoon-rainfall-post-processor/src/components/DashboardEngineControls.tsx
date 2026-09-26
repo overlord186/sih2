@@ -261,14 +261,14 @@ export const DashboardEngineControls: React.FC<{
               transition={{ duration: 0.22, ease: 'easeOut' }}
               className={`pointer-events-auto flex items-start gap-3 p-3 rounded-xl border shadow-2xl backdrop-blur-xl ${
                 toast.type === 'success'
-                  ? 'bg-slate-950/90 border-cyan-500/40 text-slate-100 shadow-[0_0_25px_rgba(6,182,212,0.25)]'
+                  ? 'bg-slate-950/90 border-sky-500/40 text-slate-100 shadow-[0_0_25px_rgba(6,182,212,0.25)]'
                   : toast.type === 'error'
                   ? 'bg-rose-950/90 border-rose-500/60 text-rose-100 shadow-[0_0_25px_rgba(244,63,94,0.3)]'
                   : 'bg-indigo-950/90 border-indigo-500/40 text-indigo-100'
               }`}
             >
               <div className="mt-0.5">
-                {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-cyan-400 animate-pulse" />}
+                {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-sky-400 animate-pulse" />}
                 {toast.type === 'error' && <AlertTriangle className="w-4 h-4 text-rose-400 animate-bounce" />}
                 {toast.type === 'info' && <Sparkles className="w-4 h-4 text-indigo-400" />}
               </div>
@@ -286,7 +286,7 @@ export const DashboardEngineControls: React.FC<{
         className={`flex items-center gap-1.5 p-1 rounded-xl bg-slate-900/90 backdrop-blur-md border border-slate-700/80 shadow-lg ${className}`}
       >
         <span className="hidden xl:flex items-center gap-1 text-[10px] font-mono font-bold text-slate-400 px-2 uppercase tracking-wider border-r border-slate-700/80 mr-0.5">
-          <Sparkles className="w-3 h-3 text-cyan-400" />
+          <Sparkles className="w-3 h-3 text-sky-400" />
           Engine:
         </span>
 
@@ -318,16 +318,16 @@ export const DashboardEngineControls: React.FC<{
           onClick={toggleWasd}
           className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
             engineState.wasdScroll
-              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(6,182,212,0.5)] ring-1 ring-cyan-400/60'
+              ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-[0_0_12px_rgba(6,182,212,0.5)] ring-1 ring-sky-400/60'
               : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700/80'
           }`}
           title="Toggle 3D Camera Free Pan & WASD Scroll (Hotkey: Alt+W or [L])"
         >
-          <Move className={`w-3.5 h-3.5 ${engineState.wasdScroll ? 'text-cyan-200 animate-pulse' : 'text-slate-400'}`} />
+          <Move className={`w-3.5 h-3.5 ${engineState.wasdScroll ? 'text-sky-200 animate-pulse' : 'text-slate-400'}`} />
           <span>WASD Scroll</span>
           <span
             className={`w-1.5 h-1.5 rounded-full ${
-              engineState.wasdScroll ? 'bg-cyan-300 shadow-[0_0_6px_#67e8f9]' : 'bg-slate-600'
+              engineState.wasdScroll ? 'bg-sky-300 shadow-[0_0_6px_#67e8f9]' : 'bg-slate-600'
             }`}
           />
         </button>

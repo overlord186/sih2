@@ -127,7 +127,7 @@ export const DailyMonsoonChallenge: React.FC<DailyMonsoonChallengeProps> = ({
               Daily Monsoon Challenge
             </span>
             <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-xs font-mono flex items-center gap-1">
-              <Calendar className="w-3 h-3 text-cyan-400" />
+              <Calendar className="w-3 h-3 text-sky-400" />
               UTC {dailyInfo.dateKey}
             </span>
             {isTodayAlreadySolved && (
@@ -274,7 +274,7 @@ export const DailyMonsoonChallenge: React.FC<DailyMonsoonChallengeProps> = ({
         <div className="p-5 space-y-5">
           {/* Synoptic Description Banner */}
           <div className="bg-slate-900 rounded-xl p-4 text-slate-200 text-xs sm:text-sm leading-relaxed border border-slate-800">
-            <div className="flex items-center gap-2 text-cyan-400 font-mono font-bold text-xs uppercase mb-1">
+            <div className="flex items-center gap-2 text-sky-400 font-mono font-bold text-xs uppercase mb-1">
               <Compass className="w-3.5 h-3.5" />
               <span>Synoptic Environmental Setting</span>
             </div>
@@ -302,12 +302,12 @@ export const DailyMonsoonChallenge: React.FC<DailyMonsoonChallengeProps> = ({
               </div>
 
               {/* 850hPa RH */}
-              <div className="p-3 rounded-xl bg-cyan-50/70 border border-cyan-200/80">
-                <div className="text-[10px] font-mono font-bold text-cyan-700 uppercase">850 hPa Humidity</div>
-                <div className="text-lg font-black text-cyan-900 mt-0.5">
+              <div className="p-3 rounded-xl bg-sky-50/70 border border-sky-200/80">
+                <div className="text-[10px] font-mono font-bold text-sky-700 uppercase">850 hPa Humidity</div>
+                <div className="text-lg font-black text-sky-900 mt-0.5">
                   {activeScenario.atmosphericIndicators.relativeHumidity850hPa}%
                 </div>
-                <div className="text-[10px] text-cyan-600 mt-0.5">Low-level moisture flux</div>
+                <div className="text-[10px] text-sky-600 mt-0.5">Low-level moisture flux</div>
               </div>
 
               {/* Surface Pressure */}
@@ -579,7 +579,7 @@ export const DailyMonsoonChallenge: React.FC<DailyMonsoonChallengeProps> = ({
                         className="px-3.5 py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white rounded-lg text-xs font-bold shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                         title="View Illuminated 3D Earth Globe Visual Effect"
                       >
-                        <Globe className="w-4 h-4 text-cyan-200 animate-spin-slow" />
+                        <Globe className="w-4 h-4 text-sky-200 animate-spin-slow" />
                         <span>Inspect 3D Globe Aura</span>
                       </button>
                     )}

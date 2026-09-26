@@ -513,8 +513,8 @@ export const RoebberPerformanceDiagram: React.FC<RoebberPerformanceDiagramProps>
           <div className="text-[11px] text-slate-200 font-mono space-y-1">
             <div className="flex justify-between"><span className="text-slate-400">POD:</span><strong className="text-emerald-400">{current.aiCorrected.pod.toFixed(3)}</strong></div>
             <div className="flex justify-between"><span className="text-slate-400">FAR:</span><strong className="text-emerald-400">{current.aiCorrected.far.toFixed(3)}</strong></div>
-            <div className="flex justify-between"><span className="text-slate-400">CSI:</span><strong className="text-cyan-300 font-bold">{current.aiCorrected.csi.toFixed(3)}</strong></div>
-            <div className="flex justify-between"><span className="text-slate-400">Bias:</span><strong className="text-cyan-300 font-bold">{current.aiCorrected.frequencyBias.toFixed(2)}</strong></div>
+            <div className="flex justify-between"><span className="text-slate-400">CSI:</span><strong className="text-sky-300 font-bold">{current.aiCorrected.csi.toFixed(3)}</strong></div>
+            <div className="flex justify-between"><span className="text-slate-400">Bias:</span><strong className="text-sky-300 font-bold">{current.aiCorrected.frequencyBias.toFixed(2)}</strong></div>
           </div>
         </div>
       </div>

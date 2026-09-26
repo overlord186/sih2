@@ -88,7 +88,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
             onClick={() => onToggleLayer('ridges')}
             className={`px-2 py-1 rounded-md border transition-all cursor-pointer ${
               showRidgeElevation
-                ? 'bg-cyan-600/20 border-cyan-400 text-cyan-300'
+                ? 'bg-sky-600/20 border-sky-400 text-sky-300'
                 : 'bg-slate-900 border-slate-800 text-slate-400'
             }`}
             title="Toggle 3D Mountain Ridge Extrusions"
@@ -154,10 +154,10 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
       <div className="mb-3">
         <div className="flex items-center justify-between text-xs mb-1.5 font-mono">
           <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-            <Wind className="w-3.5 h-3.5 text-cyan-400" />
+            <Wind className="w-3.5 h-3.5 text-sky-400" />
             <span>Select Indian Monsoon Synoptic Regime:</span>
           </span>
-          <span className="text-[10px] text-cyan-300 font-bold">
+          <span className="text-[10px] text-sky-300 font-bold">
             Wind: {activeRegime.windSpeedKmh} km/h • Specific Humidity: {activeRegime.moistureContentGKg} g/kg
           </span>
         </div>
@@ -172,7 +172,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
                 onClick={() => onChangeRegime(regime.id)}
                 className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-slate-900 border-cyan-400 text-white ring-2 ring-cyan-400/50 shadow-lg'
+                    ? 'bg-slate-900 border-sky-400 text-white ring-2 ring-sky-400/50 shadow-lg'
                     : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-900 hover:border-slate-700'
                 }`}
               >
@@ -190,7 +190,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
                 </div>
                 <div className="text-[9px] text-slate-400 font-mono mt-1 flex items-center justify-between">
                   <span>{regime.windSpeedKmh} km/h</span>
-                  <span className="text-cyan-300">{regime.moistureContentGKg} g/kg</span>
+                  <span className="text-sky-300">{regime.moistureContentGKg} g/kg</span>
                 </div>
               </button>
             );
@@ -261,7 +261,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
               {interaction.froudeNumber >= 1.0 ? 'UNBLOCKED' : 'BLOCKED'}
             </span>
           </div>
-          <div className="text-base font-black text-cyan-300 mt-1">
+          <div className="text-base font-black text-sky-300 mt-1">
             {interaction.froudeNumber.toFixed(2)}
           </div>
           <div className="text-[8px] text-slate-400 mt-0.5">
@@ -329,7 +329,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
       {/* SECTION 4: SYNOPTIC ANALYSIS & KEY STATIONS BAR */}
       <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs font-mono">
         <div className="sm:col-span-2">
-          <span className="text-[9px] uppercase font-bold text-cyan-400 block mb-1">
+          <span className="text-[9px] uppercase font-bold text-sky-400 block mb-1">
             Synoptic Interaction Analysis: {activeRegime.name} × {activeBarrier.name}
           </span>
           <p className="text-[11px] font-sans text-slate-200 leading-relaxed">
@@ -355,7 +355,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${
                       st.type === 'WINDWARD'
-                        ? 'bg-cyan-400'
+                        ? 'bg-sky-400'
                         : st.type === 'CREST'
                         ? 'bg-amber-400'
                         : 'bg-rose-400'
@@ -363,7 +363,7 @@ export const LandscapeInteractionHUD: React.FC<LandscapeInteractionHUDProps> = (
                   />
                   <span className="truncate">{st.name}</span>
                 </div>
-                <span className="font-bold text-cyan-300 font-mono">
+                <span className="font-bold text-sky-300 font-mono">
                   {st.regimeRainfallMmDay} mm/d
                 </span>
               </div>

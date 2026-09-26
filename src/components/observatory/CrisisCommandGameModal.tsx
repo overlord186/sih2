@@ -303,7 +303,7 @@ export const CrisisCommandGameModal: React.FC<CrisisCommandGameModalProps> = ({
                   </div>
                   <div className="bg-slate-900/80 p-2 rounded-lg">
                     <span className="text-[10px] text-slate-400 block">Operational Window</span>
-                    <span className="text-cyan-300 font-bold text-sm">{mission.timeLimitSec} Seconds</span>
+                    <span className="text-sky-300 font-bold text-sm">{mission.timeLimitSec} Seconds</span>
                   </div>
                 </div>
               </div>
@@ -328,10 +328,10 @@ export const CrisisCommandGameModal: React.FC<CrisisCommandGameModalProps> = ({
                 {/* Timer */}
                 <div className="flex flex-col items-center justify-center">
                   <span className="text-[10px] text-slate-400 uppercase flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-cyan-400" />
+                    <Clock className="w-3 h-3 text-sky-400" />
                     Time Remaining
                   </span>
-                  <span className={`text-xl font-black mt-0.5 ${timeLeft <= 10 ? 'text-rose-500 animate-ping' : 'text-cyan-400'}`}>
+                  <span className={`text-xl font-black mt-0.5 ${timeLeft <= 10 ? 'text-rose-500 animate-ping' : 'text-sky-400'}`}>
                     00:{timeLeft < 10 ? `0${timeLeft}` : timeLeft}
                   </span>
                 </div>
@@ -369,7 +369,7 @@ export const CrisisCommandGameModal: React.FC<CrisisCommandGameModalProps> = ({
                 <div className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-xs font-bold block text-white flex items-center gap-1.5">
-                      <Radio className="w-4 h-4 text-cyan-400" />
+                      <Radio className="w-4 h-4 text-sky-400" />
                       Mobile X-Band Doppler Radar
                     </span>
                     <span className="text-[10px] text-slate-400">Expose convective cores in blind zones (+22% confidence)</span>
@@ -508,7 +508,7 @@ export const CrisisCommandGameModal: React.FC<CrisisCommandGameModalProps> = ({
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Civilian Safety</span>
-                    <span className="text-base font-bold text-cyan-300">{civilianSafetyPct}%</span>
+                    <span className="text-base font-bold text-sky-300">{civilianSafetyPct}%</span>
                   </div>
                   <div>
                     <span className="text-[10px] text-slate-400 block">Final Threat Level</span>

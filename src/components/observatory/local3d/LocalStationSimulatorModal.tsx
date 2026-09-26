@@ -524,9 +524,9 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                     <strong className="text-blue-300 font-mono text-sm">{surfaceWaterDepthCm.toFixed(1)} cm</strong>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                    <Eye className="w-3.5 h-3.5 text-sky-400 shrink-0" />
                     <span className="text-slate-400">Visibility:</span>
-                    <strong className="text-cyan-300 font-mono text-sm">{opticalVisibilityKm.toFixed(1)} km</strong>
+                    <strong className="text-sky-300 font-mono text-sm">{opticalVisibilityKm.toFixed(1)} km</strong>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <Wind className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
@@ -666,10 +666,10 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               <div className="bg-slate-950/60 p-3 rounded-xl border border-slate-800 space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="font-semibold text-slate-300 flex items-center gap-1.5">
-                    <CloudFog className="w-3.5 h-3.5 text-cyan-400" />
+                    <CloudFog className="w-3.5 h-3.5 text-sky-400" />
                     Condensation Level (LCL Cloud Base)
                   </span>
-                  <span className="font-mono font-bold text-cyan-400 text-sm">{cloudBaseM} m</span>
+                  <span className="font-mono font-bold text-sky-400 text-sm">{cloudBaseM} m</span>
                 </div>
                 <input
                   type="range"
@@ -681,7 +681,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                     setCloudBaseM(parseFloat(e.target.value));
                     setActiveScenarioId('CUSTOM');
                   }}
-                  className="w-full accent-cyan-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+                  className="w-full accent-sky-500 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
                 />
                 <div className="flex justify-between text-[10px] text-slate-500 font-mono">
                   <span>150m (Mountain Fog)</span>
@@ -796,7 +796,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                   <button
                     onClick={() => setIsAutoOrbit(!isAutoOrbit)}
                     className={`flex-1 px-2 py-1.5 rounded text-[10px] font-bold uppercase tracking-wider transition-colors border ${
-                      isAutoOrbit ? 'bg-cyan-900/40 text-cyan-400 border-cyan-700' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
+                      isAutoOrbit ? 'bg-sky-900/40 text-sky-400 border-sky-700' : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white'
                     }`}
                   >
                     Cinematic Orbit

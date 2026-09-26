@@ -347,7 +347,7 @@ export const D3SpatialRainfallHeatmapOverlay: React.FC<Props> = ({
         <div className="space-y-2 pt-1 border-t border-slate-800">
           <div className="flex items-center justify-between text-[10px]">
             <span className="text-slate-300">Spatial Kernel Radius:</span>
-            <span className="font-mono text-cyan-300 font-bold">{kernelRadius}px</span>
+            <span className="font-mono text-sky-300 font-bold">{kernelRadius}px</span>
           </div>
           <input
             type="range"
@@ -361,7 +361,7 @@ export const D3SpatialRainfallHeatmapOverlay: React.FC<Props> = ({
 
           <div className="flex items-center justify-between text-[10px]">
             <span className="text-slate-300">Layer Opacity:</span>
-            <span className="font-mono text-cyan-300 font-bold">{Math.round(layerOpacity * 100)}%</span>
+            <span className="font-mono text-sky-300 font-bold">{Math.round(layerOpacity * 100)}%</span>
           </div>
           <input
             type="range"

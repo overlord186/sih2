@@ -379,7 +379,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
                   {stationName}
                 </span>
                 <span className="text-[10px] text-slate-300 font-mono flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
                   {timeLabel} • {synopticPhase}
                 </span>
               </div>
@@ -552,7 +552,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
               <div className="w-32 h-16 bg-gradient-to-b from-slate-800 to-slate-900 border-2 border-slate-600 rounded-t-lg shadow-xl p-1.5 flex flex-col justify-between">
                 {/* Station Callsign LED Strip */}
                 <div className="flex items-center justify-between px-1 bg-slate-950/90 rounded border border-slate-700 py-0.5">
-                  <span className="text-[8px] font-mono font-bold text-cyan-400 truncate">
+                  <span className="text-[8px] font-mono font-bold text-sky-400 truncate">
                     IMD-{stationName.split(' ')[0]}
                   </span>
                   <span className="flex h-1.5 w-1.5 relative">
@@ -602,7 +602,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
             )}
             <Droplets className="w-4 h-4 text-sky-400 shrink-0" />
             <span className="text-slate-300 font-medium">Accumulation:</span>
-            <span className="font-bold font-mono text-cyan-300 text-sm">
+            <span className="font-bold font-mono text-sky-300 text-sm">
               {aiForecastMm} mm
             </span>
           </div>
@@ -627,7 +627,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
           <div className="flex items-center gap-2 bg-slate-800/90 px-3 py-1 rounded-lg border border-slate-700 text-xs font-mono">
             <span className="text-slate-400">NWP: <strong className="text-slate-200">{rawForecastMm} mm</strong></span>
             <span className="text-slate-500">→</span>
-            <span className="text-cyan-400 font-bold">AI: <strong>{aiForecastMm} mm</strong></span>
+            <span className="text-sky-400 font-bold">AI: <strong>{aiForecastMm} mm</strong></span>
           </div>
         </div>
 
@@ -653,8 +653,8 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
           {/* Machine Learning Bias Calibration Explanation */}
           <div className="md:col-span-5 bg-gradient-to-br from-blue-950/60 to-slate-950/80 p-3.5 rounded-xl border border-blue-900/60 shadow-2xs space-y-2 flex flex-col justify-between">
             <div className="space-y-1">
-              <div className="flex items-center gap-1.5 font-bold text-cyan-300 text-xs">
-                <CheckCircle className="w-3.5 h-3.5 text-cyan-400" />
+              <div className="flex items-center gap-1.5 font-bold text-sky-300 text-xs">
+                <CheckCircle className="w-3.5 h-3.5 text-sky-400" />
                 Physical Model Bias Correction
               </div>
               <p className="text-slate-300 leading-relaxed text-[11px]">
@@ -664,7 +664,7 @@ export const KidVisualStage: React.FC<KidVisualStageProps> = ({
 
             <div className="flex items-center justify-between pt-2 border-t border-blue-900/40 text-[11px] font-mono">
               <span className="text-slate-400">Regime: <strong className="text-slate-200">{detectedRegime}</strong></span>
-              <span className="px-2 py-0.5 rounded bg-blue-950 text-cyan-300 border border-blue-800 text-[10px]">
+              <span className="px-2 py-0.5 rounded bg-blue-950 text-sky-300 border border-blue-800 text-[10px]">
                 {aiForecastMm > rawForecastMm
                   ? `+${(aiForecastMm - rawForecastMm).toFixed(1)} mm Boost`
                   : aiForecastMm < rawForecastMm

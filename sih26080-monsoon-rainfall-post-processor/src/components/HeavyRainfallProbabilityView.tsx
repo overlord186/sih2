@@ -741,10 +741,10 @@ export const HeavyRainfallProbabilityView: React.FC<HeavyRainfallProbabilityView
             {/* Sector 1: Urban Drainage */}
             <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs space-y-2">
               <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                <Building2 className="w-4 h-4 text-cyan-600" />
+                <Building2 className="w-4 h-4 text-sky-600" />
                 Urban Drainage & Infrastructure
               </div>
-              <div className="text-xs font-bold text-cyan-800 bg-cyan-50 px-2 py-1 rounded border border-cyan-200 inline-block">
+              <div className="text-xs font-bold text-sky-800 bg-sky-50 px-2 py-1 rounded border border-sky-200 inline-block">
                 {impactAnalysis.urbanDrainage.status} ({impactAnalysis.urbanDrainage.capacityPercent}%)
               </div>
               <p className="text-[11.5px] text-slate-600 leading-relaxed">

@@ -240,13 +240,13 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
                 e.stopPropagation();
                 if (onEjectDropsonde) onEjectDropsonde();
               }}
-              className="bg-slate-950/90 backdrop-blur-md px-2 py-1 rounded-md border border-cyan-400/80 shadow-lg text-[9px] font-mono text-cyan-300 flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:border-cyan-300 hover:scale-105 transition-all select-none"
+              className="bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-700 shadow-xl text-[9px] font-sans text-slate-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:border-sky-400 hover:bg-slate-800 transition-all select-none"
               title="Click to deploy dropsonde atmospheric sounder"
             >
-              <Plane className="w-3 h-3 text-cyan-400" />
-              <span className="font-bold">{currentAircraft.callsign}</span>
-              <span className="text-slate-400">FL{Math.round(currentAircraft.altitudeKm * 32.8)}</span>
-              <span className="px-1 py-0.2 bg-cyan-900/60 rounded text-[8px] text-cyan-200 border border-cyan-700/60">
+              <Plane className="w-3 h-3 text-sky-400" />
+              <span className="font-semibold text-white">{currentAircraft.callsign}</span>
+              <span className="text-slate-400 font-mono text-[8px]">FL{Math.round(currentAircraft.altitudeKm * 32.8)}</span>
+              <span className="px-1.5 py-0.2 bg-sky-950/80 rounded-full text-[8px] font-medium text-sky-300 border border-sky-800/60">
                 EJECT SONDE
               </span>
             </div>

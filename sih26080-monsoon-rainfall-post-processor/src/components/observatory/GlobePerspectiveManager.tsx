@@ -111,7 +111,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
       {/* Top Header & Primary Mode Switcher */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3 mb-3">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-600 to-blue-700 flex items-center justify-center text-white shadow-md shadow-cyan-600/30">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-sky-600 to-blue-700 flex items-center justify-center text-white shadow-md shadow-sky-600/30">
             <Compass className="w-4 h-4 animate-spin-slow" />
           </div>
           <div>
@@ -119,7 +119,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
               <span className="text-xs font-black uppercase tracking-wider text-white">
                 Globe Perspective Manager
               </span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/80 border border-cyan-700/60 text-cyan-300 font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-700/60 text-sky-300 font-bold">
                 {state.mode === 'GLOBAL' ? 'MACRO' : state.mode === 'REGIONAL' ? 'MESO' : 'SYNOPTIC'}
               </span>
             </div>
@@ -149,11 +149,11 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
             onClick={() => handleSelectMode('REGIONAL')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
               state.mode === 'REGIONAL'
-                ? 'bg-cyan-600 text-white shadow-md shadow-cyan-600/40 ring-1 ring-cyan-400/60'
+                ? 'bg-sky-600 text-white shadow-md shadow-sky-600/40 ring-1 ring-sky-400/60'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
             }`}
           >
-            <MapPin className="w-3.5 h-3.5 text-cyan-300" />
+            <MapPin className="w-3.5 h-3.5 text-sky-300" />
             <span>Regional Focus</span>
           </button>
 
@@ -192,7 +192,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                   : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
               }`}
             >
-              <RotateCw className={`w-3 h-3 text-cyan-400 ${state.autoRotatePlanetary ? 'animate-spin-slow' : ''}`} />
+              <RotateCw className={`w-3 h-3 text-sky-400 ${state.autoRotatePlanetary ? 'animate-spin-slow' : ''}`} />
               <span>Planetary Auto-Orbit: {state.autoRotatePlanetary ? 'ON' : 'OFF'}</span>
             </button>
           </div>
@@ -214,7 +214,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                 >
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-base">{p.icon}</span>
-                    {isActive && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />}
+                    {isActive && <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />}
                   </div>
                   <div className="text-xs font-bold leading-tight">{p.label}</div>
                   <div className="text-[10px] text-slate-400 font-mono mt-1 line-clamp-1">{p.synopticFocus}</div>
@@ -227,7 +227,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 text-center font-mono">
             <div className="border-r border-slate-800/80 pr-1">
               <div className="text-[9px] text-slate-400 uppercase">Mean Surface Pressure</div>
-              <div className="text-xs font-bold text-cyan-300 mt-0.5">1013.2 hPa</div>
+              <div className="text-xs font-bold text-sky-300 mt-0.5">1013.2 hPa</div>
             </div>
             <div className="border-r border-slate-800/80 pr-1">
               <div className="text-[9px] text-slate-400 uppercase">ITCZ Mean Latitude</div>
@@ -254,10 +254,10 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
         <div className="space-y-3 animate-in fade-in duration-200">
           <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
             <span className="font-mono text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+              <MapPin className="w-3.5 h-3.5 text-sky-400" />
               <span>Select Synoptic Meteorological Domain:</span>
             </span>
-            <span className="text-[10px] text-cyan-400 font-mono font-bold">
+            <span className="text-[10px] text-sky-400 font-mono font-bold">
               Current: {activeRegional.label} ({activeRegional.lat}°N, {activeRegional.lon}°E)
             </span>
           </div>
@@ -273,7 +273,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                   onClick={() => handleSelectRegionalPreset(r.id)}
                   className={`p-2 rounded-xl border text-left transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-cyan-600/20 border-cyan-400 text-white ring-1 ring-cyan-400/50 shadow-md'
+                      ? 'bg-sky-600/20 border-sky-400 text-white ring-1 ring-sky-400/50 shadow-md'
                       : 'bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-900 hover:border-slate-700'
                   }`}
                 >
@@ -294,8 +294,8 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
               <p className="text-[11px] text-slate-200 leading-relaxed font-sans">{activeRegional.description}</p>
             </div>
             <div>
-              <span className="text-[9px] uppercase font-bold text-cyan-400 block mb-0.5">Primary Weather Engine</span>
-              <p className="text-[11px] text-cyan-200 font-sans">{activeRegional.dominantWeatherFeature}</p>
+              <span className="text-[9px] uppercase font-bold text-sky-400 block mb-0.5">Primary Weather Engine</span>
+              <p className="text-[11px] text-sky-200 font-sans">{activeRegional.dominantWeatherFeature}</p>
             </div>
             <div>
               <span className="text-[9px] uppercase font-bold text-amber-400 block mb-0.5">Orographic Barrier Impact</span>
@@ -348,7 +348,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                 onClick={() => onChangeState((prev) => ({ ...prev, showPastTrackWaypoints: !prev.showPastTrackWaypoints }))}
                 className={`px-2 py-1 rounded-md border font-bold transition-all ${
                   state.showPastTrackWaypoints
-                    ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                    ? 'bg-sky-500/20 border-sky-400 text-sky-300'
                     : 'bg-slate-900 border-slate-800 text-slate-400'
                 }`}
                 title="Toggle Historical Track Waypoints"
@@ -403,7 +403,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                 {activeStorm.currentPressureHpa} <span className="text-xs text-slate-400 font-normal">hPa</span>
               </div>
               <div className="text-[10px] text-slate-400">
-                Dvorak Rating: <span className="font-bold text-cyan-300">{activeStorm.dvorakRating}</span>
+                Dvorak Rating: <span className="font-bold text-sky-300">{activeStorm.dvorakRating}</span>
               </div>
               <div className="text-[10px] text-slate-400">
                 Eye Diameter: <span className="font-bold text-amber-300">{activeStorm.eyeDiameterKm} km</span>
@@ -423,21 +423,21 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                 Gust Potential: <span className="font-bold text-rose-300">{Math.round(activeStorm.maxWindKmh * 1.25)} km/h ({activeStorm.maxWindKnots} kts)</span>
               </div>
               <div className="text-[10px] text-slate-400">
-                Movement: <span className="font-bold text-cyan-300">{activeStorm.movementHeading} @ {activeStorm.forwardSpeedKmh} km/h</span>
+                Movement: <span className="font-bold text-sky-300">{activeStorm.movementHeading} @ {activeStorm.forwardSpeedKmh} km/h</span>
               </div>
             </div>
 
             {/* Column 3: Satellite Diagnostics */}
             <div className="space-y-1 sm:col-span-2">
-              <div className="text-[10px] font-bold text-cyan-400 uppercase flex items-center gap-1">
-                <Radio className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <div className="text-[10px] font-bold text-sky-400 uppercase flex items-center gap-1">
+                <Radio className="w-3.5 h-3.5 text-sky-400 animate-pulse" />
                 <span>Satellite & Synoptic Diagnosis: {activeStorm.basin}</span>
               </div>
               <p className="text-[11px] font-sans text-slate-300 leading-relaxed">
                 {activeStorm.synopticOverview}
               </p>
               <div className="text-[10px] text-slate-400 bg-slate-950/70 p-1.5 rounded border border-slate-800 mt-1">
-                <span className="text-cyan-300 font-bold">Cloud Signature:</span> {activeStorm.satelliteSignature}
+                <span className="text-sky-300 font-bold">Cloud Signature:</span> {activeStorm.satelliteSignature}
               </div>
             </div>
           </div>
@@ -446,7 +446,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
           <div className="bg-slate-900/60 p-2.5 rounded-xl border border-slate-800 space-y-2 font-mono">
             <div className="flex items-center justify-between text-xs">
               <span className="text-[10px] uppercase font-bold text-slate-400 flex items-center gap-1.5">
-                <Navigation className="w-3 h-3 text-cyan-400" />
+                <Navigation className="w-3 h-3 text-sky-400" />
                 <span>Track Timeline Step Scrubber:</span>
               </span>
 
@@ -455,7 +455,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                 onClick={() => handleScrubStep(null)}
                 className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer transition-all ${
                   state.activeTrackScrubStep === null
-                    ? 'bg-cyan-600 text-white'
+                    ? 'bg-sky-600 text-white'
                     : 'bg-slate-800 text-slate-400 hover:text-white'
                 }`}
               >
@@ -474,7 +474,7 @@ export const GlobePerspectiveManager: React.FC<GlobePerspectiveManagerProps> = (
                     onClick={() => handleScrubStep(pt.step)}
                     className={`px-2.5 py-1.5 rounded-lg border text-[10px] font-mono whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
                       isSelected
-                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 border-cyan-300 text-white shadow-md ring-1 ring-cyan-400/60 font-bold'
+                        ? 'bg-gradient-to-r from-sky-600 to-blue-600 border-sky-300 text-white shadow-md ring-1 ring-sky-400/60 font-bold'
                         : pt.isForecast
                         ? 'bg-amber-950/40 border-amber-800/80 text-amber-300 hover:bg-amber-900/50'
                         : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-800'

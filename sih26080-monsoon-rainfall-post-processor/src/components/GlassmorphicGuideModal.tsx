@@ -176,7 +176,7 @@ const DASHBOARD_COMPONENT_ANALYSIS: ComponentAnalysis[] = [
     enhancementRecommendations: [
       'Wrap chart canvas in .hud-glass-panel with backdrop-filter: blur(18px) to soften background terrain wires.',
       'Standardize legend pill styling across both Probability of Detection (POD) and False Alarm (FAR) panels.',
-      'Use semi-transparent chart tooltips with border-cyan-500/30 matching the radar inspect card.',
+      'Use semi-transparent chart tooltips with border-sky-500/30 matching the radar inspect card.',
     ],
   },
   {
@@ -307,8 +307,8 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
   left: -1px;
   width: 8px;
   height: 8px;
-  border-top: 2px solid var(--accent-cyan-neon, #00f0ff);
-  border-left: 2px solid var(--accent-cyan-neon, #00f0ff);
+  border-top: 2px solid var(--accent-sky-neon, #00f0ff);
+  border-left: 2px solid var(--accent-sky-neon, #00f0ff);
   border-top-left-radius: 4px;
 }
 
@@ -322,11 +322,11 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col bg-slate-950/95 border border-cyan-500/40 rounded-2xl shadow-2xl shadow-cyan-950/40 text-white overflow-hidden ring-1 ring-cyan-500/20">
+      <div className="relative w-full max-w-5xl max-h-[90vh] flex flex-col bg-slate-950/95 border border-sky-500/40 rounded-2xl shadow-2xl shadow-sky-950/40 text-white overflow-hidden ring-1 ring-sky-500/20">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-cyan-950/80 border border-cyan-500/50 rounded-xl text-cyan-400 shadow-inner">
+            <div className="p-2 bg-sky-950/80 border border-sky-500/50 rounded-xl text-sky-400 shadow-inner">
               <Sparkles className="w-5 h-5 animate-pulse" />
             </div>
             <div>
@@ -334,7 +334,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                 <h2 className="text-lg font-bold text-slate-100 font-mono tracking-tight">
                   SAMVARTAKA AI Visual Architecture
                 </h2>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-950 text-cyan-300 border border-cyan-700/60">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-950 text-sky-300 border border-sky-700/60">
                   v2.4 Design System
                 </span>
               </div>
@@ -358,7 +358,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
             onClick={() => setActiveTab('PRESETS')}
             className={`flex items-center gap-2 px-4 py-2 text-xs font-mono font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'PRESETS'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/30'
+                ? 'border-sky-400 text-sky-300 bg-sky-950/30'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -369,7 +369,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
             onClick={() => setActiveTab('ANALYSIS')}
             className={`flex items-center gap-2 px-4 py-2 text-xs font-mono font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'ANALYSIS'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/30'
+                ? 'border-sky-400 text-sky-300 bg-sky-950/30'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -380,7 +380,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
             onClick={() => setActiveTab('CSS_GUIDE')}
             className={`flex items-center gap-2 px-4 py-2 text-xs font-mono font-semibold border-b-2 transition-all cursor-pointer ${
               activeTab === 'CSS_GUIDE'
-                ? 'border-cyan-400 text-cyan-300 bg-cyan-950/30'
+                ? 'border-sky-400 text-sky-300 bg-sky-950/30'
                 : 'border-transparent text-slate-400 hover:text-slate-200'
             }`}
           >
@@ -395,7 +395,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
           {activeTab === 'PRESETS' && (
             <div className="space-y-5">
               <div>
-                <h3 className="text-sm font-bold text-cyan-300 font-mono flex items-center gap-2">
+                <h3 className="text-sm font-bold text-sky-300 font-mono flex items-center gap-2">
                   <Palette className="w-4 h-4" /> Real-Time Atmosphere & Glassmorphism Presets
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -414,7 +414,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                       onClick={() => handleSelectPreset(presetKey)}
                       className={`relative p-4 rounded-xl border transition-all cursor-pointer text-left ${
                         isSelected
-                          ? 'bg-cyan-950/40 border-cyan-400 ring-2 ring-cyan-500/30 shadow-lg shadow-cyan-950/50'
+                          ? 'bg-sky-950/40 border-sky-400 ring-2 ring-sky-500/30 shadow-lg shadow-sky-950/50'
                           : 'bg-slate-900/60 border-slate-800 hover:border-slate-700 hover:bg-slate-900/90'
                       }`}
                     >
@@ -425,14 +425,14 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                             {p.badge}
                           </span>
                           {isSelected && (
-                            <span className="p-0.5 rounded-full bg-cyan-500 text-slate-950">
+                            <span className="p-0.5 rounded-full bg-sky-500 text-slate-950">
                               <Check className="w-3.5 h-3.5 stroke-[3]" />
                             </span>
                           )}
                         </div>
                       </div>
 
-                      <div className="text-xs text-cyan-400 font-medium mb-2">{p.tagline}</div>
+                      <div className="text-xs text-sky-400 font-medium mb-2">{p.tagline}</div>
                       <p className="text-xs text-slate-300 leading-relaxed mb-3">{p.description}</p>
 
                       {/* Live Glass Swatch Preview */}
@@ -446,7 +446,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                         }}
                       >
                         <span className="text-slate-200">Blur: {p.cssVariables['--hud-backdrop-blur']}</span>
-                        <span className="text-cyan-300 font-bold">Contrast: WCAG AA Pass</span>
+                        <span className="text-sky-300 font-bold">Contrast: WCAG AA Pass</span>
                       </div>
                     </div>
                   );
@@ -461,21 +461,21 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                 <ul className="list-disc list-inside space-y-1 text-slate-400 leading-relaxed pl-1">
                   <li>
                     <strong className="text-slate-200">Inside Corner Radius Rule:</strong>{' '}
-                    <code className="text-cyan-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
+                    <code className="text-sky-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
                       R_inner = R_outer - Padding
                     </code>{' '}
                     prevents clashing concentric borders.
                   </li>
                   <li>
                     <strong className="text-slate-200">Specular Edge Bevel:</strong> Uses high-contrast 1px top highlight (
-                    <code className="text-cyan-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
+                    <code className="text-sky-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
                       inset 0 1px 0 0 rgba(255,255,255,0.18)
                     </code>
                     ) mimicking aircraft glass cockpit multi-layer lamination.
                   </li>
                   <li>
                     <strong className="text-slate-200">Compositor Performance:</strong> Employs{' '}
-                    <code className="text-cyan-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
+                    <code className="text-sky-300 bg-slate-950 px-1 py-0.5 rounded font-mono">
                       transform: translateZ(0)
                     </code>{' '}
                     to offload backdrop diffusion to the GPU composition thread without stalling Three.js draw calls.
@@ -489,7 +489,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
           {activeTab === 'ANALYSIS' && (
             <div className="space-y-4">
               <div>
-                <h3 className="text-sm font-bold text-cyan-300 font-mono flex items-center gap-2">
+                <h3 className="text-sm font-bold text-sky-300 font-mono flex items-center gap-2">
                   <Layout className="w-4 h-4" /> Operational Dashboard Component Hierarchy Review
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
@@ -509,7 +509,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                         <div className="text-[11px] text-slate-400">{comp.role}</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyan-950 text-cyan-300 border border-cyan-800">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-sky-950 text-sky-300 border border-sky-800">
                           {comp.hierarchyLevel}
                         </span>
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-emerald-950 text-emerald-300 border border-emerald-800 font-bold">
@@ -521,7 +521,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-300">
                       <div>
                         <div className="font-bold text-slate-400 mb-1 text-[11px] flex items-center gap-1">
-                          <Eye className="w-3 h-3 text-cyan-400" /> Current Visual Findings
+                          <Eye className="w-3 h-3 text-sky-400" /> Current Visual Findings
                         </div>
                         <ul className="list-disc list-inside space-y-1 text-slate-400 leading-relaxed">
                           {comp.findings.map((f, fi) => (
@@ -551,7 +551,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-sm font-bold text-cyan-300 font-mono flex items-center gap-2">
+                  <h3 className="text-sm font-bold text-sky-300 font-mono flex items-center gap-2">
                     <Code className="w-4 h-4" /> Production CSS Glassmorphic Utility Suite
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
@@ -560,7 +560,7 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
                 </div>
                 <button
                   onClick={() => handleCopy(sampleCssCode, 'full-css')}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-xs font-mono font-bold transition-colors cursor-pointer shadow"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white text-xs font-mono font-bold transition-colors cursor-pointer shadow"
                 >
                   {copiedSection === 'full-css' ? (
                     <>
@@ -584,11 +584,11 @@ export const GlassmorphicGuideModal: React.FC<Props> = ({
         {/* Footer Controls */}
         <div className="px-6 py-3 border-t border-slate-800 bg-slate-900/60 flex items-center justify-between text-xs">
           <span className="text-slate-400 font-mono">
-            Current Active Profile: <strong className="text-cyan-300">{GLASS_PRESETS[activePreset]?.name}</strong>
+            Current Active Profile: <strong className="text-sky-300">{GLASS_PRESETS[activePreset]?.name}</strong>
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-mono font-bold text-xs transition-colors cursor-pointer shadow"
+            className="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-mono font-bold text-xs transition-colors cursor-pointer shadow"
           >
             Done / Close Console
           </button>

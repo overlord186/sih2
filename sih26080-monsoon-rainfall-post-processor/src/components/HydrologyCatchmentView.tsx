@@ -120,11 +120,11 @@ export const HydrologyCatchmentView: React.FC = () => {
     <div id="hydrology-catchment-container" className="space-y-6">
       {/* Header Banner */}
       <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-cyan-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+        <div className="absolute top-0 right-0 w-96 h-96 bg-sky-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 relative z-10">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
+              <span className="px-2.5 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20 text-sky-400 text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5">
                 <Waves className="w-3.5 h-3.5" />
                 Hydrological Impact Engine
               </span>
@@ -143,7 +143,7 @@ export const HydrologyCatchmentView: React.FC = () => {
               onClick={() => setActiveSubTab('RIVER_BASIN')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeSubTab === 'RIVER_BASIN'
-                  ? 'bg-cyan-600 text-white shadow-md'
+                  ? 'bg-sky-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -154,7 +154,7 @@ export const HydrologyCatchmentView: React.FC = () => {
               onClick={() => setActiveSubTab('URBAN_MATRIX')}
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 activeSubTab === 'URBAN_MATRIX'
-                  ? 'bg-cyan-600 text-white shadow-md'
+                  ? 'bg-sky-600 text-white shadow-md'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -168,7 +168,7 @@ export const HydrologyCatchmentView: React.FC = () => {
         <div className="mt-5 pt-4 border-t border-slate-800 flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <Sliders className="w-3.5 h-3.5 text-sky-400" />
               Precipitation Scaling Multiplier:
             </span>
             <div className="flex items-center gap-2">
@@ -178,7 +178,7 @@ export const HydrologyCatchmentView: React.FC = () => {
                   onClick={() => setRainMultiplier(mult)}
                   className={`px-2.5 py-1 rounded-md text-xs font-mono font-semibold transition-all cursor-pointer border ${
                     rainMultiplier === mult
-                      ? 'bg-cyan-500/20 border-cyan-400 text-cyan-300'
+                      ? 'bg-sky-500/20 border-sky-400 text-sky-300'
                       : 'bg-slate-800/60 border-slate-700/60 text-slate-400 hover:text-slate-200'
                   }`}
                 >
@@ -231,7 +231,7 @@ export const HydrologyCatchmentView: React.FC = () => {
                 onClick={() => setSelectedBasinId(basin.id)}
                 className={`px-4 py-2 rounded-xl text-xs font-medium transition-all border whitespace-nowrap cursor-pointer ${
                   selectedBasinId === basin.id
-                    ? 'bg-cyan-600/20 border-cyan-500 text-cyan-200 font-bold shadow-md'
+                    ? 'bg-sky-600/20 border-sky-500 text-sky-200 font-bold shadow-md'
                     : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-800'
                 }`}
               >
@@ -262,10 +262,10 @@ export const HydrologyCatchmentView: React.FC = () => {
                 SCS Runoff Yield (Q)
               </span>
               <div className="flex items-baseline gap-2 mt-1">
-                <span className="text-2xl font-black text-cyan-400 font-mono">
+                <span className="text-2xl font-black text-sky-400 font-mono">
                   {dynamicBasinData.directRunoffQ}
                 </span>
-                <span className="text-xs text-cyan-500 font-medium">mm ({dynamicBasinData.runoffCoef}% yield)</span>
+                <span className="text-xs text-sky-500 font-medium">mm ({dynamicBasinData.runoffCoef}% yield)</span>
               </div>
               <span className="text-[11px] text-slate-500 mt-1 block">
                 Effective CN: {dynamicBasinData.cn} (Ia = {dynamicBasinData.Ia} mm)
@@ -320,7 +320,7 @@ export const HydrologyCatchmentView: React.FC = () => {
                 <div>
                   <h3 className="text-lg font-bold text-white flex items-center gap-2">
                     <span>Discharge Hydrograph & Inundation Curve:</span>
-                    <span className="text-cyan-400">{baseBasin.gaugeStation}</span>
+                    <span className="text-sky-400">{baseBasin.gaugeStation}</span>
                   </h3>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Coupled rainfall hyetograph with unit hydrograph convolution
@@ -328,8 +328,8 @@ export const HydrologyCatchmentView: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3 h-2 bg-cyan-500/40 rounded-sm" />
-                    <span className="text-cyan-300">Discharge (m³/s)</span>
+                    <span className="w-3 h-2 bg-sky-500/40 rounded-sm" />
+                    <span className="text-sky-300">Discharge (m³/s)</span>
                   </div>
                   <div className="flex items-center gap-1.5">
                     <span className="w-3 h-0.5 bg-red-500" />
@@ -381,7 +381,7 @@ export const HydrologyCatchmentView: React.FC = () => {
                               <p className="font-bold text-slate-200 border-b border-slate-800 pb-1">
                                 Forecast Time: {label}
                               </p>
-                              <p className="text-cyan-400 font-mono">Discharge: {data.dischargeM3s.toLocaleString()} m³/s</p>
+                              <p className="text-sky-400 font-mono">Discharge: {data.dischargeM3s.toLocaleString()} m³/s</p>
                               <p className="text-blue-400 font-mono">Precipitation: {data.precipitationMm} mm</p>
                               <p className="text-amber-400 font-mono">Stage Level: {data.stageM} m</p>
                             </div>
@@ -425,7 +425,7 @@ export const HydrologyCatchmentView: React.FC = () => {
             <div className="lg:col-span-4 space-y-4">
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5 mb-3">
-                  <Gauge className="w-4 h-4 text-cyan-400" />
+                  <Gauge className="w-4 h-4 text-sky-400" />
                   Hydrological Station Gauge Telemetry
                 </h4>
                 <div className="space-y-3">
@@ -521,7 +521,7 @@ export const HydrologyCatchmentView: React.FC = () => {
                   <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
                     <div className="bg-slate-800/60 p-2.5 rounded-xl border border-slate-700/50">
                       <span className="text-slate-400 text-[11px] block">Projected Waterlogging</span>
-                      <span className="text-lg font-black text-cyan-300 font-mono mt-0.5 block">
+                      <span className="text-lg font-black text-sky-300 font-mono mt-0.5 block">
                         {point.simulatedWaterloggingCm} cm
                       </span>
                     </div>

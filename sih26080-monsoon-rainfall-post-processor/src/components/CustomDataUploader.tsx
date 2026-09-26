@@ -369,7 +369,7 @@ export const CustomDataUploader: React.FC = () => {
                     </td>
                     <td className="py-2.5 px-3 text-slate-400">{r.subdivision}</td>
                     <td className="py-2.5 px-3">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 border border-slate-700 text-[10px] font-semibold font-sans">
+                      <span className="px-2 py-0.5 rounded bg-slate-800 text-sky-300 border border-slate-700 text-[10px] font-semibold font-sans">
                         {r.synopticRegime}
                       </span>
                     </td>

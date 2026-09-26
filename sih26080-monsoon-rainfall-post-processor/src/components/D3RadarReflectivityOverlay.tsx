@@ -579,13 +579,13 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
             top: `${Math.min(window.innerHeight - 200, inspectData.y - 40)}px`,
           }}
         >
-          <div className="bg-slate-950/95 backdrop-blur-xl border border-cyan-500/50 rounded-xl p-3 shadow-2xl text-white font-mono text-xs w-60 space-y-1.5 ring-1 ring-cyan-500/20">
-            <div className="flex items-center justify-between border-b border-cyan-500/30 pb-1 text-[11px]">
-              <span className="font-bold text-cyan-300 flex items-center gap-1">
-                <Compass className="w-3 h-3 text-cyan-400" />
+          <div className="bg-slate-950/95 backdrop-blur-xl border border-sky-500/50 rounded-xl p-3 shadow-2xl text-white font-mono text-xs w-60 space-y-1.5 ring-1 ring-sky-500/20">
+            <div className="flex items-center justify-between border-b border-sky-500/30 pb-1 text-[11px]">
+              <span className="font-bold text-sky-300 flex items-center gap-1">
+                <Compass className="w-3 h-3 text-sky-400" />
                 {inspectData.rangeKm} km @ {inspectData.azimuthDeg}°
               </span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-700">
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-sky-950 text-sky-300 border border-sky-700">
                 {radarSite.frequencyGhz}
               </span>
             </div>
@@ -628,13 +628,13 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
 
       {/* TOP-LEFT RADAR CONTROLS & DUAL-POL PRODUCT SELECTOR */}
       <div className="absolute top-3 left-3 z-[500] pointer-events-auto flex flex-col items-start gap-2">
-        <div className="bg-slate-950/90 backdrop-blur-xl border border-cyan-500/40 rounded-xl p-2.5 shadow-2xl text-white text-xs max-w-sm">
+        <div className="bg-slate-950/90 backdrop-blur-xl border border-sky-500/40 rounded-xl p-2.5 shadow-2xl text-white text-xs max-w-sm">
           {/* Header Title & Minimize Toggle */}
           <div className="flex items-center justify-between gap-3 mb-2 border-b border-slate-800 pb-1.5">
             <div className="flex items-center gap-1.5">
               <Radio className="w-4 h-4 text-rose-400 animate-pulse" />
               <div>
-                <div className="font-bold text-xs text-cyan-300 leading-none">{radarSite.name}</div>
+                <div className="font-bold text-xs text-sky-300 leading-none">{radarSite.name}</div>
                 <div className="text-[9px] text-slate-400 font-mono">D3 S-Band Dual-Polarization DWR</div>
               </div>
             </div>
@@ -651,7 +651,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                 </button>
                 <button
                   onClick={onTogglePlay}
-                  className="text-cyan-400 hover:text-cyan-200 p-0.5 cursor-pointer"
+                  className="text-sky-400 hover:text-sky-200 p-0.5 cursor-pointer"
                   title={isPlaying ? 'Pause radar sweep' : 'Resume live sweep'}
                 >
                   {isPlaying ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
@@ -663,7 +663,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                 >
                   ⏭
                 </button>
-                <span className="text-[10px] font-mono text-cyan-300 font-bold px-1">
+                <span className="text-[10px] font-mono text-sky-300 font-bold px-1">
                   {frame.timestamp}
                 </span>
               </div>
@@ -723,7 +723,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                     type="checkbox"
                     checked={sweepEnabled}
                     onChange={(e) => setSweepEnabled(e.target.checked)}
-                    className="accent-cyan-500 rounded"
+                    className="accent-sky-500 rounded"
                   />
                   <span>Phosphor Sweep</span>
                 </label>
@@ -741,7 +741,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                     type="checkbox"
                     checked={showRings}
                     onChange={(e) => setShowRings(e.target.checked)}
-                    className="accent-cyan-500 rounded"
+                    className="accent-sky-500 rounded"
                   />
                   <span>Range Rings (50km)</span>
                 </label>
@@ -750,7 +750,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                     type="checkbox"
                     checked={showAzimuthSpokes}
                     onChange={(e) => setShowAzimuthSpokes(e.target.checked)}
-                    className="accent-cyan-500 rounded"
+                    className="accent-sky-500 rounded"
                   />
                   <span>Azimuth Spokes (30°)</span>
                 </label>
@@ -760,7 +760,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
               <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex flex-col gap-1.5 text-[10px] font-mono">
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 flex items-center gap-1">
-                    <Eye className="w-3 h-3 text-cyan-400" /> Map Transparency: {Math.round((1 - radarOpacity) * 100)}%
+                    <Eye className="w-3 h-3 text-sky-400" /> Map Transparency: {Math.round((1 - radarOpacity) * 100)}%
                   </span>
                   <input
                     type="range"
@@ -769,13 +769,13 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                     step="0.05"
                     value={radarOpacity}
                     onChange={(e) => setRadarOpacity(Number(e.target.value))}
-                    className="w-24 accent-cyan-400 cursor-pointer"
+                    className="w-24 accent-sky-400 cursor-pointer"
                     title="Control radar overlay opacity so underlying map is clear"
                   />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-slate-400 flex items-center gap-1">
-                    <Sliders className="w-3 h-3 text-cyan-400" /> Min Gate: {minDbzThreshold} dBZ
+                    <Sliders className="w-3 h-3 text-sky-400" /> Min Gate: {minDbzThreshold} dBZ
                   </span>
                   <input
                     type="range"
@@ -784,7 +784,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                     step="5"
                     value={minDbzThreshold}
                     onChange={(e) => setMinDbzThreshold(Number(e.target.value))}
-                    className="w-24 accent-cyan-400 cursor-pointer"
+                    className="w-24 accent-sky-400 cursor-pointer"
                   />
                 </div>
               </div>
@@ -803,7 +803,7 @@ export const D3RadarReflectivityOverlay: React.FC<Props> = ({
                 : 'Doppler Vr'}
             </span>
             <div className="flex items-center gap-1">
-              <span className="text-cyan-400 font-bold text-[8px]">Hover Gate</span>
+              <span className="text-sky-400 font-bold text-[8px]">Hover Gate</span>
               <button
                 onClick={() => setIsLegendCollapsed(!isLegendCollapsed)}
                 className="p-0.5 rounded bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white cursor-pointer"

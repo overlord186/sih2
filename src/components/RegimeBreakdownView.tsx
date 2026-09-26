@@ -237,7 +237,7 @@ export const RegimeBreakdownView: React.FC<RegimeBreakdownViewProps> = ({
               <span className="text-slate-400">
                 {chartMetric === 'samples' ? 'Season Share:' : 'NWP Error Footprint:'}
               </span>
-              <span className="font-mono font-bold text-cyan-400">{sharePct}%</span>
+              <span className="font-mono font-bold text-sky-400">{sharePct}%</span>
             </div>
             <div className="flex justify-between pt-1 border-t border-slate-800/80">
               <span className="text-slate-400">Raw NWP MAE:</span>
@@ -415,7 +415,7 @@ export const RegimeBreakdownView: React.FC<RegimeBreakdownViewProps> = ({
                   </div>
 
                   <div className="text-right pl-2 shrink-0">
-                    <span className={`text-xs font-mono font-bold block ${isSelected ? 'text-cyan-300' : 'text-slate-900'}`}>
+                    <span className={`text-xs font-mono font-bold block ${isSelected ? 'text-sky-300' : 'text-slate-900'}`}>
                       {share}%
                     </span>
                     <span className={`text-[10px] ${isSelected ? 'text-slate-400' : 'text-slate-500'}`}>

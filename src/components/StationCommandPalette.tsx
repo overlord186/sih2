@@ -137,7 +137,7 @@ export const StationCommandPalette: React.FC<StationCommandPaletteProps> = ({
         {/* Quick Highlights / Shortcuts */}
         <div className="px-4 py-2 bg-slate-950/30 border-b border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400">
           <span className="flex items-center gap-1.5 font-medium">
-            <Compass className="w-3.5 h-3.5 text-cyan-400" />
+            <Compass className="w-3.5 h-3.5 text-sky-400" />
             {filteredStations.length} Meteorological Observatories
           </span>
           <div className="hidden sm:flex items-center gap-2 text-slate-500 font-mono text-[10px]">
@@ -184,7 +184,7 @@ export const StationCommandPalette: React.FC<StationCommandPaletteProps> = ({
                       {stn.id === 'ALL' ? (
                         <Layers className="w-4 h-4 text-emerald-400" />
                       ) : (
-                        <MapPin className="w-4 h-4 text-cyan-400" />
+                        <MapPin className="w-4 h-4 text-sky-400" />
                       )}
                     </div>
                     <div className="min-w-0">
@@ -214,7 +214,7 @@ export const StationCommandPalette: React.FC<StationCommandPaletteProps> = ({
                         )}
                       </div>
                       {stn.climateZone && stn.climateZone !== 'All Synoptic Regimes' && (
-                        <p className="text-[11px] text-cyan-400/80 italic mt-0.5 truncate max-w-md">
+                        <p className="text-[11px] text-sky-400/80 italic mt-0.5 truncate max-w-md">
                           {stn.climateZone}
                         </p>
                       )}

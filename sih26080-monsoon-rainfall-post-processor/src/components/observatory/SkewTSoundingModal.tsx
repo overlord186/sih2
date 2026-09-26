@@ -56,11 +56,11 @@ export const SkewTSoundingModal: React.FC<SkewTSoundingModalProps> = ({ sonde: p
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col text-white font-sans">
+      <div className="bg-slate-900 border border-sky-500/50 rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col text-white font-sans">
         {/* Header */}
         <div className="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-700/60 text-cyan-400">
+            <div className="p-1.5 rounded-lg bg-sky-950/80 border border-sky-700/60 text-sky-400">
               <Activity className="w-5 h-5" />
             </div>
             <div>
@@ -68,7 +68,7 @@ export const SkewTSoundingModal: React.FC<SkewTSoundingModalProps> = ({ sonde: p
                 <h3 className="text-sm font-black tracking-wide text-white uppercase">
                   Atmospheric Sounding Profile (Skew-T / Log-P)
                 </h3>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-cyan-900/50 text-cyan-300 border border-cyan-600/40">
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-sky-900/50 text-sky-300 border border-sky-600/40">
                   {sonde.id}
                 </span>
               </div>
@@ -114,12 +114,12 @@ export const SkewTSoundingModal: React.FC<SkewTSoundingModalProps> = ({ sonde: p
 
             <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
               <span className="text-[10px] text-slate-400 uppercase font-mono block">Boundary Temp / DP</span>
-              <div className="text-base font-bold font-mono text-cyan-300 flex items-baseline gap-1 mt-0.5">
+              <div className="text-base font-bold font-mono text-sky-300 flex items-baseline gap-1 mt-0.5">
                 <span>{levels[0]?.tempC || 27}°</span>
                 <span className="text-slate-500">/</span>
                 <span>{levels[0]?.dewPointC || 24}°C</span>
               </div>
-              <span className="text-[9px] text-cyan-400 font-medium">High Surface Moisture</span>
+              <span className="text-[9px] text-sky-400 font-medium">High Surface Moisture</span>
             </div>
 
             <div className="bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-500/40">
@@ -246,7 +246,7 @@ export const SkewTSoundingModal: React.FC<SkewTSoundingModalProps> = ({ sonde: p
               <tbody className="divide-y divide-slate-800/60 bg-slate-900/60 text-slate-300">
                 {levels.slice(0, 5).map((l, i) => (
                   <tr key={i} className="hover:bg-slate-800/40">
-                    <td className="py-1.5 px-3 text-cyan-300 font-bold">{l.altKm.toFixed(1)} km</td>
+                    <td className="py-1.5 px-3 text-sky-300 font-bold">{l.altKm.toFixed(1)} km</td>
                     <td className="py-1.5 px-3">{l.pressureHpa} hPa</td>
                     <td className="py-1.5 px-3 text-rose-400">{l.tempC.toFixed(1)}°C</td>
                     <td className="py-1.5 px-3 text-sky-400">{l.dewPointC.toFixed(1)}°C</td>
@@ -267,7 +267,7 @@ export const SkewTSoundingModal: React.FC<SkewTSoundingModalProps> = ({ sonde: p
           </span>
           <button
             onClick={onClose}
-            className="px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 font-bold text-white transition-colors"
+            className="px-4 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 font-bold text-white transition-colors"
           >
             Close Sounding
           </button>

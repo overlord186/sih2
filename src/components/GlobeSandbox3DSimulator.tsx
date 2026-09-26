@@ -109,7 +109,7 @@ class WebGLErrorBoundary extends Component<{ children: ReactNode }, { hasError: 
     if (this.state.hasError) {
       return (
         <div className="w-full h-full bg-slate-950 flex flex-col items-center justify-center p-6 text-center text-white">
-          <GlobeIcon className="w-12 h-12 text-cyan-400 animate-spin-slow mb-3" />
+          <GlobeIcon className="w-12 h-12 text-sky-400 animate-spin-slow mb-3" />
           <h3 className="text-base font-bold">3D Earth Simulation Active</h3>
           <p className="text-xs text-slate-400 max-w-md mt-1">Rendering real-time atmospheric & planetary telemetry layer.</p>
         </div>
@@ -1700,19 +1700,11 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
           <ringGeometry args={[0.14, 0.16, 32]} />
           <meshBasicMaterial color="#f59e0b" side={THREE.DoubleSide} transparent opacity={0.45} />
         </mesh>
-        <Html distanceFactor={10} position={[0, 0.16, 0]} zIndexRange={[150, 0]}>
-          <div className="bg-slate-950/95 backdrop-blur-xl text-white px-3 py-1.5 rounded-xl border border-amber-400 shadow-2xl text-[10px] font-mono whitespace-nowrap flex flex-col gap-0.5 pointer-events-none select-none min-w-[170px]">
-            <div className="flex items-center gap-1.5 text-amber-300 font-bold border-b border-slate-800 pb-0.5">
-              <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping" />
-              <span>🎯 FOCAL OBSERVATORY</span>
-            </div>
-            <div className="font-bold text-white text-[11px] truncate">
-              {selectedTarget.name}
-            </div>
-            <div className="text-slate-400 text-[9px] flex items-center justify-between">
-              <span>{selectedTarget.country}</span>
-              <span className="text-cyan-400 font-mono">({selectedTarget.lat.toFixed(1)}°N, {selectedTarget.lon.toFixed(1)}°E)</span>
-            </div>
+        <Html distanceFactor={10} position={[0, 0.12, 0]} zIndexRange={[150, 0]}>
+          <div className="bg-slate-900/90 backdrop-blur-md text-slate-200 px-3 py-1 rounded-full border border-slate-700/80 shadow-xl text-[10px] font-sans whitespace-nowrap flex items-center gap-2 pointer-events-none select-none">
+            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+            <span className="font-semibold text-white">{selectedTarget.name}</span>
+            <span className="text-slate-400 font-mono text-[9px]">({selectedTarget.lat.toFixed(1)}°, {selectedTarget.lon.toFixed(1)}°)</span>
           </div>
         </Html>
       </group>
@@ -1731,7 +1723,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.6} />
             </mesh>
             <Html distanceFactor={11} position={[0, 0.08, 0]} zIndexRange={[90, 0]}>
-              <div className="px-1.5 py-0.5 rounded bg-slate-900/90 text-cyan-300 border border-cyan-500/60 text-[8px] font-mono whitespace-nowrap pointer-events-none">
+              <div className="px-1.5 py-0.5 rounded bg-slate-900/90 text-sky-300 border border-slate-600 text-[8px] font-mono whitespace-nowrap pointer-events-none">
                 🔵 Probe ({trig.lat.toFixed(1)}°, {trig.lon.toFixed(1)}°)
               </div>
             </Html>
@@ -1747,7 +1739,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
 
         return (
           <group key={target.id} position={[pos.x, pos.y, pos.z]}>
-            {/* Outer Concentric Cyan Beacon Ring */}
+            {/* Outer Concentric Beacon Ring */}
             <mesh>
               <ringGeometry args={[0.042, 0.068, 24]} />
               <meshBasicMaterial 
@@ -1782,41 +1774,39 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               />
             </mesh>
 
-            {/* 3D Permanent Observatory Chip & Hover Card */}
-            <Html distanceFactor={10} position={[0, 0.07, 0]} zIndexRange={[110, 0]}>
-              <div 
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSelectTarget(target);
-                }}
-                className={`font-mono transition-all transform -translate-x-1/2 cursor-pointer select-none ${
-                  isHovered ? 'scale-105 z-50' : 'opacity-85 hover:opacity-100 scale-90'
-                }`}
-              >
-                <div className="px-2 py-0.5 rounded-lg flex items-center gap-1.5 text-[9px] border border-cyan-400/80 bg-slate-950/90 text-cyan-300 backdrop-blur-md shadow-lg">
-                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
-                  <span className="font-bold whitespace-nowrap">{target.name}</span>
-                  <span className="text-[8px] text-slate-400">({target.country})</span>
-                </div>
+            {/* 3D Observatory Tooltip (Only shown on hover so cities do not clutter the globe) */}
+            {isHovered && (
+              <Html distanceFactor={10} position={[0, 0.07, 0]} zIndexRange={[110, 0]}>
+                <div 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSelectTarget(target);
+                  }}
+                  className="font-sans transition-all transform -translate-x-1/2 cursor-pointer select-none scale-105 z-50 pointer-events-auto"
+                >
+                  <div className="px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[9px] border border-slate-700 bg-slate-900/95 text-slate-200 backdrop-blur-md shadow-xl">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    <span className="font-semibold whitespace-nowrap text-white">{target.name}</span>
+                    <span className="text-[8px] text-slate-400">({target.country})</span>
+                  </div>
 
-                {/* Hover Telemetry Card */}
-                {isHovered && (
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1.5 p-2.5 rounded-xl bg-slate-950/95 border border-cyan-400 text-white text-[9px] shadow-2xl min-w-[210px] pointer-events-none">
-                    <div className="font-bold text-cyan-300 flex items-center justify-between border-b border-slate-800 pb-1 mb-1">
-                      <span>🔵 Synoptic Weather Station</span>
-                      <span className="text-slate-400 text-[8px]">{target.lat.toFixed(1)}°N, {target.lon.toFixed(1)}°E</span>
+                  {/* Hover Telemetry Card */}
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2.5 rounded-xl bg-slate-950/95 border border-slate-800 text-white text-[9px] shadow-2xl min-w-[200px] pointer-events-none">
+                    <div className="font-semibold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-1 mb-1">
+                      <span className="text-sky-400">Weather Station</span>
+                      <span className="text-slate-400 font-mono text-[8px]">{target.lat.toFixed(1)}°N, {target.lon.toFixed(1)}°E</span>
                     </div>
-                    <div className="flex items-center justify-between text-[8px] text-amber-300 mb-1">
-                      <span>Metropolitan Pop: {target.populationM}M</span>
-                      <span className="text-emerald-400 font-bold">Click to Center</span>
+                    <div className="flex items-center justify-between text-[8px] text-slate-300 mb-1">
+                      <span>Metro Pop: {target.populationM}M</span>
+                      <span className="text-emerald-400 font-semibold">Click to Center</span>
                     </div>
-                    <div className="text-[8px] text-slate-400 italic">
-                      Continuous surface barometric, moisture & wind monitoring node.
+                    <div className="text-[8px] text-slate-400">
+                      Surface barometric, moisture & wind monitoring hub.
                     </div>
                   </div>
-                )}
-              </div>
-            </Html>
+                </div>
+              </Html>
+            )}
           </group>
         );
       })}
@@ -1836,14 +1826,14 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
 
           {/* 3D Floating Hover-Card Tooltip */}
           <Html distanceFactor={11} zIndexRange={[200, 0]} style={{ pointerEvents: 'auto' }}>
-            <div className="w-72 sm:w-80 bg-slate-950/95 backdrop-blur-xl border border-cyan-500/70 rounded-xl p-3.5 shadow-[0_16px_50px_rgba(0,0,0,0.9),0_0_25px_rgba(56,189,248,0.3)] text-white transform -translate-x-1/2 -translate-y-full mb-3 select-none animate-in fade-in zoom-in-95 duration-150">
+            <div className="w-72 sm:w-80 bg-slate-950/95 backdrop-blur-xl border border-slate-600/70 rounded-xl p-3.5 shadow-[0_16px_50px_rgba(0,0,0,0.9)] text-white transform -translate-x-1/2 -translate-y-full mb-3 select-none animate-in fade-in zoom-in-95 duration-150">
               {/* Header */}
               <div className="flex items-start justify-between gap-2 pb-2 mb-2 border-b border-slate-800">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="text-xs font-black text-cyan-300 truncate">{inspectTooltip.regionName}</span>
+                    <span className="text-xs font-black text-sky-300 truncate">{inspectTooltip.regionName}</span>
                     <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 rounded ${
-                      inspectTooltip.category === 'Ocean Basin' ? 'bg-cyan-950 text-cyan-400 border border-cyan-800/80' :
+                      inspectTooltip.category === 'Ocean Basin' ? 'bg-slate-900 text-sky-400 border border-slate-700' :
                       inspectTooltip.category === 'Polar Cap' ? 'bg-sky-950 text-sky-300 border border-sky-800/80' :
                       'bg-amber-950 text-amber-300 border border-amber-800/80'
                     }`}>
@@ -1851,7 +1841,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
                     </span>
                   </div>
                   <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-cyan-400 shrink-0" />
+                    <MapPin className="w-3 h-3 text-sky-400 shrink-0" />
                     <span>Coordinates: {Math.abs(inspectTooltip.lat)}°{inspectTooltip.lat >= 0 ? 'N' : 'S'}, {Math.abs(inspectTooltip.lon)}°{inspectTooltip.lon >= 0 ? 'E' : 'W'}</span>
                   </div>
                 </div>
@@ -1873,12 +1863,12 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
                 {/* Pressure */}
                 <div className="flex flex-col items-center">
                   <div className="text-[9px] font-mono text-slate-400 uppercase tracking-wider flex items-center gap-1">
-                    <Gauge className="w-2.5 h-2.5 text-cyan-400" />
+                    <Gauge className="w-2.5 h-2.5 text-sky-400" />
                     <span>Pressure</span>
                   </div>
                   <div className={`text-xs font-black font-mono mt-0.5 ${
                     inspectTooltip.pressureHpa < 990 ? 'text-rose-400' :
-                    inspectTooltip.pressureHpa < 1005 ? 'text-amber-300' : 'text-cyan-300'
+                    inspectTooltip.pressureHpa < 1005 ? 'text-amber-300' : 'text-sky-300'
                   }`}>
                     {inspectTooltip.pressureHpa} <span className="text-[9px] font-normal text-slate-400">hPa</span>
                   </div>
@@ -1920,7 +1910,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               <div className="space-y-1.5 mb-2.5 text-[10px]">
                 <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1 rounded border border-slate-800/80">
                   <span className="text-slate-400 font-mono">Beaufort Scale:</span>
-                  <span className="font-bold font-mono text-cyan-300">{inspectTooltip.beaufortScale}</span>
+                  <span className="font-bold font-mono text-sky-300">{inspectTooltip.beaufortScale}</span>
                 </div>
                 <div className="flex items-center justify-between bg-slate-900/60 px-2 py-1 rounded border border-slate-800/80">
                   <span className="text-slate-400 font-mono">Relative Humidity:</span>
@@ -1930,7 +1920,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
 
               {/* Microclimate Synoptic Advisory Note */}
               <div className="bg-slate-900/80 p-2 rounded-lg border border-slate-800 text-[10px] text-slate-300 leading-relaxed mb-2.5">
-                <span className="text-cyan-400 font-bold font-mono uppercase block mb-0.5">Synoptic Advisory</span>
+                <span className="text-sky-400 font-bold font-mono uppercase block mb-0.5">Synoptic Advisory</span>
                 {inspectTooltip.advisoryNote}
               </div>
 
@@ -1949,7 +1939,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
                   });
                   setInspectTooltip(null);
                 }}
-                className="w-full py-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-[10px] uppercase font-mono rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
+                className="w-full py-1.5 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold text-[10px] uppercase font-mono rounded-lg transition-all shadow-md flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <Crosshair className="w-3 h-3" />
                 <span>Focus Simulation On Coordinates</span>
@@ -2140,8 +2130,8 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
   });
   const [perspectiveTrackingCoord, setPerspectiveTrackingCoord] = useState<{ lat: number; lon: number } | undefined>(undefined);
 
-  // 3D Planetary Marker Legend & Inspector State
-  const [showMarkerLegendHUD, setShowMarkerLegendHUD] = useState<boolean>(true);
+  // 3D Planetary Marker Legend & Inspector State (Collapsed by default for clean view)
+  const [showMarkerLegendHUD, setShowMarkerLegendHUD] = useState<boolean>(false);
   const [markerLegendTab, setMarkerLegendTab] = useState<'ALL' | 'BLUE' | 'YELLOW' | 'RED'>('ALL');
 
   const focusTargetObservatory = (target: LocationTarget) => {
@@ -2353,7 +2343,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           <div>
             <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
               <span>3D Planetary Earth Observatory</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-700/60 text-cyan-300 font-bold">
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-sky-300 font-bold">
                 REAL-TIME SIMULATOR v4.5
               </span>
               <ExploreBeacon id="globe-simulator" size="sm" />
@@ -2368,8 +2358,8 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           {/* Earth View Mode Toggle */}
           <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1 text-[11px]">
-            <span className="text-[10px] uppercase font-bold text-cyan-400 px-1.5 flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="text-[10px] uppercase font-bold text-slate-400 px-1.5 flex items-center gap-1">
+              <Layers className="w-3.5 h-3.5 text-sky-400" />
               <span>View Mode:</span>
             </span>
             <button
@@ -2398,7 +2388,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               onClick={() => setViewMode('SYNOPTIC_METEOROLOGY')}
               className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
                 viewMode === 'SYNOPTIC_METEOROLOGY'
-                  ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-500/50 shadow-sm ring-1 ring-cyan-400/50'
+                  ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 shadow-sm ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
               }`}
               title="Synoptic Meteorology Vector & Pressure Radar View"
@@ -2411,12 +2401,12 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             onClick={() => setShowWindVectors(!showWindVectors)}
             className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
               showWindVectors
-                ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400/50'
+                ? 'bg-sky-500/20 border-sky-500/50 text-sky-200 shadow-md shadow-sky-500/10 ring-1 ring-sky-400/40'
                 : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
             }`}
             title="Toggle Pressure-Responsive Dynamic 3D Wind Streamlines Layer"
           >
-            <Wind className={`w-4 h-4 ${showWindVectors ? 'text-cyan-300 animate-spin-slow' : 'text-slate-400'}`} />
+            <Wind className={`w-4 h-4 ${showWindVectors ? 'text-sky-300 animate-spin-slow' : 'text-slate-400'}`} />
             <span>3D Streamlines: {showWindVectors ? 'ON' : 'OFF'}</span>
           </button>
 
@@ -2509,9 +2499,9 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           </button>
 
           <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
-            <Clock className="w-3.5 h-3.5 text-cyan-400" />
+            <Clock className="w-3.5 h-3.5 text-sky-400" />
             <span className="text-[10px] font-bold text-slate-400 uppercase">Simulation State:</span>
-            <span className={`font-bold text-xs flex items-center gap-1.5 ${isPaused ? 'text-amber-300' : 'text-cyan-300'}`}>
+            <span className={`font-bold text-xs flex items-center gap-1.5 ${isPaused ? 'text-amber-300' : 'text-sky-300'}`}>
               {!isPaused && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
               {isPaused ? 'PAUSED (Frozen)' : `${timeSpeed.toFixed(2)}x Speed`}
             </span>
@@ -2532,7 +2522,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                 }}
                 className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-cyan-500/30 border-cyan-400 text-cyan-200 shadow-sm ring-1 ring-cyan-400/50'
+                    ? 'bg-indigo-500/25 border-indigo-400/60 text-indigo-200 shadow-sm ring-1 ring-indigo-400/40'
                     : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                 }`}
                 title={`Set Simulation Speed to ${spd}x`}
@@ -2550,7 +2540,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer text-[10px] flex items-center gap-1"
             title="Reset Simulation Pace to 1.0x Real-time"
           >
-            <RotateCcw className="w-3 h-3 text-cyan-400" />
+            <RotateCcw className="w-3 h-3 text-sky-400" />
             <span>Reset</span>
           </button>
         </div>
@@ -2569,7 +2559,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               setTimeSpeed(parseFloat(e.target.value));
               if (isPaused) setIsPaused(false);
             }}
-            className="w-20 sm:w-28 accent-cyan-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
+            className="w-20 sm:w-28 accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
             title="Adjust Simulation Speed Slider (0.1x to 10.0x)"
           />
           <span className="text-amber-300 font-bold w-12 text-right">{timeSpeed.toFixed(1)}x</span>
@@ -2691,12 +2681,12 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               onClick={() => setEnableWindRibbons(!enableWindRibbons)}
               className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all ${
                 enableWindRibbons
-                  ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-500/40 shadow-sm'
+                  ? 'bg-sky-500/20 text-sky-200 border border-sky-500/30 shadow-sm'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
               title="Toggle 3D Volumetric Jet Streams (Somali Jet, Monsoon Trough, TEJ)"
             >
-              <Wind className="w-3.5 h-3.5 text-cyan-400" />
+              <Wind className="w-3.5 h-3.5 text-sky-400" />
               <span>3D Jets</span>
             </button>
             {enableWindRibbons && (
@@ -2707,7 +2697,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                     onClick={() => setWindPressureLevel(lvl)}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       windPressureLevel === lvl
-                        ? 'bg-cyan-600 text-white'
+                        ? 'bg-indigo-600 text-white'
                         : 'text-slate-400 hover:text-slate-200'
                     }`}
                   >
@@ -2873,24 +2863,24 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           <div className="space-y-4">
             {/* Situation Selector */}
             <div>
-              <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Sliders className="w-4 h-4 text-cyan-400" />
+              <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                <Sliders className="w-4 h-4 text-sky-400" />
                 Disaster Event Trigger
               </h3>
 
               <div className="space-y-1.5">
                 <button
                   onClick={() => { setSelectedDisaster('CLOUDBURST'); handleTriggerDisaster(); }}
-                  className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                     selectedDisaster === 'CLOUDBURST'
-                      ? 'bg-blue-600/20 border-blue-500 text-blue-200'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-blue-900/30 border-blue-500/80 text-blue-100 shadow-sm'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <CloudRain className="w-4 h-4 text-blue-400" />
                     <div>
-                      <div className="text-xs font-bold">Cloudburst Deluge</div>
+                      <div className="text-xs font-medium">Cloudburst Deluge</div>
                     </div>
                   </div>
                   {selectedDisaster === 'CLOUDBURST' && <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
@@ -2898,33 +2888,33 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
 
                 <button
                   onClick={() => { setSelectedDisaster('SUPER_TYPHOON'); handleTriggerDisaster(); }}
-                  className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                     selectedDisaster === 'SUPER_TYPHOON'
-                      ? 'bg-cyan-600/20 border-cyan-500 text-cyan-200'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-sky-900/30 border-sky-500/80 text-sky-100 shadow-sm'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Wind className="w-4 h-4 text-cyan-400" />
+                  <div className="flex items-center gap-2.5">
+                    <Wind className="w-4 h-4 text-sky-400" />
                     <div>
-                      <div className="text-xs font-bold">Category 5 Typhoon</div>
+                      <div className="text-xs font-medium">Category 5 Typhoon</div>
                     </div>
                   </div>
-                  {selectedDisaster === 'SUPER_TYPHOON' && <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />}
+                  {selectedDisaster === 'SUPER_TYPHOON' && <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />}
                 </button>
 
                 <button
                   onClick={() => { setSelectedDisaster('HEATWAVE_DROUGHT'); handleTriggerDisaster(); }}
-                  className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                     selectedDisaster === 'HEATWAVE_DROUGHT'
-                      ? 'bg-amber-600/20 border-amber-500 text-amber-200'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-amber-900/30 border-amber-500/80 text-amber-100 shadow-sm'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <ThermometerSun className="w-4 h-4 text-amber-400" />
                     <div>
-                      <div className="text-xs font-bold">Heatwave & Drought</div>
+                      <div className="text-xs font-medium">Heatwave & Drought</div>
                     </div>
                   </div>
                   {selectedDisaster === 'HEATWAVE_DROUGHT' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />}
@@ -2932,16 +2922,16 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
 
                 <button
                   onClick={() => { setSelectedDisaster('VOLCANIC_ASH'); handleTriggerDisaster(); }}
-                  className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                     selectedDisaster === 'VOLCANIC_ASH'
-                      ? 'bg-rose-600/20 border-rose-500 text-rose-200'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-rose-900/30 border-rose-500/80 text-rose-100 shadow-sm'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2.5">
                     <Flame className="w-4 h-4 text-rose-400" />
                     <div>
-                      <div className="text-xs font-bold">Volcanic Plume Column</div>
+                      <div className="text-xs font-medium">Volcanic Plume Column</div>
                     </div>
                   </div>
                   {selectedDisaster === 'VOLCANIC_ASH' && <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />}
@@ -2949,27 +2939,27 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
 
                 <button
                   onClick={() => { setSelectedDisaster('TSUNAMI_SURGE'); handleTriggerDisaster(); }}
-                  className={`w-full p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
+                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
                     selectedDisaster === 'TSUNAMI_SURGE'
-                      ? 'bg-sky-600/20 border-sky-500 text-sky-200'
-                      : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200'
+                      ? 'bg-teal-900/30 border-teal-500/80 text-teal-100 shadow-sm'
+                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
                   }`}
                 >
-                  <div className="flex items-center gap-2">
-                    <Waves className="w-4 h-4 text-sky-400" />
+                  <div className="flex items-center gap-2.5">
+                    <Waves className="w-4 h-4 text-teal-400" />
                     <div>
-                      <div className="text-xs font-bold">Tsunami Storm Surge</div>
+                      <div className="text-xs font-medium">Tsunami Storm Surge</div>
                     </div>
                   </div>
-                  {selectedDisaster === 'TSUNAMI_SURGE' && <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />}
+                  {selectedDisaster === 'TSUNAMI_SURGE' && <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />}
                 </button>
               </div>
             </div>
 
             {/* QUICK GEOGRAPHIC REGION FOCUS PRESETS */}
-            <div className="pt-2 border-t border-slate-800 space-y-2">
-              <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Navigation className="w-3.5 h-3.5 text-cyan-400" />
+            <div className="pt-2 border-t border-slate-800/80 space-y-2">
+              <h4 className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Navigation className="w-3.5 h-3.5 text-sky-400" />
                 Region Focus
               </h4>
 
@@ -2980,10 +2970,10 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                     <button
                       key={p.id}
                       onClick={() => handleSelectRegionPreset(p)}
-                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-1.5 text-xs font-bold ${
+                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
                         isPresetActive
-                          ? 'bg-cyan-600/20 border-cyan-400 text-cyan-200 ring-1 ring-cyan-400/40'
-                          : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-slate-200'
+                          ? 'bg-sky-900/30 border-sky-500/80 text-sky-100 shadow-sm'
+                          : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70'
                       }`}
                       title={p.description}
                     >
@@ -2996,10 +2986,10 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             </div>
 
             {/* GRANULAR MANUAL CAMERA CONTROLS */}
-            <div className="pt-2 border-t border-slate-800 space-y-2.5 font-mono text-xs">
+            <div className="pt-2 border-t border-slate-800/80 space-y-2.5 font-sans text-xs">
               <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Move className="w-3.5 h-3.5 text-emerald-400" />
+                <h4 className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <Move className="w-3.5 h-3.5 text-sky-400" />
                   Granular Camera
                 </h4>
                 <button
@@ -3009,7 +2999,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                     setCameraDistance(6.2);
                     setActiveFocusPreset('GLOBAL');
                   }}
-                  className="text-[10px] text-cyan-400 hover:text-cyan-300 cursor-pointer flex items-center gap-1 bg-cyan-950/60 px-2 py-0.5 rounded border border-cyan-800/60"
+                  className="text-[10px] text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700 transition-colors"
                   title="Reset Camera Orientation"
                 >
                   <RotateCcw className="w-2.5 h-2.5" />
@@ -3021,7 +3011,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>Tilt Angle (Pitch):</span>
-                  <span className="text-cyan-400 font-bold">{cameraPitch}°</span>
+                  <span className="text-sky-300 font-mono font-medium">{cameraPitch}°</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -3042,7 +3032,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                       setCameraPitch(Number(e.target.value));
                       setActiveFocusPreset('CUSTOM');
                     }}
-                    className="w-full accent-cyan-400 cursor-pointer h-1.5"
+                    className="w-full accent-sky-500 cursor-pointer h-1.5"
                   />
                   <button
                     onClick={() => {
@@ -3060,7 +3050,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>Rotation (Yaw):</span>
-                  <span className="text-cyan-400 font-bold">{cameraYaw}°</span>
+                  <span className="text-sky-300 font-mono font-medium">{cameraYaw}°</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -3081,7 +3071,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                       setCameraYaw(Number(e.target.value));
                       setActiveFocusPreset('CUSTOM');
                     }}
-                    className="w-full accent-cyan-400 cursor-pointer h-1.5"
+                    className="w-full accent-sky-500 cursor-pointer h-1.5"
                   />
                   <button
                     onClick={() => {
@@ -3099,7 +3089,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               <div className="space-y-1">
                 <div className="flex justify-between text-[10px] text-slate-400">
                   <span>Zoom Distance:</span>
-                  <span className="text-cyan-400 font-bold">{cameraDistance.toFixed(1)}x</span>
+                  <span className="text-sky-300 font-mono font-medium">{cameraDistance.toFixed(1)}x</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <button
@@ -3107,7 +3097,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                       setCameraDistance((d) => Math.max(2.6, Number((d - 0.8).toFixed(1))));
                       setActiveFocusPreset('CUSTOM');
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-bold"
+                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-medium"
                   >
                     Zoom +
                   </button>
@@ -3121,14 +3111,14 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                       setCameraDistance(Number(e.target.value));
                       setActiveFocusPreset('CUSTOM');
                     }}
-                    className="w-full accent-cyan-400 cursor-pointer h-1.5"
+                    className="w-full accent-sky-500 cursor-pointer h-1.5"
                   />
                   <button
                     onClick={() => {
                       setCameraDistance((d) => Math.min(22.0, Number((d + 0.8).toFixed(1))));
                       setActiveFocusPreset('CUSTOM');
                     }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-bold"
+                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-medium"
                   >
                     Zoom -
                   </button>
@@ -3138,10 +3128,10 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           </div>
 
           {/* Location Focus Target Selector & Severity */}
-          <div className="pt-2 border-t border-slate-800 space-y-2">
-            <div className="flex items-center justify-between text-xs font-mono">
+          <div className="pt-2 border-t border-slate-800/80 space-y-2">
+            <div className="flex items-center justify-between text-xs">
               <span className="text-slate-400">Event Severity:</span>
-              <span className="font-bold text-cyan-400">{intensity}%</span>
+              <span className="font-semibold text-sky-300 font-mono">{intensity}%</span>
             </div>
             <input
               type="range"
@@ -3149,7 +3139,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               max="100"
               value={intensity}
               onChange={(e) => setIntensity(Number(e.target.value))}
-              className="w-full accent-cyan-400 cursor-pointer"
+              className="w-full accent-sky-500 cursor-pointer"
             />
           </div>
         </div>
@@ -3174,7 +3164,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             <span className="text-slate-700">|</span>
 
             <div className="flex items-center gap-1">
-              {[0.25, 0.5, 1, 2, 5, 10].map((spd) => {
+              {[0.5, 1, 2, 5].map((spd) => {
                 const isActive = !isPaused && Math.abs(timeSpeed - spd) < 0.05;
                 return (
                   <button
@@ -3183,17 +3173,33 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                       setTimeSpeed(spd);
                       setIsPaused(false);
                     }}
-                    className={`px-2 py-1 rounded-lg border transition-all text-[10px] font-bold cursor-pointer ${
+                    className={`px-2 py-1 rounded-lg border transition-all text-[10px] font-mono font-semibold cursor-pointer ${
                       isActive
-                        ? 'bg-cyan-500 border-cyan-300 text-slate-950 font-black shadow-sm ring-1 ring-cyan-300/60'
+                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm ring-1 ring-indigo-400/50'
                         : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                     }`}
                   >
-                    {spd === 0.25 ? '0.25x' : spd === 0.5 ? '0.5x' : `${spd}x`}
+                    {spd === 0.5 ? '0.5x' : `${spd}x`}
                   </button>
                 );
               })}
             </div>
+
+            <span className="text-slate-700">|</span>
+
+            {/* Legend Toggle Button */}
+            <button
+              onClick={() => setShowMarkerLegendHUD(!showMarkerLegendHUD)}
+              className={`px-2.5 py-1 rounded-xl border text-[11px] font-sans font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
+                showMarkerLegendHUD
+                  ? 'bg-sky-600/30 border-sky-400 text-sky-200 ring-1 ring-sky-400/50'
+                  : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
+              }`}
+              title="Toggle Observatory & Storm Telemetry Legend"
+            >
+              <Layers className="w-3.5 h-3.5 text-sky-400" />
+              <span>Legend</span>
+            </button>
           </div>
 
           {/* Frozen Simulation Notice Overlay */}
@@ -3229,7 +3235,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               }}
               className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
                 perspectiveState.mode === 'REGIONAL'
-                  ? 'bg-cyan-600/30 border-cyan-400 text-cyan-200 ring-1 ring-cyan-400/50'
+                  ? 'bg-sky-600/20 border-sky-500/50 text-sky-200 ring-1 ring-sky-400/40'
                   : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
               }`}
               title="Switch to Regional Focus"
@@ -3260,7 +3266,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                 className="px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 bg-gradient-to-r from-blue-900/70 to-indigo-900/70 border-blue-500/60 text-blue-200 hover:text-white shadow-xs"
                 title="Descend to 3D Ground Station Simulator"
               >
-                <Mountain className="w-3 h-3 text-cyan-300" />
+                <Mountain className="w-3 h-3 text-blue-300" />
                 <span className="hidden sm:inline">3D Ground Sim</span>
               </button>
             )}
@@ -3268,8 +3274,8 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
 
           {/* Floating View Mode Selector Directly on 3D Viewport */}
           <div className="absolute top-16 right-3 sm:top-auto sm:bottom-4 sm:right-4 z-20 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700/80 shadow-2xl font-mono text-xs">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-cyan-300 px-2">
-              <Eye className="w-4 h-4 text-cyan-400 animate-pulse" />
+            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-300 px-2">
+              <Eye className="w-4 h-4 text-sky-400" />
               <span className="hidden sm:inline uppercase">Earth View Mode:</span>
             </div>
             <button
@@ -3298,7 +3304,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
               onClick={() => setViewMode('SYNOPTIC_METEOROLOGY')}
               className={`px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
                 viewMode === 'SYNOPTIC_METEOROLOGY'
-                  ? 'bg-cyan-600/40 text-cyan-200 border border-cyan-500/60 shadow-md ring-2 ring-cyan-400/50'
+                  ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-md ring-2 ring-indigo-400/40'
                   : 'bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700'
               }`}
               title="Switch to Synoptic Radar & Pressure Isobars"
@@ -3345,7 +3351,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                         key={st.name}
                         className="px-1.5 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[9px] text-slate-300 flex items-center gap-1"
                       >
-                        <span className="text-cyan-400 font-bold">{st.name}:</span>
+                        <span className="text-sky-400 font-bold">{st.name}:</span>
                         <span className="text-emerald-300">{st.cloudCover}%</span>
                       </span>
                     ))}
@@ -3355,7 +3361,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             )}
 
             <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-2">
-              <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin-slow" />
+              <Compass className="w-3.5 h-3.5 text-sky-400" />
               <span>Drag to rotate Earth • Scroll zoom • Real-time Cloud Cover Stream Active</span>
             </div>
           </div>
@@ -3526,320 +3532,274 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
             </WebGLErrorBoundary>
 
             {/* 3D Earth Observatory Marker Legend & Telemetry Key HUD Overlay */}
-            <div className="absolute top-3 left-3 z-30 pointer-events-auto">
-              {!showMarkerLegendHUD ? (
-                <button
-                  onClick={() => setShowMarkerLegendHUD(true)}
-                  className="px-3 py-1.5 rounded-xl bg-slate-950/90 hover:bg-slate-900 border border-cyan-500/70 hover:border-cyan-400 text-white font-mono text-xs shadow-2xl backdrop-blur-md flex items-center gap-2 transition-all cursor-pointer group"
-                  title="Expand 3D Markers Telemetry Key"
-                >
-                  <div className="flex items-center gap-1">
-                    <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-500" />
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-500" />
-                  </div>
-                  <span className="font-bold text-slate-200 group-hover:text-white">
-                    🔵 Blue & 🟡 Yellow Markers Key
-                  </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-800">
-                    Open Key
-                  </span>
-                </button>
-              ) : (
-                <div className="w-[310px] sm:w-[360px] max-h-[78vh] flex flex-col bg-slate-950/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl shadow-2xl p-3.5 space-y-3 font-sans text-xs">
-                  {/* Header */}
-                  <div className="flex items-start justify-between border-b border-slate-800 pb-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <MapPin className="w-4 h-4 text-cyan-400" />
-                        <h4 className="font-bold text-white text-[12px] uppercase tracking-wider font-mono">
-                          Observatory Marker Key
-                        </h4>
-                      </div>
-                      <p className="text-[10px] text-slate-400 mt-0.5">
-                        Decoded telemetry for all dots & rings on Earth
-                      </p>
+            {showMarkerLegendHUD && (
+              <div className="absolute top-16 left-4 z-30 pointer-events-auto w-[320px] sm:w-[360px] max-h-[75vh] flex flex-col bg-slate-900/95 backdrop-blur-2xl border border-slate-800 rounded-2xl shadow-2xl p-4 space-y-3 font-sans text-xs">
+                {/* Header */}
+                <div className="flex items-start justify-between border-b border-slate-800 pb-2.5">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-4 h-4 text-sky-400" />
+                      <h4 className="font-semibold text-white text-xs tracking-tight">
+                        Observatory Marker Legend
+                      </h4>
                     </div>
-                    <button
-                      onClick={() => setShowMarkerLegendHUD(false)}
-                      className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                      title="Minimize Legend"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Ground telemetry, Doppler radars & storm trajectory waypoints
+                    </p>
                   </div>
-
-                  {/* Filter Tabs */}
-                  <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-900/90 rounded-lg border border-slate-800 font-mono text-[9px]">
-                    <button
-                      onClick={() => setMarkerLegendTab('ALL')}
-                      className={`py-1 rounded text-center transition-all cursor-pointer font-bold ${
-                        markerLegendTab === 'ALL'
-                          ? 'bg-slate-800 text-white shadow'
-                          : 'text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      ALL
-                    </button>
-                    <button
-                      onClick={() => setMarkerLegendTab('BLUE')}
-                      className={`py-1 rounded text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
-                        markerLegendTab === 'BLUE'
-                          ? 'bg-cyan-950/80 text-cyan-300 border border-cyan-500/60 shadow'
-                          : 'text-slate-400 hover:text-cyan-300'
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                      BLUE
-                    </button>
-                    <button
-                      onClick={() => setMarkerLegendTab('YELLOW')}
-                      className={`py-1 rounded text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
-                        markerLegendTab === 'YELLOW'
-                          ? 'bg-amber-950/80 text-amber-300 border border-amber-500/60 shadow'
-                          : 'text-slate-400 hover:text-amber-300'
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      YELLOW
-                    </button>
-                    <button
-                      onClick={() => setMarkerLegendTab('RED')}
-                      className={`py-1 rounded text-center transition-all cursor-pointer font-bold flex items-center justify-center gap-1 ${
-                        markerLegendTab === 'RED'
-                          ? 'bg-rose-950/80 text-rose-300 border border-rose-500/60 shadow'
-                          : 'text-slate-400 hover:text-rose-300'
-                      }`}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      RED/RINGS
-                    </button>
-                  </div>
-
-                  {/* Marker Explanations & Quick Fly Links */}
-                  <div className="space-y-2.5 overflow-y-auto max-h-[50vh] pr-1 custom-scrollbar text-[10px]">
-                    {/* SECTION 1: BLUE DOTS */}
-                    {(markerLegendTab === 'ALL' || markerLegendTab === 'BLUE') && (
-                      <div className="p-2.5 rounded-xl bg-cyan-950/30 border border-cyan-500/40 space-y-2">
-                        <div className="flex items-center gap-1.5 text-cyan-300 font-bold font-mono text-[11px]">
-                          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse shadow-sm shadow-cyan-400" />
-                          <span>🔵 What Blue Dots Are Doing</span>
-                        </div>
-
-                        <div className="space-y-1.5 text-slate-300 leading-relaxed font-sans">
-                          <div>
-                            <strong className="text-white block font-mono text-[10px]">
-                              1. Planetary Surface Observatories (8 Fixed Baseline Hubs):
-                            </strong>
-                            <span>
-                              Continuous weather stations monitoring surface barometric pressure, temperature, cloud cover, and winds.
-                            </span>
-                          </div>
-
-                          {/* Quick Fly Station Buttons */}
-                          <div className="pt-1">
-                            <span className="text-[9px] text-slate-400 font-mono block mb-1">
-                              Center Camera on Observatory:
-                            </span>
-                            <div className="flex flex-wrap gap-1">
-                              {GLOBE_TARGETS.map((tgt) => (
-                                <button
-                                  key={tgt.id}
-                                  onClick={() => focusTargetObservatory(tgt)}
-                                  className={`px-1.5 py-0.5 rounded text-[8px] font-mono border transition-all cursor-pointer ${
-                                    selectedTarget.id === tgt.id
-                                      ? 'bg-cyan-500 text-slate-950 font-bold border-cyan-400 shadow-md'
-                                      : 'bg-slate-900/90 text-cyan-300 border-slate-700 hover:border-cyan-400 hover:bg-slate-800'
-                                  }`}
-                                  title={`Fly camera to ${tgt.name}`}
-                                >
-                                  {tgt.name.split(' ')[0]}
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-
-                          <div className="pt-1 border-t border-cyan-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              2. Historical Cyclone Track Fixes (-36h to -12h):
-                            </strong>
-                            <span>
-                              Verified past storm eye positions logged by Doppler radar and INSAT/GOES satellites.
-                            </span>
-                          </div>
-
-                          <div className="pt-1 border-t border-cyan-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              3. Windward Mountain Inflow Stations:
-                            </strong>
-                            <span>
-                              Coastal stations (e.g. Ratnagiri, Goa) capturing incoming maritime monsoon surges before mountain lift.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SECTION 2: YELLOW DOTS */}
-                    {(markerLegendTab === 'ALL' || markerLegendTab === 'YELLOW') && (
-                      <div className="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/40 space-y-2">
-                        <div className="flex items-center gap-1.5 text-amber-300 font-bold font-mono text-[11px]">
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-sm shadow-amber-400" />
-                          <span>🟡 What Yellow Dots Are Doing</span>
-                        </div>
-
-                        <div className="space-y-1.5 text-slate-300 leading-relaxed font-sans">
-                          <div>
-                            <strong className="text-white block font-mono text-[10px]">
-                              1. Numerical Model Cyclone Forecasts (+12h, +24h, +48h):
-                            </strong>
-                            <span>
-                              Ensemble forecast trajectory waypoints predicting storm intensification, landfall location, and inland decay.
-                            </span>
-                            <button
-                              onClick={focusCycloneForecastLandfall}
-                              className="mt-1.5 w-full py-1 px-2 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 border border-amber-400 text-amber-300 font-mono text-[9px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                            >
-                              <Crosshair className="w-3 h-3 text-amber-400" />
-                              <span>Focus Cyclone Landfall (+24h Forecast Point)</span>
-                            </button>
-                          </div>
-
-                          <div className="pt-1.5 border-t border-amber-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              2. Orographic Mountain Crest Summits:
-                            </strong>
-                            <span>
-                              High-altitude peaks (e.g. Mahabaleshwar 1,353m crest) where rapid orographic uplift triggers extreme condensation and cloudbursts.
-                            </span>
-                            <button
-                              onClick={focusMahabaleshwarCrest}
-                              className="mt-1.5 w-full py-1 px-2 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400 text-emerald-300 font-mono text-[9px] font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                            >
-                              <Mountain className="w-3 h-3 text-emerald-400" />
-                              <span>Focus Mahabaleshwar Crest (1,353m Peak)</span>
-                            </button>
-                          </div>
-
-                          <div className="pt-1.5 border-t border-amber-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              3. Active Focal Target Ring:
-                            </strong>
-                            <span>
-                              Double concentric golden ring indicating the currently selected observatory or clicked sensor probe.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* SECTION 3: RED / RINGS */}
-                    {(markerLegendTab === 'ALL' || markerLegendTab === 'RED') && (
-                      <div className="p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/40 space-y-2">
-                        <div className="flex items-center gap-1.5 text-rose-300 font-bold font-mono text-[11px]">
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                          <span>🔴 Red Dots & Spire Towers</span>
-                        </div>
-
-                        <div className="space-y-1.5 text-slate-300 leading-relaxed font-sans">
-                          <div>
-                            <strong className="text-white block font-mono text-[10px]">
-                              1. Leeward Rain-Shadow Stations:
-                            </strong>
-                            <span>
-                              Dry interior stations (e.g. Pune, 560m) where descending föhn air creates severe rain deficits behind mountain barriers.
-                            </span>
-                          </div>
-
-                          <div className="pt-1 border-t border-rose-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              2. IMD Doppler Radar Towers:
-                            </strong>
-                            <span>
-                              Volumetric radar towers scanning 360° reflectivity cones and precipitation echo spires across a 250km radial radius.
-                            </span>
-                          </div>
-
-                          <div className="pt-1 border-t border-rose-900/40">
-                            <strong className="text-white block font-mono text-[10px]">
-                              3. Category 5 Eyewall Vortex Core:
-                            </strong>
-                            <span>
-                              Severe cyclone core with rotating spiral bands and extreme wind gusts exceeding 220 km/h.
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Interactive Quick Tip Footer */}
-                  <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800 text-[9px] text-slate-400 flex items-center justify-between font-mono">
-                    <span>💡 Tip: Click or hover any 3D dot for telemetry</span>
-                    <span className="text-cyan-400 font-bold">Interactive 3D</span>
-                  </div>
+                  <button
+                    onClick={() => setShowMarkerLegendHUD(false)}
+                    className="p-1 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Close Legend"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              )}
-            </div>
+
+                {/* Filter Tabs */}
+                <div className="grid grid-cols-4 gap-1 p-0.5 bg-slate-950/80 rounded-lg border border-slate-800 text-[10px]">
+                  <button
+                    onClick={() => setMarkerLegendTab('ALL')}
+                    className={`py-1 rounded text-center transition-all cursor-pointer font-medium ${
+                      markerLegendTab === 'ALL'
+                        ? 'bg-slate-800 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    ALL
+                  </button>
+                  <button
+                    onClick={() => setMarkerLegendTab('BLUE')}
+                    className={`py-1 rounded text-center transition-all cursor-pointer font-medium flex items-center justify-center gap-1 ${
+                      markerLegendTab === 'BLUE'
+                        ? 'bg-slate-800 text-sky-300 border border-sky-500/50 shadow-sm'
+                        : 'text-slate-400 hover:text-sky-300'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                    BLUE
+                  </button>
+                  <button
+                    onClick={() => setMarkerLegendTab('YELLOW')}
+                    className={`py-1 rounded text-center transition-all cursor-pointer font-medium flex items-center justify-center gap-1 ${
+                      markerLegendTab === 'YELLOW'
+                        ? 'bg-slate-800 text-amber-300 border border-amber-500/50 shadow-sm'
+                        : 'text-slate-400 hover:text-amber-300'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                    YELLOW
+                  </button>
+                  <button
+                    onClick={() => setMarkerLegendTab('RED')}
+                    className={`py-1 rounded text-center transition-all cursor-pointer font-medium flex items-center justify-center gap-1 ${
+                      markerLegendTab === 'RED'
+                        ? 'bg-slate-800 text-rose-300 border border-rose-500/50 shadow-sm'
+                        : 'text-slate-400 hover:text-rose-300'
+                    }`}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                    RED
+                  </button>
+                </div>
+
+                {/* Marker Explanations & Quick Fly Links */}
+                <div className="space-y-2.5 overflow-y-auto max-h-[48vh] pr-1 custom-scrollbar text-[11px]">
+                  {/* SECTION 1: BLUE DOTS */}
+                  {(markerLegendTab === 'ALL' || markerLegendTab === 'BLUE') && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                      <div className="flex items-center gap-1.5 text-sky-300 font-semibold text-[11px]">
+                        <span className="w-2 h-2 rounded-full bg-sky-400" />
+                        <span>Planetary Surface Observatories</span>
+                      </div>
+
+                      <div className="space-y-2 text-slate-300 leading-relaxed font-sans text-[10px]">
+                        <div>
+                          <strong className="text-white block font-medium">
+                            1. Fixed Baseline Weather Stations:
+                          </strong>
+                          <span className="text-slate-400">
+                            Continuous nodes monitoring barometric pressure, temperature, cloud cover, and winds.
+                          </span>
+                        </div>
+
+                        {/* Quick Fly Station Buttons */}
+                        <div className="pt-1">
+                          <span className="text-[10px] text-slate-400 block mb-1">
+                            Center Camera on Observatory:
+                          </span>
+                          <div className="flex flex-wrap gap-1">
+                            {GLOBE_TARGETS.map((tgt) => (
+                              <button
+                                key={tgt.id}
+                                onClick={() => focusTargetObservatory(tgt)}
+                                className={`px-2 py-0.5 rounded-md text-[9px] font-sans border transition-all cursor-pointer ${
+                                  selectedTarget.id === tgt.id
+                                    ? 'bg-sky-600 text-white font-medium border-sky-400 shadow-sm'
+                                    : 'bg-slate-900/90 text-slate-300 border-slate-800 hover:border-slate-600 hover:bg-slate-800'
+                                }`}
+                                title={`Fly camera to ${tgt.name}`}
+                              >
+                                {tgt.name.split(' ')[0]}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-slate-800/80">
+                          <strong className="text-white block font-medium">
+                            2. Historical Cyclone Track Fixes:
+                          </strong>
+                          <span className="text-slate-400">
+                            Verified past storm eye positions logged by Doppler radar and INSAT/GOES satellites.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SECTION 2: YELLOW DOTS */}
+                  {(markerLegendTab === 'ALL' || markerLegendTab === 'YELLOW') && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                      <div className="flex items-center gap-1.5 text-amber-300 font-semibold text-[11px]">
+                        <span className="w-2 h-2 rounded-full bg-amber-400" />
+                        <span>Forecast Points & Mountain Summits</span>
+                      </div>
+
+                      <div className="space-y-2 text-slate-300 leading-relaxed font-sans text-[10px]">
+                        <div>
+                          <strong className="text-white block font-medium">
+                            1. Numerical Model Forecasts (+12h, +24h, +48h):
+                          </strong>
+                          <span className="text-slate-400">
+                            Trajectory waypoints predicting intensification, landfall location, and decay.
+                          </span>
+                          <button
+                            onClick={focusCycloneForecastLandfall}
+                            className="mt-1.5 w-full py-1.5 px-2 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Crosshair className="w-3 h-3 text-amber-400" />
+                            <span>Focus Landfall (+24h Forecast Point)</span>
+                          </button>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-slate-800/80">
+                          <strong className="text-white block font-medium">
+                            2. Orographic Crest Summits:
+                          </strong>
+                          <span className="text-slate-400">
+                            High-altitude peaks where rapid orographic uplift triggers extreme condensation.
+                          </span>
+                          <button
+                            onClick={focusMahabaleshwarCrest}
+                            className="mt-1.5 w-full py-1.5 px-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[10px] font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <Mountain className="w-3 h-3 text-emerald-400" />
+                            <span>Focus Mahabaleshwar Crest (1,353m)</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SECTION 3: RED / RINGS */}
+                  {(markerLegendTab === 'ALL' || markerLegendTab === 'RED') && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                      <div className="flex items-center gap-1.5 text-rose-300 font-semibold text-[11px]">
+                        <span className="w-2 h-2 rounded-full bg-rose-400" />
+                        <span>Radar Spires & Extreme Vortex Core</span>
+                      </div>
+
+                      <div className="space-y-2 text-slate-300 leading-relaxed font-sans text-[10px]">
+                        <div>
+                          <strong className="text-white block font-medium">
+                            1. IMD Doppler Radar Towers:
+                          </strong>
+                          <span className="text-slate-400">
+                            Volumetric towers scanning 360° reflectivity cones and precipitation echo spires.
+                          </span>
+                        </div>
+
+                        <div className="pt-1.5 border-t border-slate-800/80">
+                          <strong className="text-white block font-medium">
+                            2. Eyewall Vortex Core:
+                          </strong>
+                          <span className="text-slate-400">
+                            Cyclone core with rotating spiral bands and extreme wind gusts exceeding 220 km/h.
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Footer Tip */}
+                <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
+                  <span>💡 Hover any 3D node for live telemetry</span>
+                  <span className="text-sky-400 font-medium">Interactive 3D</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Right Sidebar: Real-time Telemetry & Impact */}
-        <div className="lg:col-span-3 bg-slate-900/80 border-l border-slate-800 p-4 space-y-4 flex flex-col justify-between z-10">
+        <div className="lg:col-span-3 bg-slate-900/80 border-l border-slate-800 p-4 space-y-4 flex flex-col justify-between z-10 font-sans">
           <div>
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <Radio className="w-4 h-4 text-emerald-400" />
               Atmospheric Telemetry & Impact
             </h3>
 
             {/* Climate Anomaly Card */}
-            <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 mb-3 space-y-1 font-mono text-[11px]">
-              <div className="text-amber-300 font-bold flex items-center justify-between">
+            <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 mb-3 space-y-1.5 text-[11px]">
+              <div className="text-amber-300 font-medium flex items-center justify-between">
                 <span>Scenario Anomaly:</span>
-                <span>{CLIMATE_SCENARIOS[climateScenario].pressureAnomalyHpa} hPa</span>
+                <span className="font-mono font-semibold">{CLIMATE_SCENARIOS[climateScenario].pressureAnomalyHpa} hPa</span>
               </div>
-              <div className="text-sky-300 flex items-center justify-between">
+              <div className="text-sky-300 font-medium flex items-center justify-between">
                 <span>Global Sea Level Surge:</span>
-                <span>+{CLIMATE_SCENARIOS[climateScenario].seaLevelRiseM} m</span>
+                <span className="font-mono font-semibold">+{CLIMATE_SCENARIOS[climateScenario].seaLevelRiseM} m</span>
               </div>
-              <p className="text-[10px] text-slate-400 leading-tight pt-1 font-sans">
+              <p className="text-[10px] text-slate-400 leading-relaxed pt-1 border-t border-slate-800/80 font-sans">
                 {CLIMATE_SCENARIOS[climateScenario].description}
               </p>
             </div>
 
-            <div className="space-y-2 font-mono text-xs">
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Surface Pressure:</span>
-                <span className="font-bold text-cyan-400">{derivedMetrics.pressureHpa} hPa</span>
+            <div className="space-y-1.5 text-xs">
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Surface Pressure:</span>
+                <span className="font-semibold text-sky-300 font-mono">{derivedMetrics.pressureHpa} hPa</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">24h Precip Rate:</span>
-                <span className="font-bold text-blue-400">{derivedMetrics.rainMm24} mm</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">24h Precip Rate:</span>
+                <span className="font-semibold text-blue-300 font-mono">{derivedMetrics.rainMm24} mm</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Wind Velocity:</span>
-                <span className="font-bold text-amber-400">{derivedMetrics.windKmH} km/h</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Wind Velocity:</span>
+                <span className="font-semibold text-amber-300 font-mono">{derivedMetrics.windKmH} km/h</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Surface Temp:</span>
-                <span className="font-bold text-rose-400">{derivedMetrics.tempC}°C</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Surface Temp:</span>
+                <span className="font-semibold text-rose-300 font-mono">{derivedMetrics.tempC}°C</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Storm Surge Height:</span>
-                <span className="font-bold text-sky-400">+{derivedMetrics.oceanSurgeM} m</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Storm Surge Height:</span>
+                <span className="font-semibold text-sky-300 font-mono">+{derivedMetrics.oceanSurgeM} m</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Population Exposed:</span>
-                <span className="font-bold text-purple-400">{derivedMetrics.popAffectedM} M</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Population Exposed:</span>
+                <span className="font-semibold text-purple-300 font-mono">{derivedMetrics.popAffectedM} M</span>
               </div>
 
-              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-                <span className="text-slate-400">Est. Economic Risk:</span>
-                <span className="font-bold text-emerald-400">${derivedMetrics.economicLossB} B</span>
+              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
+                <span className="text-slate-400 text-[11px] font-medium">Est. Economic Risk:</span>
+                <span className="font-semibold text-emerald-300 font-mono">${derivedMetrics.economicLossB} B</span>
               </div>
             </div>
 
@@ -3854,30 +3814,30 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                   );
                   onOpenLocal3dSimulator(matched ? matched.id : 'BOM_SANTACRUZ');
                 }}
-                className="w-full mt-3 py-2 bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white rounded-xl font-bold text-xs transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer active:scale-98"
+                className="w-full mt-3 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-xs transition-all shadow-md shadow-indigo-950/40 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
                 title="Descend to 3D ground station simulation for this location"
               >
-                <Mountain className="w-4 h-4 text-cyan-300" />
+                <Mountain className="w-4 h-4 text-sky-200" />
                 <span>Descend to 3D Ground Simulation</span>
               </button>
             )}
           </div>
 
           {/* Gamified Missions */}
-          <div className="pt-3 border-t border-slate-800 space-y-2">
+          <div className="pt-3 border-t border-slate-800/80 space-y-2">
             <div className="flex items-center justify-between">
-              <h4 className="text-xs font-bold text-amber-300 uppercase tracking-wider flex items-center gap-1.5">
+              <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
                 <Trophy className="w-4 h-4 text-amber-400" />
                 Planetary Missions
               </h4>
-              <span className="text-[10px] font-mono text-amber-400 bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800 font-bold">
+              <span className="text-[10px] font-mono text-amber-300 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700 font-medium">
                 Level {activeMissionIndex + 1}/3
               </span>
             </div>
 
-            <div className="bg-amber-950/20 border border-amber-800/60 p-3 rounded-xl text-xs space-y-2">
-              <div className="font-bold text-amber-200">{currentMission.title}</div>
-              <p className="text-[11px] text-slate-300 leading-relaxed font-sans">{currentMission.goal}</p>
+            <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl text-xs space-y-2">
+              <div className="font-semibold text-slate-200">{currentMission.title}</div>
+              <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{currentMission.goal}</p>
 
               <div className="pt-1 flex flex-col gap-1.5">
                 <button
@@ -3885,7 +3845,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                     setShowCrisisModal(true);
                     if (!isSoundMuted) weatherSynth.playCrisisAlertTone();
                   }}
-                  className="w-full py-1.5 bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md shadow-amber-900/30"
+                  className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm shadow-rose-950/40"
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
                   <span>Launch Crisis Command Operations</span>
@@ -3897,7 +3857,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                     setSelectedTarget(missions[(activeMissionIndex + 1) % missions.length].target);
                     setSelectedDisaster(missions[(activeMissionIndex + 1) % missions.length].disaster);
                   }}
-                  className="w-full py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1"
+                  className="w-full py-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1"
                 >
                   <span>Next Planetary Challenge</span>
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -3925,7 +3885,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           </div>
           <div className="space-y-1 text-[11px]">
             <div className="flex justify-between"><span className="text-slate-400">Altitude:</span> <span className="text-amber-300">{selectedSatellite.altitudeKm.toLocaleString()} km</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Orbit Period:</span> <span className="text-cyan-300">{selectedSatellite.orbitPeriodMin} min</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Orbit Period:</span> <span className="text-sky-300">{selectedSatellite.orbitPeriodMin} min</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Inclination:</span> <span>{selectedSatellite.inclinationDeg}°</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Sensor Swath:</span> <span className="text-emerald-300">{selectedSatellite.swathWidthKm} km</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Payload:</span> <span className="text-purple-300">{selectedSatellite.spectralBand}</span></div>
@@ -3952,7 +3912,7 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
           <div className="space-y-1 text-[11px]">
             <div className="flex justify-between"><span className="text-slate-400">Peak Reflectivity:</span> <span className="text-rose-400 font-bold">{selectedRadar.maxDbz} dBZ</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Echo Top Height:</span> <span className="text-purple-300 font-bold">{selectedRadar.echoTopKm} km</span></div>
-            <div className="flex justify-between"><span className="text-slate-400">Rain Rate:</span> <span className="text-cyan-300">{selectedRadar.rainRateMmH} mm/hr</span></div>
+            <div className="flex justify-between"><span className="text-slate-400">Rain Rate:</span> <span className="text-sky-300">{selectedRadar.rainRateMmH} mm/hr</span></div>
             <div className="flex justify-between"><span className="text-slate-400">VIL (Liquid Water):</span> <span className="text-amber-300">{selectedRadar.vilKgM2} kg/m²</span></div>
             <div className="flex justify-between"><span className="text-slate-400">Radial Velocity:</span> <span>{selectedRadar.radialVelocityMps} m/s</span></div>
             <div className="flex justify-between items-center pt-1 border-t border-slate-800">

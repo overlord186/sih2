@@ -134,19 +134,19 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       isDark,
       // Main outer container style
       container: isDark
-        ? 'bg-slate-950/95 backdrop-blur-md rounded-xl border border-cyan-500/40 p-5 shadow-2xl shadow-cyan-950/50 text-cyan-50 transition-all duration-500'
+        ? 'bg-slate-950/95 backdrop-blur-md rounded-xl border border-sky-500/40 p-5 shadow-2xl shadow-sky-950/50 text-sky-50 transition-all duration-500'
         : 'bg-white/90 backdrop-blur-md rounded-xl border border-slate-200 p-5 shadow-xs transition-all duration-500 text-slate-900',
       
-      headerTitle: isDark ? 'text-cyan-200 font-mono tracking-wider' : 'text-slate-900 tracking-tight',
+      headerTitle: isDark ? 'text-sky-200 font-mono tracking-wider' : 'text-slate-900 tracking-tight',
       headerSubtitle: isDark ? 'text-slate-400 font-mono text-xs mt-0.5' : 'text-slate-500 text-xs mt-0.5',
       
       // Controls & toolbar wrappers
       toolbarBg: isDark
-        ? 'bg-slate-900/90 border-cyan-500/30 text-cyan-100'
+        ? 'bg-slate-900/90 border-sky-500/30 text-sky-100'
         : 'bg-slate-50/80 border-slate-200/90 text-slate-700',
       
       subToolbarBg: isDark
-        ? 'bg-slate-900/80 border-cyan-500/20 text-cyan-200'
+        ? 'bg-slate-900/80 border-sky-500/20 text-sky-200'
         : 'bg-slate-100/80 border-slate-200/80 text-slate-700',
 
       // Recharts Canvas stroke properties
@@ -174,15 +174,15 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
       // Legend panel style
       legendContainer: isDark
-        ? 'bg-slate-900/90 border-cyan-500/30 text-cyan-100'
+        ? 'bg-slate-900/90 border-sky-500/30 text-sky-100'
         : 'bg-slate-50/90 border-slate-200/90 text-slate-700',
       legendSubCard: isDark
-        ? 'bg-slate-950/80 border-cyan-900/50 text-cyan-100'
+        ? 'bg-slate-950/80 border-sky-900/50 text-sky-100'
         : 'bg-white border-slate-200/80 text-slate-700',
 
       // Summary Box style
       summaryBoxBg: isDark
-        ? 'bg-black/90 border-cyan-500/40 text-cyan-50 shadow-xl shadow-cyan-950'
+        ? 'bg-black/90 border-sky-500/40 text-sky-50 shadow-xl shadow-sky-950'
         : 'bg-slate-900 border-slate-800 text-white',
     };
   }, [isDark]);
@@ -1447,11 +1447,11 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               </div>
 
               <div className="bg-blue-950/40 border border-blue-500/30 rounded-lg p-1.5 text-center">
-                <span className="block text-[9px] uppercase font-bold text-cyan-400">AI Corrected</span>
-                <span className="font-mono font-bold text-xs text-cyan-200">
+                <span className="block text-[9px] uppercase font-bold text-sky-400">AI Corrected</span>
+                <span className="font-mono font-bold text-xs text-sky-200">
                   {item.aiCorrected} <span className="text-[9px] font-normal">mm</span>
                 </span>
-                <span className="block text-[9px] text-cyan-300 font-mono mt-0.5">
+                <span className="block text-[9px] text-sky-300 font-mono mt-0.5">
                   {dataRepresentation === 'weeklyMA' ? `Raw: ${item.rawDailyAiCorrected}mm` : `7d: ${item.weeklyMaAi}mm`}
                 </span>
               </div>
@@ -1493,7 +1493,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   return (
     <div id="forecast-chart-card" className={themeStyles.container}>
       {/* Primary Header & Top Action Bar */}
-      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b ${isDark ? 'border-cyan-500/20' : 'border-slate-100'}`}>
+      <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b ${isDark ? 'border-sky-500/20' : 'border-slate-100'}`}>
         <div>
           <div className="flex items-center gap-2">
             <h2 className={`text-base font-bold ${themeStyles.headerTitle}`}>
@@ -1503,7 +1503,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               <button
                 onClick={() => setIsStationSelectorOpen(!isStationSelectorOpen)}
                 className={`flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded transition-colors cursor-pointer ${
-                  isDark ? 'bg-cyan-950 text-cyan-300 border border-cyan-800/80 hover:bg-cyan-900 font-mono' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
+                  isDark ? 'bg-sky-950 text-sky-300 border border-sky-800/80 hover:bg-sky-900 font-mono' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
                 }`}
               >
                 {activeStations.length === 1 ? selectedStationName : `${activeStations.length} Stations Compared`}
@@ -1530,11 +1530,11 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                           }}
                           className={`flex items-center gap-2 px-2 py-1.5 rounded cursor-pointer text-xs transition-colors ${
                             isActive 
-                              ? (isDark ? 'bg-cyan-500/20 text-cyan-300' : 'bg-blue-50 text-blue-700 font-semibold')
+                              ? (isDark ? 'bg-sky-500/20 text-sky-300' : 'bg-blue-50 text-blue-700 font-semibold')
                               : (isDark ? 'hover:bg-slate-800 text-slate-400' : 'hover:bg-slate-100 text-slate-600')
                           }`}
                         >
-                          <div className={`w-3 h-3 rounded flex items-center justify-center border ${isActive ? 'bg-cyan-500 border-cyan-500' : 'border-slate-500'}`}>
+                          <div className={`w-3 h-3 rounded flex items-center justify-center border ${isActive ? 'bg-sky-500 border-sky-500' : 'border-slate-500'}`}>
                             {isActive && <Check className="w-2.5 h-2.5 text-white" />}
                           </div>
                           <span className="truncate">{st.name}</span>
@@ -1554,7 +1554,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
         <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-auto">
           {/* THEME SELECTOR BUTTON GROUP */}
           <div className={`inline-flex rounded-lg p-0.5 border text-xs font-medium transition-all ${
-            isDark ? 'bg-slate-900 border-cyan-500/40 shadow-inner' : 'bg-slate-100 border-slate-200 shadow-2xs'
+            isDark ? 'bg-slate-900 border-sky-500/40 shadow-inner' : 'bg-slate-100 border-slate-200 shadow-2xs'
           }`}>
             <button
               id="theme-standard-report-btn"
@@ -1562,7 +1562,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
                 chartTheme === 'standard'
                   ? 'bg-white text-slate-900 shadow-xs'
-                  : isDark ? 'text-cyan-300/70 hover:text-cyan-100' : 'text-slate-500 hover:text-slate-900'
+                  : isDark ? 'text-sky-300/70 hover:text-sky-100' : 'text-slate-500 hover:text-slate-900'
               }`}
               title="Standard Report Mode (High-contrast White/Black styling)"
             >
@@ -1574,12 +1574,12 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => setChartTheme('scientificDark')}
               className={`px-2.5 py-1 rounded-md font-semibold transition-all flex items-center gap-1.5 ${
                 chartTheme === 'scientificDark'
-                  ? 'bg-cyan-500 text-slate-950 font-bold shadow-md shadow-cyan-500/30'
-                  : isDark ? 'text-cyan-300/70 hover:text-cyan-100' : 'text-slate-500 hover:text-slate-900'
+                  ? 'bg-sky-500 text-slate-950 font-bold shadow-md shadow-sky-500/30'
+                  : isDark ? 'text-sky-300/70 hover:text-sky-100' : 'text-slate-500 hover:text-slate-900'
               }`}
               title="Scientific Dark Mode (High-contrast Neon styling)"
             >
-              <Moon className="w-3.5 h-3.5 text-cyan-900" />
+              <Moon className="w-3.5 h-3.5 text-sky-900" />
               Scientific Dark
             </button>
           </div>
@@ -1606,7 +1606,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => setShowExportMenu(!showExportMenu)}
               className={`px-2.5 py-1 text-xs rounded-md border font-bold transition-all flex items-center gap-1.5 shadow-xs ${
                 isDark
-                  ? 'bg-cyan-950/90 text-cyan-200 border-cyan-500/50 hover:bg-cyan-900/90'
+                  ? 'bg-sky-950/90 text-sky-200 border-sky-500/50 hover:bg-sky-900/90'
                   : 'bg-blue-600 text-white border-blue-600 hover:bg-blue-700'
               }`}
               title="Download station rainfall data as JSON or CSV"
@@ -1618,7 +1618,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
             {showExportMenu && (
               <div className={`absolute right-0 mt-1.5 w-56 rounded-xl border shadow-2xl z-50 p-1 space-y-1 backdrop-blur-xl ${
-                isDark ? 'bg-slate-900/95 border-cyan-500/40 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
+                isDark ? 'bg-slate-900/95 border-sky-500/40 text-slate-100' : 'bg-white border-slate-200 text-slate-800'
               }`}>
                 <div className="px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-wider text-slate-400 border-b border-slate-700/50">
                   Download Options ({selectedStationName})
@@ -1630,7 +1630,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                     id="export-csv-full-btn"
                     onClick={() => handleDownloadCSV('full')}
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
-                      isDark ? 'hover:bg-cyan-950/80 text-cyan-300' : 'hover:bg-blue-50 text-blue-700'
+                      isDark ? 'hover:bg-sky-950/80 text-sky-300' : 'hover:bg-blue-50 text-blue-700'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -1663,7 +1663,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                     id="export-json-full-btn"
                     onClick={() => handleDownloadJSON('full')}
                     className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center justify-between transition-colors ${
-                      isDark ? 'hover:bg-cyan-950/80 text-cyan-300' : 'hover:bg-blue-50 text-blue-700'
+                      isDark ? 'hover:bg-sky-950/80 text-sky-300' : 'hover:bg-blue-50 text-blue-700'
                     }`}
                   >
                     <span className="flex items-center gap-2">
@@ -1725,7 +1725,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                   value={compareYear || ''}
                   onChange={(e) => onCompareYearChange(Number(e.target.value))}
                   className={`border rounded-md px-1.5 py-1 text-xs outline-none ${
-                    isDark ? 'bg-slate-900 border-cyan-500/40 text-cyan-200' : 'bg-white border-slate-200 text-slate-700'
+                    isDark ? 'bg-slate-900 border-sky-500/40 text-sky-200' : 'bg-white border-slate-200 text-slate-700'
                   }`}
                 >
                   <option value={2025}>2025</option>
@@ -1759,7 +1759,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => handleSetDataRepresentation('rawDaily')}
               className={`px-2.5 py-1 text-xs rounded font-semibold transition-all flex items-center gap-1.5 ${
                 dataRepresentation === 'rawDaily'
-                  ? isDark ? 'bg-cyan-500 text-slate-950 font-bold shadow-xs' : 'bg-white text-slate-900 shadow-xs'
+                  ? isDark ? 'bg-sky-500 text-slate-950 font-bold shadow-xs' : 'bg-white text-slate-900 shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
               }`}
               title="Raw Daily: Display unfiltered daily station recordings and timestep forecasts"
@@ -1791,7 +1791,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => setViewMode('rainfall')}
               className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
                 viewMode === 'rainfall'
-                  ? isDark ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-white text-slate-900 shadow-xs'
+                  ? isDark ? 'bg-sky-500 text-slate-950 font-bold' : 'bg-white text-slate-900 shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -1802,7 +1802,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => setViewMode('residual')}
               className={`px-2.5 py-1 text-xs rounded font-medium transition-colors ${
                 viewMode === 'residual'
-                  ? isDark ? 'bg-cyan-500 text-slate-950 font-bold' : 'bg-white text-slate-900 shadow-xs'
+                  ? isDark ? 'bg-sky-500 text-slate-950 font-bold' : 'bg-white text-slate-900 shadow-xs'
                   : isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
@@ -1849,12 +1849,12 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
         <div className={`rounded-xl border p-3 flex flex-wrap items-center justify-between gap-3 text-xs ${themeStyles.toolbarBg}`}>
           {/* Moving Average Window Selectors */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-cyan-200 font-mono' : 'text-slate-700'}`}>
+            <span className={`font-semibold flex items-center gap-1.5 ${isDark ? 'text-sky-200 font-mono' : 'text-slate-700'}`}>
               <Calculator className="w-4 h-4 text-amber-500" />
               D3 Moving Average Window:
             </span>
             <div className={`inline-flex items-center gap-1 p-0.5 rounded-lg border shadow-2xs ${
-              isDark ? 'bg-slate-950 border-cyan-500/30' : 'bg-white border-slate-200'
+              isDark ? 'bg-slate-950 border-sky-500/30' : 'bg-white border-slate-200'
             }`}>
               {[7, 14, 30].map((w) => (
                 <button
@@ -1867,7 +1867,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                   className={`px-2.5 py-1 rounded-md font-medium transition-all text-xs ${
                     showD3MovingAvg && movingAvgWindow === w
                       ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
-                      : isDark ? 'text-cyan-300/80 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'
+                      : isDark ? 'text-sky-300/80 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'
                   }`}
                 >
                   {w}-Day
@@ -1883,7 +1883,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                 setShowD3MovingAvg(true);
               }}
               className={`border rounded-lg px-2 py-1 text-xs font-mono outline-none ${
-                isDark ? 'bg-slate-950 border-cyan-500/30 text-amber-300' : 'bg-white border-slate-200 text-slate-700'
+                isDark ? 'bg-slate-950 border-sky-500/30 text-amber-300' : 'bg-white border-slate-200 text-slate-700'
               }`}
               title="Select custom window size"
             >
@@ -1950,12 +1950,12 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
               onClick={() => setShowGlobalCrosshair(!showGlobalCrosshair)}
               className={`px-2.5 py-1 rounded-lg border font-semibold transition-colors flex items-center gap-1.5 ${
                 showGlobalCrosshair
-                  ? isDark ? 'bg-cyan-950/80 text-cyan-300 border-cyan-500/50' : 'bg-blue-50 text-blue-800 border-blue-300 shadow-2xs'
+                  ? isDark ? 'bg-sky-950/80 text-sky-300 border-sky-500/50' : 'bg-blue-50 text-blue-800 border-blue-300 shadow-2xs'
                   : isDark ? 'bg-slate-950 text-slate-400 border-slate-800' : 'bg-white text-slate-500 border-slate-200 hover:bg-slate-50'
               }`}
               title="Toggle D3 Global Surface Crosshair for precise interpolated date/rainfall alignment"
             >
-              <Crosshair className={`w-3.5 h-3.5 ${showGlobalCrosshair ? (isDark ? 'text-cyan-400' : 'text-blue-600') : 'text-slate-400'}`} />
+              <Crosshair className={`w-3.5 h-3.5 ${showGlobalCrosshair ? (isDark ? 'text-sky-400' : 'text-blue-600') : 'text-slate-400'}`} />
               Crosshairs
             </button>
 
@@ -1995,7 +1995,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
             {/* Sensitivity Threshold dropdown */}
             {showAnomalies && (
               <div className={`flex items-center gap-1 border rounded-lg px-2 py-0.5 ${
-                isDark ? 'bg-slate-950 border-cyan-500/30 text-cyan-200' : 'bg-white border-slate-200 text-slate-700'
+                isDark ? 'bg-slate-950 border-sky-500/30 text-sky-200' : 'bg-white border-slate-200 text-slate-700'
               }`}>
                 <Sliders className="w-3 h-3 text-slate-400" />
                 <span className="text-[11px] opacity-80">Threshold:</span>
@@ -2018,8 +2018,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       {/* D3 ZOOM & PAN TOOLBAR CONTROL BAR */}
       <div className={`flex flex-wrap items-center justify-between gap-2 px-3 py-1.5 rounded-lg border text-xs ${themeStyles.subToolbarBg}`}>
         <div className="flex items-center gap-2">
-          <span className={`font-semibold flex items-center gap-1 ${isDark ? 'text-cyan-200' : 'text-slate-700'}`}>
-            <Maximize2 className="w-3.5 h-3.5 text-cyan-400" />
+          <span className={`font-semibold flex items-center gap-1 ${isDark ? 'text-sky-200' : 'text-slate-700'}`}>
+            <Maximize2 className="w-3.5 h-3.5 text-sky-400" />
             D3 Zoom & Pan:
           </span>
           <span className="font-mono text-[11px] opacity-80">
@@ -2030,29 +2030,29 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
         <div className="flex flex-wrap items-center gap-1.5">
           {/* Quick Presets */}
           <div className={`inline-flex items-center gap-1 p-0.5 rounded border text-[11px] ${
-            isDark ? 'bg-slate-950 border-cyan-500/30' : 'bg-white border-slate-200'
+            isDark ? 'bg-slate-950 border-sky-500/30' : 'bg-white border-slate-200'
           }`}>
             <button
               onClick={() => handlePresetZoom('all')}
-              className={`px-1.5 py-0.5 rounded ${zoomRange[0] === 0 && zoomRange[1] >= fullChartData.length ? 'bg-blue-600 text-white font-bold' : isDark ? 'text-cyan-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`px-1.5 py-0.5 rounded ${zoomRange[0] === 0 && zoomRange[1] >= fullChartData.length ? 'bg-blue-600 text-white font-bold' : isDark ? 'text-sky-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               All (60d)
             </button>
             <button
               onClick={() => handlePresetZoom('onset')}
-              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-cyan-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-sky-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               Onset (0-20)
             </button>
             <button
               onClick={() => handlePresetZoom('peak')}
-              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-cyan-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-sky-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               Peak (15-45)
             </button>
             <button
               onClick={() => handlePresetZoom('withdrawal')}
-              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-cyan-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`px-1.5 py-0.5 rounded ${isDark ? 'text-sky-300 hover:bg-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
             >
               Late (40-60)
             </button>
@@ -2061,21 +2061,21 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
           {/* Zoom Buttons */}
           <button
             onClick={handleZoomIn}
-            className={`p-1 rounded border ${isDark ? 'bg-slate-950 border-cyan-500/30 text-cyan-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            className={`p-1 rounded border ${isDark ? 'bg-slate-950 border-sky-500/30 text-sky-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleZoomOut}
-            className={`p-1 rounded border ${isDark ? 'bg-slate-950 border-cyan-500/30 text-cyan-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            className={`p-1 rounded border ${isDark ? 'bg-slate-950 border-sky-500/30 text-sky-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
           <button
             onClick={handleResetZoom}
-            className={`p-1 rounded border flex items-center gap-1 px-1.5 text-[11px] ${isDark ? 'bg-slate-950 border-cyan-500/30 text-cyan-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
+            className={`p-1 rounded border flex items-center gap-1 px-1.5 text-[11px] ${isDark ? 'bg-slate-950 border-sky-500/30 text-sky-200 hover:bg-slate-900' : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'}`}
             title="Reset Zoom"
           >
             <RotateCcw className="w-3 h-3 opacity-70" />
@@ -2192,7 +2192,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                   const suffix = dataRepresentation === 'weeklyMA' ? ' (7d Weekly MA)' : '';
                   if (val === 'observed') return <span className={isDark ? 'text-emerald-300 font-semibold' : 'text-slate-700 font-semibold'}>Observed Ground Truth (IMD){suffix}</span>;
                   if (val === 'rawForecast') return <span className={isDark ? 'text-rose-300' : 'text-slate-700'}>Raw NWP Model Forecast{suffix}</span>;
-                  if (val === 'aiCorrected') return <span className={isDark ? 'text-cyan-300 font-bold' : 'text-blue-700 font-bold'}>Regime-Aware AI Corrected{suffix}</span>;
+                  if (val === 'aiCorrected') return <span className={isDark ? 'text-sky-300 font-bold' : 'text-blue-700 font-bold'}>Regime-Aware AI Corrected{suffix}</span>;
                   if (val === 'compareObserved') return <span className="text-slate-400 font-semibold">{compareYear} Observed (IMD){suffix}</span>;
                   if (val === 'compareAiCorrected') return <span className="text-indigo-400 font-bold">{compareYear} AI Corrected{suffix}</span>;
                   if (val === 'd3AiMovingAvg') return <span className={isDark ? 'text-amber-300 font-semibold' : 'text-amber-700 font-semibold'}>D3 {movingAvgWindow}-Day Reference MA</span>;
@@ -2385,16 +2385,16 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
       {/* DESCRIPTIVE LEGEND PANEL */}
       <div className={`rounded-xl border p-3.5 space-y-2 text-xs ${themeStyles.legendContainer}`}>
-        <div className={`flex items-center justify-between border-b pb-1.5 ${isDark ? 'border-cyan-500/20' : 'border-slate-200/80'}`}>
+        <div className={`flex items-center justify-between border-b pb-1.5 ${isDark ? 'border-sky-500/20' : 'border-slate-200/80'}`}>
           <div className="flex items-center gap-2">
-            <span className={`font-bold flex items-center gap-1.5 ${isDark ? 'text-cyan-200' : 'text-slate-800'}`}>
-              <Layers className="w-4 h-4 text-cyan-500" />
+            <span className={`font-bold flex items-center gap-1.5 ${isDark ? 'text-sky-200' : 'text-slate-800'}`}>
+              <Layers className="w-4 h-4 text-sky-500" />
               Descriptive Series & Visual Legend
             </span>
             <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold border flex items-center gap-1 ${
               dataRepresentation === 'weeklyMA'
                 ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40'
+                : 'bg-sky-500/20 text-sky-300 border-sky-500/40'
             }`}>
               {dataRepresentation === 'weeklyMA' ? <TrendingUp className="w-3 h-3" /> : <BarChart3 className="w-3 h-3" />}
               {dataRepresentation === 'weeklyMA' ? 'Active: 7-Day Weekly Moving Average' : 'Active: Raw Daily Observations'}
@@ -2606,11 +2606,11 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
       {showDayByDayReport && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-6 animate-fadeIn">
           <div className={`w-full max-w-6xl max-h-[92vh] rounded-2xl border shadow-2xl flex flex-col overflow-hidden ${
-            isDark ? 'bg-slate-900 border-cyan-500/40 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
+            isDark ? 'bg-slate-900 border-sky-500/40 text-slate-100' : 'bg-white border-slate-200 text-slate-900'
           }`}>
             {/* Modal Header */}
             <div className={`p-4 sm:p-5 border-b flex items-start justify-between gap-4 shrink-0 ${
-              isDark ? 'bg-slate-950/90 border-cyan-500/30' : 'bg-slate-50 border-slate-200'
+              isDark ? 'bg-slate-950/90 border-sky-500/30' : 'bg-slate-50 border-slate-200'
             }`}>
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
@@ -2726,7 +2726,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                   value={reportSearchQuery}
                   onChange={(e) => setReportSearchQuery(e.target.value)}
                   className={`w-full pl-9 pr-3 py-1.5 rounded-lg border text-xs outline-none transition-colors ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-white focus:border-cyan-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500'
+                    isDark ? 'bg-slate-950 border-slate-700 text-white focus:border-sky-500' : 'bg-slate-50 border-slate-200 text-slate-900 focus:border-blue-500'
                   }`}
                 />
               </div>
@@ -2763,7 +2763,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                   value={reportRegimeFilter}
                   onChange={(e) => setReportRegimeFilter(e.target.value)}
                   className={`border rounded-lg px-2.5 py-1.5 text-xs outline-none font-semibold ${
-                    isDark ? 'bg-slate-950 border-slate-700 text-cyan-300' : 'bg-white border-slate-200 text-slate-800'
+                    isDark ? 'bg-slate-950 border-slate-700 text-sky-300' : 'bg-white border-slate-200 text-slate-800'
                   }`}
                 >
                   <option value="All">All Regimes</option>
@@ -2796,7 +2796,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
                 <div className="border rounded-xl overflow-hidden shadow-inner">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead className={`font-mono text-[11px] uppercase tracking-wider sticky top-0 z-10 border-b ${
-                      isDark ? 'bg-slate-950 text-cyan-300 border-slate-800' : 'bg-slate-100 text-slate-800 font-bold border-slate-300'
+                      isDark ? 'bg-slate-950 text-sky-300 border-slate-800' : 'bg-slate-100 text-slate-800 font-bold border-slate-300'
                     }`}>
                       <tr>
                         <th className="p-3">Date</th>

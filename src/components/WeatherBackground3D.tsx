@@ -921,8 +921,8 @@ export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase
           onClick={toggleCameraLock}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border transition-all duration-300 shadow-xl cursor-pointer ${
             isCameraLocked
-              ? 'bg-slate-950/80 text-slate-300 border-white/10 hover:border-cyan-400/50 hover:text-white'
-              : 'bg-cyan-950/90 text-cyan-200 border-cyan-400/80 shadow-[0_0_20px_rgba(6,182,212,0.4)]'
+              ? 'bg-slate-950/80 text-slate-300 border-white/10 hover:border-sky-400/50 hover:text-white'
+              : 'bg-sky-950/90 text-sky-200 border-sky-400/80 shadow-[0_0_20px_rgba(6,182,212,0.4)]'
           }`}
           title="Toggle camera mode (Keyboard shortcut: [L])"
         >
@@ -933,7 +933,7 @@ export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase
             </>
           ) : (
             <>
-              <Unlock size={12} className="text-cyan-400 animate-pulse" />
+              <Unlock size={12} className="text-sky-400 animate-pulse" />
               <span>[L] CAMERA: FREE (WASD/SCROLL)</span>
             </>
           )}
@@ -941,7 +941,7 @@ export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase
 
         {!isCameraLocked && (
           <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/80 backdrop-blur-xl border border-white/10 text-[10px] font-mono text-slate-400 shadow-lg">
-            <Move size={11} className="text-cyan-400" />
+            <Move size={11} className="text-sky-400" />
             <span>WASD: Pan • Wheel: Zoom • Drag: Orbit</span>
           </div>
         )}

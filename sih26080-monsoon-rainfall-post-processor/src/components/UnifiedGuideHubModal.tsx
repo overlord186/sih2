@@ -231,7 +231,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold uppercase font-mono tracking-wider">
+                  <span className="px-2 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40 text-[10px] font-bold uppercase font-mono tracking-wider">
                     SAMVARTAKA AI Hub
                   </span>
                   <span className="text-xs text-slate-400 font-mono">
@@ -251,13 +251,13 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                   onClick={() => setActiveTab('explore')}
                   className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                     activeTab === 'explore'
-                      ? 'bg-cyan-600 text-white shadow-md'
+                      ? 'bg-sky-600 text-white shadow-md'
                       : 'text-slate-400 hover:text-slate-200'
                   }`}
                 >
                   <Compass className="w-3.5 h-3.5" />
                   <span>Explore UI</span>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-cyan-950 border border-cyan-400/40 font-mono">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-sky-950 border border-sky-400/40 font-mono">
                     {exploredCount}/{totalTourCount}
                   </span>
                 </button>
@@ -324,7 +324,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                       style={{ width: `${percentTourComplete}%` }}
                     />
                   </div>
-                  <span className="font-mono text-[11px] font-bold text-cyan-300">
+                  <span className="font-mono text-[11px] font-bold text-sky-300">
                     {percentTourComplete}%
                   </span>
                 </div>
@@ -332,7 +332,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                 <div className="flex items-center gap-3 self-end sm:self-center">
                   <button
                     onClick={handleStartWalkthrough}
-                    className="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
+                    className="px-3.5 py-1.5 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>Start Guided Walkthrough</span>
@@ -356,7 +356,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                       onClick={() => setSelectedExploreCategory(cat)}
                       className={`px-3 py-1 rounded-lg font-medium transition-all whitespace-nowrap cursor-pointer ${
                         selectedExploreCategory === cat
-                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold'
+                          ? 'bg-sky-500/20 text-sky-300 border border-sky-500/40 font-bold'
                           : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
                       }`}
                     >
@@ -372,7 +372,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                     value={exploreSearchQuery}
                     onChange={(e) => setExploreSearchQuery(e.target.value)}
                     placeholder="Search meteorological elements..."
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-sky-500"
                   />
                 </div>
               </div>
@@ -389,7 +389,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                       className={`rounded-2xl border p-4 transition-all flex flex-col justify-between ${
                         isSeen
                           ? 'bg-slate-900/90 border-slate-800 hover:border-slate-700'
-                          : 'bg-cyan-950/20 border-cyan-500/30 hover:border-cyan-400/50'
+                          : 'bg-sky-950/20 border-sky-500/30 hover:border-sky-400/50'
                       }`}
                     >
                       <div className="space-y-2.5">
@@ -398,12 +398,12 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                             <div className={`p-2 rounded-xl border ${
                               isSeen 
                                 ? 'bg-slate-800 border-slate-700 text-slate-300' 
-                                : 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                                : 'bg-sky-500/20 border-sky-500/40 text-sky-300'
                             }`}>
                               <IconComponent className="w-4 h-4" />
                             </div>
                             <div>
-                              <span className="text-[10px] font-mono text-cyan-400 uppercase tracking-wider block">
+                              <span className="text-[10px] font-mono text-sky-400 uppercase tracking-wider block">
                                 {item.category} • {item.scale}
                               </span>
                               <h3 className="text-sm font-bold text-white leading-tight">
@@ -418,7 +418,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                               Explored
                             </span>
                           ) : (
-                            <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-2 py-0.5 rounded-full shrink-0">
+                            <span className="text-[10px] font-mono text-sky-300 bg-sky-950/60 border border-sky-500/30 px-2 py-0.5 rounded-full shrink-0">
                               New
                             </span>
                           )}
@@ -427,7 +427,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                         <div className="bg-slate-950/80 rounded-xl p-3 border border-slate-800/80 space-y-1.5 text-xs">
                           <div className="text-slate-400 text-[11px]">
                             <strong className="text-slate-300">Physics Law: </strong>
-                            <span className="text-cyan-300 font-mono">
+                            <span className="text-sky-300 font-mono">
                               {item.meteorologicalSignificance.primaryAtmosphericLaw}
                             </span>
                           </div>
@@ -444,7 +444,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
 
                         <button
                           onClick={() => handleInspectTourItem(item)}
-                          className="px-3 py-1.5 bg-cyan-600/30 hover:bg-cyan-600/50 border border-cyan-500/40 text-cyan-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
+                          className="px-3 py-1.5 bg-sky-600/30 hover:bg-sky-600/50 border border-sky-500/40 text-sky-200 rounded-lg text-xs font-bold flex items-center gap-1 transition-all cursor-pointer"
                         >
                           <span>Inspect Feature</span>
                           <ArrowRight className="w-3.5 h-3.5" />
@@ -586,7 +586,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-3">
                   <span className="text-[11px] text-slate-400 block mb-1">Loss Formulation:</span>
-                  <span className="text-xs font-mono font-bold text-cyan-300">Huber (δ=18.0) + Pinball (q10/q90)</span>
+                  <span className="text-xs font-mono font-bold text-sky-300">Huber (δ=18.0) + Pinball (q10/q90)</span>
                 </div>
                 <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-3">
                   <span className="text-[11px] text-slate-400 block mb-1">Chronological Splits:</span>
@@ -629,10 +629,10 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
 
                     <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
                       <span className="text-[10px] text-slate-400 font-mono block mb-0.5">Extreme CSI (≥64.5mm)</span>
-                      <span className="text-xl font-bold text-cyan-400">
+                      <span className="text-xl font-bold text-sky-400">
                         {(trainedWeights.metrics.finalCsi64 * 100).toFixed(1)}%
                       </span>
-                      <span className="text-[9px] text-cyan-500/80 block mt-0.5">&gt; 60.0% Target (Pass)</span>
+                      <span className="text-[9px] text-sky-500/80 block mt-0.5">&gt; 60.0% Target (Pass)</span>
                     </div>
 
                     <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
@@ -685,7 +685,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
             <div className="p-6 overflow-y-auto flex-1 space-y-6">
               <div className="space-y-2">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-cyan-400" />
+                  <Sparkles className="w-4 h-4 text-sky-400" />
                   <span>SAMVARTAKA AI — Glassmorphic Visual Architecture</span>
                 </h3>
                 <p className="text-xs text-slate-400 leading-relaxed">
@@ -695,7 +695,7 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono">
                 <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl space-y-2">
-                  <span className="text-cyan-400 font-bold block">1. Optical Contrast</span>
+                  <span className="text-sky-400 font-bold block">1. Optical Contrast</span>
                   <p className="text-slate-300 font-sans leading-relaxed text-[11px]">
                     All textual elements strictly pass WCAG AA (4.5:1 ratio for body text, 3:1 for large headers).
                   </p>

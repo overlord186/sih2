@@ -2166,7 +2166,7 @@ export const InteractiveGlobe = ({ stationStats, selectedStationId, onSelectStat
           </div>
 
           <div className="flex items-center gap-1">
-            <span className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
+            <span className="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_rgba(6,182,212,0.8)]"></span>
             <span>&lt; 15.5mm (Light)</span>
           </div>
 

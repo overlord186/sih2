@@ -98,7 +98,7 @@ export const OrographicProfileModal: React.FC<OrographicProfileModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="bg-slate-900 border border-cyan-500/50 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col text-white font-sans">
+      <div className="bg-slate-900 border border-sky-500/50 rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl flex flex-col text-white font-sans">
         {/* Header */}
         <div className="bg-slate-950 px-5 py-3.5 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -149,7 +149,7 @@ export const OrographicProfileModal: React.FC<OrographicProfileModalProps> = ({
 
             {/* Elevation Multiplier Slider */}
             <div className="flex items-center gap-2.5 bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono">
-              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <Sliders className="w-3.5 h-3.5 text-sky-400" />
               <span className="text-slate-400">Elevation Multiplier:</span>
               {[1.0, 2.0, 3.5, 5.0].map((m) => (
                 <button
@@ -157,7 +157,7 @@ export const OrographicProfileModal: React.FC<OrographicProfileModalProps> = ({
                   onClick={() => onChangeElevationMultiplier(m)}
                   className={`px-2 py-0.5 rounded text-[11px] font-bold ${
                     elevationMultiplier === m
-                      ? 'bg-cyan-600 text-white'
+                      ? 'bg-sky-600 text-white'
                       : 'text-slate-400 hover:text-white bg-slate-800'
                   }`}
                 >
@@ -171,7 +171,7 @@ export const OrographicProfileModal: React.FC<OrographicProfileModalProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div className="bg-slate-950/70 p-2.5 rounded-xl border border-slate-800">
               <span className="text-[10px] text-slate-400 uppercase font-mono block">Windward Peak Deluge</span>
-              <div className="text-base font-bold font-mono text-cyan-400 mt-0.5">
+              <div className="text-base font-bold font-mono text-sky-400 mt-0.5">
                 {transect.peakRainMm} mm/24h
               </div>
               <span className="text-[9px] text-slate-400">{transect.windwardStation}</span>
@@ -201,7 +201,7 @@ export const OrographicProfileModal: React.FC<OrographicProfileModalProps> = ({
                 <Mountain className="w-3.5 h-3.5" />
                 Terrain Relief (m)
               </span>
-              <span className="flex items-center gap-1.5 text-cyan-300 font-bold">
+              <span className="flex items-center gap-1.5 text-sky-300 font-bold">
                 <CloudRain className="w-3.5 h-3.5" />
                 Precipitation Rate (mm/24h)
               </span>

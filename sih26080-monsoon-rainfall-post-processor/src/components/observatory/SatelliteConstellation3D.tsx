@@ -232,7 +232,7 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
                     : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
                 }`}
               >
-                <Satellite className="w-2.5 h-2.5 text-cyan-400" />
+                <Satellite className="w-2.5 h-2.5 text-sky-400" />
                 <span>{sat.code}</span>
                 <span className="text-[8px] text-slate-400">({sat.sensorType.slice(0, 12)}...)</span>
               </div>

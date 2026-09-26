@@ -92,7 +92,7 @@ export const METRIC_LEGENDS: Record<'mae' | 'rmse' | 'bias' | 'threatScore' | 'p
   mae: {
     title: 'Mean Absolute Error (MAE)',
     badge: 'Precipitation Magnitude',
-    badgeColor: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
+    badgeColor: 'bg-sky-500/20 text-sky-300 border-sky-500/30',
     accentColor: '#06b6d4',
     unit: 'mm / day',
     formula: 'MAE = (1 / n) Σ |Forecast_i - Observed_i|',
@@ -384,7 +384,7 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
                     Unit: <strong className="text-slate-200">{legendData.unit}</strong>
                   </span>
                   <span className="text-[10px] text-slate-500">•</span>
-                  <span className="text-[10px] text-cyan-400 font-medium">
+                  <span className="text-[10px] text-sky-400 font-medium">
                     Climate Legend
                   </span>
                 </div>
@@ -407,8 +407,8 @@ const SpotlightCard: React.FC<SpotlightCardProps> = ({
 
               {/* Climate & Operational Meaning */}
               <div className="bg-slate-800/80 rounded-lg p-2.5 border border-slate-700/60">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300 flex items-center gap-1.5 mb-1">
-                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-sky-300 flex items-center gap-1.5 mb-1">
+                  <Activity className="w-3.5 h-3.5 text-sky-400" />
                   Operational IMD & Disaster Impact
                 </span>
                 <p className="text-slate-300 text-[11px] leading-relaxed">
@@ -570,8 +570,8 @@ export const MetricCards: React.FC<MetricCardsProps> = ({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Mean Absolute Error (MAE)
             </span>
-            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-slate-400 group-hover:text-cyan-600 transition-colors">
-              <Info className="w-3.5 h-3.5 text-cyan-500" />
+            <span className="inline-flex items-center justify-center w-4 h-4 rounded-full text-slate-400 group-hover:text-sky-600 transition-colors">
+              <Info className="w-3.5 h-3.5 text-sky-500" />
             </span>
           </div>
           <span className="inline-flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">

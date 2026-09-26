@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
@@ -140,6 +140,7 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
   isPaused,
 }) => {
   const sweepBeamsRef = useRef<{ [id: string]: THREE.Mesh | null }>({});
+  const [hoveredRadarId, setHoveredRadarId] = useState<string | null>(null);
 
   useFrame((state, delta) => {
     if (isPaused) return;
@@ -163,6 +164,7 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
         alignQuat.setFromUnitVectors(new THREE.Vector3(0, 1, 0), normal);
 
         const isSelected = selectedRadarId === radar.id;
+        const isHovered = hoveredRadarId === radar.id;
 
         // Total vertical column height scaled in 3D (0.28 units ~ 16km)
         const colHeight = (radar.echoTopKm / 16) * 0.26;
@@ -173,6 +175,15 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
             key={radar.id}
             position={[surfacePos.x, surfacePos.y, surfacePos.z]}
             quaternion={alignQuat}
+            onPointerOver={(e) => {
+              e.stopPropagation();
+              setHoveredRadarId(radar.id);
+              document.body.style.cursor = 'pointer';
+            }}
+            onPointerOut={() => {
+              setHoveredRadarId(null);
+              document.body.style.cursor = 'auto';
+            }}
             onClick={(e) => {
               e.stopPropagation();
               onSelectRadar(radar);
@@ -239,23 +250,25 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
               </group>
             )}
 
-            {/* Station Callout Tag */}
-            <Html distanceFactor={10} position={[0, colHeight + 0.04, 0]}>
-              <div
-                className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap shadow-xl select-none ${
-                  isSelected
-                    ? 'bg-rose-950/95 text-rose-300 border-rose-400 font-bold scale-110 shadow-rose-900/50'
-                    : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
-                }`}
-              >
-                <Radio className="w-2.5 h-2.5 text-rose-400" />
-                <span>{radar.code}</span>
-                <span className={`text-[8px] px-1 rounded ${radar.maxDbz > 55 ? 'bg-rose-900 text-rose-200' : 'bg-amber-900 text-amber-200'}`}>
-                  {radar.maxDbz} dBZ
-                </span>
-                <span className="text-[8px] text-slate-400">ET {radar.echoTopKm}km</span>
-              </div>
-            </Html>
+            {/* Station Callout Tag (Only visible when hovered or selected to prevent canvas clutter) */}
+            {(isSelected || isHovered) && (
+              <Html distanceFactor={10} position={[0, colHeight + 0.04, 0]}>
+                <div
+                  className={`px-2 py-0.5 rounded-full border text-[9px] font-sans cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap shadow-xl select-none backdrop-blur-md ${
+                    isSelected
+                      ? 'bg-slate-900/95 text-rose-300 border-rose-500/80 font-semibold scale-105 shadow-black/80'
+                      : 'bg-slate-900/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
+                  }`}
+                >
+                  <Radio className="w-2.5 h-2.5 text-rose-400" />
+                  <span className="font-semibold text-white">{radar.code}</span>
+                  <span className={`text-[8px] font-mono px-1 rounded-full ${radar.maxDbz > 55 ? 'bg-rose-950 text-rose-300 border border-rose-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60'}`}>
+                    {radar.maxDbz} dBZ
+                  </span>
+                  <span className="text-[8px] text-slate-400 font-mono">ET {radar.echoTopKm}km</span>
+                </div>
+              </Html>
+            )}
           </group>
         );
       })}

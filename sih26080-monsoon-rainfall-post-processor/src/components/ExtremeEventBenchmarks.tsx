@@ -177,7 +177,7 @@ export const ExtremeEventBenchmarks: React.FC<ExtremeEventBenchmarksProps> = ({
                 <span className="text-emerald-400 font-bold">
                   AI: {preset.aiCalibratedMm}mm
                 </span>
-                <span className="text-cyan-300 font-bold">
+                <span className="text-sky-300 font-bold">
                   Obs: {preset.recordedRainMm}mm
                 </span>
               </div>

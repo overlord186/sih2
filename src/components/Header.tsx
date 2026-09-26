@@ -196,7 +196,7 @@ export const Header: React.FC<HeaderProps> = ({
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border border-blue-500/40 hover:border-blue-400 text-blue-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
               title="Launch AI Meteorologist Assistant"
             >
-              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <Bot className="w-3.5 h-3.5 text-sky-400" />
               <span>AI Meteorologist</span>
             </button>
             {onOpenBulletin && (
@@ -206,7 +206,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-950/60 hover:bg-blue-900/70 border border-blue-800/60 text-blue-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
                 title="View Operational Weather Advisory Bulletin"
               >
-                <FileText className="w-3.5 h-3.5 text-cyan-400" />
+                <FileText className="w-3.5 h-3.5 text-sky-400" />
                 <span className="hidden sm:inline">Advisory Bulletin</span>
               </button>
             )}
@@ -322,7 +322,7 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex items-center gap-1 px-2 py-1 rounded-md bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white text-xs font-mono font-medium transition-all cursor-pointer shrink-0"
                 title="Press / or Ctrl+K to open Station Command Palette"
               >
-                <Search className="w-3 h-3 text-cyan-400" />
+                <Search className="w-3 h-3 text-sky-400" />
                 <span className="hidden xl:inline text-[11px]">Jump</span>
                 <kbd className="px-1 py-0.2 bg-slate-900 border border-slate-700 rounded text-[9px] text-slate-400 font-mono">/</kbd>
               </button>
@@ -350,7 +350,7 @@ export const Header: React.FC<HeaderProps> = ({
                   className="px-2 py-1 rounded bg-blue-600/30 hover:bg-blue-600 border border-blue-500/50 hover:border-blue-500 text-blue-300 hover:text-white text-xs font-bold transition-all flex items-center gap-1 cursor-pointer shrink-0"
                   title="Experience selected station in 3D ground simulator"
                 >
-                  <Mountain className="w-3 h-3 text-cyan-300" />
+                  <Mountain className="w-3 h-3 text-sky-300" />
                   <span className="hidden xl:inline">3D Sim</span>
                 </button>
               )}
@@ -394,7 +394,7 @@ export const Header: React.FC<HeaderProps> = ({
                     >
                       <span>{item.label}</span>
                       {isActive && (
-                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-cyan-300 shadow-xs shadow-cyan-400" />
+                        <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-sky-300 shadow-xs shadow-sky-400" />
                       )}
                     </button>
                   );
@@ -413,7 +413,7 @@ export const Header: React.FC<HeaderProps> = ({
               </div>
 
               {/* Dynamic Atmospheric Scale Indicator */}
-              <span className="hidden xl:inline-block text-[10px] font-mono text-cyan-300 bg-cyan-950/40 border border-cyan-800/40 px-2.5 py-0.5 rounded-full shadow-xs">
+              <span className="hidden xl:inline-block text-[10px] font-mono text-sky-300 bg-sky-950/40 border border-sky-800/40 px-2.5 py-0.5 rounded-full shadow-xs">
                 {selectedLeadTime === 0 && 'Aggregate Horizon'}
                 {selectedLeadTime === 1 && 'T+24h • Deep Convective'}
                 {selectedLeadTime === 2 && 'T+48h • Moisture Flow'}

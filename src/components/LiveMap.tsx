@@ -1022,8 +1022,8 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
         <>
           {memoizedTileCSSReset}
           {cacheNotice && (
-            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl border border-cyan-400/40 backdrop-blur-md flex items-center gap-2 animate-bounce">
-              <RefreshCw className="w-3.5 h-3.5 text-cyan-400 animate-spin" />
+            <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[400] bg-slate-900/90 text-white text-xs font-semibold px-4 py-2 rounded-full shadow-xl border border-sky-400/40 backdrop-blur-md flex items-center gap-2 animate-bounce">
+              <RefreshCw className="w-3.5 h-3.5 text-sky-400 animate-spin" />
               <span>{cacheNotice}</span>
             </div>
           )}
@@ -1412,7 +1412,7 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
             <div className="bg-slate-900/90 backdrop-blur-md text-white rounded-2xl p-3 shadow-2xl border border-slate-700/80 transition-all duration-300">
               <div className="flex items-center justify-between gap-3 border-b border-slate-800 pb-2 mb-2">
                 <div className="flex items-center gap-2">
-                  <SlidersHorizontal className="w-4 h-4 text-cyan-400" />
+                  <SlidersHorizontal className="w-4 h-4 text-sky-400" />
                   <span className="text-xs font-bold tracking-tight text-white">
                     Rainfall Intensity & Overlay Legend
                   </span>

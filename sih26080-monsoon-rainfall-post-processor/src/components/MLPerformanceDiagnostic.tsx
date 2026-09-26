@@ -485,12 +485,12 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
         >
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-bold text-slate-400 tracking-wider uppercase">RMSE Variance Slashed</span>
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center">
               <ShieldCheck className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl lg:text-3xl font-black text-cyan-400 font-mono">
+            <span className="text-2xl lg:text-3xl font-black text-sky-400 font-mono">
               +{summary.rmseSkillScore}%
             </span>
             <span className="text-xs text-slate-400 font-medium">skill score</span>
@@ -713,7 +713,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
                       <td className="py-3 px-3 text-right font-mono font-black text-emerald-300">
                         +{row.maeSkillScore}%
                       </td>
-                      <td className="py-3 px-3 text-right font-mono text-cyan-300 font-bold">
+                      <td className="py-3 px-3 text-right font-mono text-sky-300 font-bold">
                         +{row.rmseSkillScore}%
                       </td>
                       <td className="py-3 px-3 text-slate-400 text-[11px] leading-relaxed max-w-xs">
@@ -777,7 +777,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400">RMSE Reduction:</span>
-                        <span className="text-cyan-300 font-bold">+{lt.rmseSkillScore}%</span>
+                        <span className="text-sky-300 font-bold">+{lt.rmseSkillScore}%</span>
                       </div>
                     </div>
                   </div>
@@ -834,12 +834,12 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
                 <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
                   <span className="text-slate-400 block mb-1">Mean Absolute Reduction:</span>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-bold text-cyan-400">
+                    <span className="text-2xl font-bold text-sky-400">
                       {regimeBreakdown.find(r => r.regime === RainfallRegime.HEAVY_EXTREME)?.maeReductionMm ?? 25.8} mm
                     </span>
                     <span className="text-slate-500">slashed</span>
                   </div>
-                  <span className="text-[11px] text-cyan-300 block mt-1">
+                  <span className="text-[11px] text-sky-300 block mt-1">
                     Direct orographic lift adjustment
                   </span>
                 </div>
@@ -889,7 +889,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
                     </div>
 
                     <div className="bg-slate-900/90 border border-slate-800 rounded-lg p-3">
-                      <span className="text-cyan-400 font-bold block mb-1">3. Historical Wet-Day Frequency</span>
+                      <span className="text-sky-400 font-bold block mb-1">3. Historical Wet-Day Frequency</span>
                       <span className="text-slate-300 text-[11px] font-sans">
                         Acts as an empirical Bayesian prior suppressing &quot;safe drizzle&quot; false alarms in historically rain-shadow arid sub-regions.
                       </span>
@@ -943,7 +943,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
                           {prof.record24hRainfallMm} mm
                           <span className="text-[10px] text-slate-500 font-normal block">Year: {prof.record24hDate.split('-')[0]}</span>
                         </td>
-                        <td className="py-2.5 text-cyan-300">
+                        <td className="py-2.5 text-sky-300">
                           {prof.gevReturnLevel50yrMm} mm
                         </td>
                         <td className="py-2.5 text-slate-300">
@@ -976,7 +976,7 @@ export const MLPerformanceDiagnostic: React.FC<MLPerformanceDiagnosticProps> = (
             In tropical monsoon meteorology, persistence (predicting yesterday&apos;s observed rainfall, y[t-1]) is artificially rewarded during tranquil dry days, creating a misleading baseline. 
             However, when active monsoon surges, mid-tropospheric cyclones, or Western Ghats orographic windward lift ignite, persistence suffers 
             from critical 24-hour hysteresis (predicting yesterday&apos;s calm). The regime-aware ML model incorporates CAPE, low-level moisture convergence (RH 850hPa), 
-            and topographic gradients, achieving a <strong className="text-emerald-300">+{summary.maeSkillScore}% MAE improvement</strong> and <strong className="text-cyan-300">+{summary.rmseSkillScore}% RMSE reduction</strong>.
+            and topographic gradients, achieving a <strong className="text-emerald-300">+{summary.maeSkillScore}% MAE improvement</strong> and <strong className="text-sky-300">+{summary.rmseSkillScore}% RMSE reduction</strong>.
           </p>
         </div>
       </div>

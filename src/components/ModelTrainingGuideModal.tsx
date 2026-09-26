@@ -71,7 +71,7 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
         <div className="w-full h-36 bg-slate-950 rounded-xl border border-slate-800 flex flex-col justify-center px-4 font-mono text-[11px] text-slate-300 space-y-2">
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <span className="text-slate-400">NWP Inputs (X):</span>
-            <span className="text-cyan-300">[RawRain: 18.2mm, RH850: 92%, Pres: 1002.4hPa, Wind: 28km/h]</span>
+            <span className="text-sky-300">[RawRain: 18.2mm, RH850: 92%, Pres: 1002.4hPa, Wind: 28km/h]</span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-800/80 pb-1.5">
             <span className="text-slate-400">IMD Ground Truth (Y):</span>
@@ -136,7 +136,7 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
       ],
       visual: (
         <div className="w-full h-36 bg-slate-950 rounded-xl border border-slate-800 p-3 font-mono text-[11px] text-slate-300 flex flex-col justify-center space-y-1.5">
-          <div className="flex justify-between items-center text-cyan-300">
+          <div className="flex justify-between items-center text-sky-300">
             <span>q90 (Upper Bound - Flash Flood Risk):</span>
             <span className="font-bold">114.6 mm</span>
           </div>
@@ -205,8 +205,8 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
           </div>
           <div className="flex-1 border border-slate-800 bg-slate-900/80 rounded-lg flex flex-col items-center justify-center p-2">
             <span className="text-[10px] text-slate-400 font-mono">Extreme CSI (≥64.5mm)</span>
-            <span className="text-2xl font-black text-cyan-400">63.4%</span>
-            <span className="text-[9px] text-cyan-500/80">High Threat Score</span>
+            <span className="text-2xl font-black text-sky-400">63.4%</span>
+            <span className="text-[9px] text-sky-500/80">High Threat Score</span>
           </div>
         </div>
       )
@@ -458,7 +458,7 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-3">
                   <span className="text-[11px] text-slate-400 block mb-1">Loss Functions:</span>
-                  <span className="text-xs font-mono font-bold text-cyan-300">Huber (δ=18.0) + Pinball (q10/q90)</span>
+                  <span className="text-xs font-mono font-bold text-sky-300">Huber (δ=18.0) + Pinball (q10/q90)</span>
                 </div>
                 <div className="bg-slate-950/70 border border-slate-800 rounded-lg p-3">
                   <span className="text-[11px] text-slate-400 block mb-1">Chronological Splits:</span>
@@ -501,10 +501,10 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
 
                     <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">
                       <span className="text-[10px] text-slate-400 font-mono block mb-0.5">Extreme CSI (≥64.5mm)</span>
-                      <span className="text-xl font-bold text-cyan-400">
+                      <span className="text-xl font-bold text-sky-400">
                         {(trainedWeights.metrics.finalCsi64 * 100).toFixed(1)}%
                       </span>
-                      <span className="text-[9px] text-cyan-500/80 block mt-0.5">&gt; 60.0% Target (Pass)</span>
+                      <span className="text-[9px] text-sky-500/80 block mt-0.5">&gt; 60.0% Target (Pass)</span>
                     </div>
 
                     <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-center">

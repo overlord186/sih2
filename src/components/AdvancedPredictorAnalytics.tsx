@@ -288,10 +288,10 @@ export const AdvancedPredictorAnalytics: React.FC<Props> = ({
         <div>
           <div className="flex items-center justify-between border-b border-slate-100 pb-2 mb-3">
             <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-              <Waves className="w-4 h-4 text-cyan-600" />
+              <Waves className="w-4 h-4 text-sky-600" />
               Hydrological Catchment Runoff & Soil Saturation
             </h4>
-            <span className="text-[10px] font-mono text-cyan-700 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200 font-bold">
+            <span className="text-[10px] font-mono text-sky-700 bg-sky-50 px-2 py-0.5 rounded border border-sky-200 font-bold">
               Watershed Basin
             </span>
           </div>
@@ -312,7 +312,7 @@ export const AdvancedPredictorAnalytics: React.FC<Props> = ({
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                 <span className="text-[10px] text-slate-500 block uppercase">Runoff Volume</span>
-                <span className="text-sm font-bold text-cyan-700">{hydrologicalMetrics.runoffMCM} MCM</span>
+                <span className="text-sm font-bold text-sky-700">{hydrologicalMetrics.runoffMCM} MCM</span>
               </div>
               <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
                 <span className="text-[10px] text-slate-500 block uppercase">Peak Discharge</span>
@@ -324,7 +324,7 @@ export const AdvancedPredictorAnalytics: React.FC<Props> = ({
 
         <div className="pt-2 border-t border-slate-100 text-[10px] text-slate-500 font-mono flex items-center justify-between">
           <span>Runoff Coefficient: {hydrologicalMetrics.runoffCoefficient}%</span>
-          <span className="text-cyan-700 font-semibold">Rational Method Model</span>
+          <span className="text-sky-700 font-semibold">Rational Method Model</span>
         </div>
       </div>
     </div>

@@ -179,14 +179,14 @@ export const DailyChallengeRewardVFX3D: React.FC<DailyChallengeRewardVFX3DProps>
       {/* 4. 3D Floating Holographic Telemetry Card */}
       <group position={surfacePos.clone().add(normal.clone().multiplyScalar(0.75))}>
         <Html center distanceFactor={14} zIndexRange={[100, 0]}>
-          <div className="w-72 bg-slate-950/90 backdrop-blur-md border border-cyan-400/80 rounded-xl p-3 shadow-[0_0_30px_rgba(56,189,248,0.45)] text-white font-sans pointer-events-auto transform -translate-y-2 select-none animate-in fade-in zoom-in duration-300">
+          <div className="w-72 bg-slate-950/90 backdrop-blur-md border border-sky-400/80 rounded-xl p-3 shadow-[0_0_30px_rgba(56,189,248,0.45)] text-white font-sans pointer-events-auto transform -translate-y-2 select-none animate-in fade-in zoom-in duration-300">
             {/* Header pill */}
-            <div className="flex items-center justify-between border-b border-cyan-500/30 pb-2 mb-2">
+            <div className="flex items-center justify-between border-b border-sky-500/30 pb-2 mb-2">
               <div className="flex items-center gap-1.5">
                 <div className="w-5 h-5 rounded-full bg-emerald-500/20 border border-emerald-400/60 flex items-center justify-center">
                   <Trophy className="w-3 h-3 text-emerald-400" />
                 </div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-300">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-sky-300">
                   Daily Challenge Victory
                 </span>
               </div>
@@ -211,7 +211,7 @@ export const DailyChallengeRewardVFX3D: React.FC<DailyChallengeRewardVFX3DProps>
                 <span className="truncate">{scenario.stationName}</span>
               </div>
               <p className="text-[10px] text-slate-300 font-mono">
-                Verified: <strong className="text-cyan-300">{scenario.targetRainfallRegime}</strong>
+                Verified: <strong className="text-sky-300">{scenario.targetRainfallRegime}</strong>
               </p>
               <p className="text-[9px] text-slate-400 leading-tight">
                 Synoptic: {scenario.targetSynopticRegime}

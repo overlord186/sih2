@@ -398,7 +398,7 @@ export const DopplerRadarWidget: React.FC<DopplerRadarWidgetProps> = ({
               }`}>
                 {selectedEcho.intensity} dBZ ({selectedEcho.rainRate})
               </span>
-              <span className="text-cyan-300 font-semibold">{rangeMode}km</span>
+              <span className="text-sky-300 font-semibold">{rangeMode}km</span>
             </div>
 
             <div className="text-[8.5px] font-mono text-slate-400 truncate max-w-[180px]">
@@ -478,7 +478,7 @@ export const DopplerRadarWidget: React.FC<DopplerRadarWidgetProps> = ({
                   </div>
                   <div className="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
                     <div className="text-[9px] font-mono text-slate-400">Rainfall Rate</div>
-                    <div className="text-sm font-mono font-bold text-cyan-300">{selectedEcho.rainRate}</div>
+                    <div className="text-sm font-mono font-bold text-sky-300">{selectedEcho.rainRate}</div>
                   </div>
                   <div className="p-2 rounded-xl bg-slate-900/80 border border-slate-800">
                     <div className="text-[9px] font-mono text-slate-400">Storm Speed</div>
@@ -494,7 +494,7 @@ export const DopplerRadarWidget: React.FC<DopplerRadarWidgetProps> = ({
               {/* Doppler dBZ Color Decibel Scale Table */}
               <div className="flex flex-col gap-2">
                 <h4 className="text-xs font-mono font-bold text-slate-200 uppercase tracking-wider flex items-center gap-1.5">
-                  <Layers size={14} className="text-cyan-400" /> dBZ Decibel Reflectivity Color Scale
+                  <Layers size={14} className="text-sky-400" /> dBZ Decibel Reflectivity Color Scale
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] font-mono">
                   <div className="flex items-center justify-between p-2 rounded-xl bg-slate-900/60 border border-emerald-500/20">

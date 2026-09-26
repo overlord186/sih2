@@ -86,7 +86,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
       label: 'District Forecasts',
       category: 'core',
       icon: Layers,
-      accentColor: 'text-cyan-400 group-hover:text-cyan-300',
+      accentColor: 'text-sky-400 group-hover:text-sky-300',
     },
     {
       id: 'verification',
@@ -180,13 +180,13 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
             <div className="flex items-center gap-2.5 overflow-hidden">
               <div
                 onClick={onToggleExpanded}
-                className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-cyan-400 shrink-0 cursor-pointer hover:bg-blue-600/30 transition-all shadow-xs"
+                className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-sky-400 shrink-0 cursor-pointer hover:bg-blue-600/30 transition-all shadow-xs"
                 title="Collapse Sidebar"
               >
                 <Radar className="w-4 h-4 animate-spin-slow" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs font-black tracking-wider uppercase font-mono text-cyan-300 truncate">
+                <div className="text-xs font-black tracking-wider uppercase font-mono text-sky-300 truncate">
                   SAMVARTAKA
                 </div>
                 <div className="text-[10px] text-slate-400 font-mono">Workstation</div>
@@ -205,11 +205,11 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
           /* Sleek Collapsed Toggle Button with Radar Glyph and Expand Arrow Indicator */
           <button
             onClick={onToggleExpanded}
-            className="w-11 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-cyan-500/50 flex items-center justify-center text-slate-300 hover:text-cyan-300 transition-all cursor-pointer relative group shadow-xs"
+            className="w-11 h-11 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500/50 flex items-center justify-center text-slate-300 hover:text-sky-300 transition-all cursor-pointer relative group shadow-xs"
             title="Expand Workstation Sidebar (push view right)"
           >
-            <Radar className="w-5 h-5 text-cyan-400 group-hover:rotate-45 transition-transform duration-300" />
-            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-[9px] text-cyan-300 group-hover:scale-110 transition-transform">
+            <Radar className="w-5 h-5 text-sky-400 group-hover:rotate-45 transition-transform duration-300" />
+            <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-800 border border-slate-600 flex items-center justify-center text-[9px] text-sky-300 group-hover:scale-110 transition-transform">
               <ChevronRight className="w-3 h-3" />
             </span>
           </button>
@@ -237,7 +237,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
                       }`
                     : `w-11 h-11 rounded-xl justify-center ${
                         isActive
-                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40 ring-1 ring-cyan-400/50'
+                          ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40 ring-1 ring-sky-400/50'
                           : 'text-slate-400 hover:text-white hover:bg-slate-900/90 border border-transparent hover:border-slate-800'
                       }`
                 }`}
@@ -251,7 +251,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
                     }`}
                   />
                   {isActive && !isExpanded && (
-                    <span className="absolute -left-3.5 w-1 h-4 bg-cyan-300 rounded-r-full shadow-xs" />
+                    <span className="absolute -left-3.5 w-1 h-4 bg-sky-300 rounded-r-full shadow-xs" />
                   )}
                 </div>
 
@@ -263,7 +263,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
                       <span
                         className={`text-[9px] px-1.5 py-0.5 rounded font-mono uppercase font-bold shrink-0 ${
                           isActive
-                            ? 'bg-blue-800 text-cyan-200'
+                            ? 'bg-blue-800 text-sky-200'
                             : 'bg-slate-800 text-slate-400 border border-slate-700/60'
                         }`}
                       >
@@ -280,7 +280,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
                   <div className="bg-slate-900/95 backdrop-blur-md text-white text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xl border border-slate-700 whitespace-nowrap flex items-center gap-2">
                     <span>{item.label}</span>
                     {item.badge && (
-                      <span className="text-[9px] px-1.5 py-0.2 bg-blue-900/90 text-cyan-300 rounded font-mono font-bold">
+                      <span className="text-[9px] px-1.5 py-0.2 bg-blue-900/90 text-sky-300 rounded font-mono font-bold">
                         {item.badge}
                       </span>
                     )}
@@ -362,7 +362,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
           </button>
           {!isExpanded && (
             <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-50 pointer-events-none">
-              <div className="bg-slate-900 text-cyan-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xl border border-slate-700 whitespace-nowrap">
+              <div className="bg-slate-900 text-sky-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xl border border-slate-700 whitespace-nowrap">
                 AI Meteorologist Copilot
               </div>
             </div>
@@ -385,7 +385,7 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
                 {isAudioMuted ? (
                   <VolumeX className="w-5 h-5 text-rose-400" />
                 ) : (
-                  <Volume2 className="w-5 h-5 text-cyan-400" />
+                  <Volume2 className="w-5 h-5 text-sky-400" />
                 )}
               </div>
               {isExpanded && (

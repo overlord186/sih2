@@ -4330,14 +4330,14 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
     }
     return {
       gradient: 'bg-gradient-to-r from-sky-600 via-cyan-600 to-blue-600 hover:from-sky-500 hover:to-cyan-500',
-      border: 'border-cyan-300/60',
+      border: 'border-sky-300/60',
       shadow: 'shadow-[0_0_20px_rgba(6,182,212,0.5),0_0_8px_rgba(56,189,248,0.3)]',
       pulse: '',
-      textColor: 'text-cyan-50',
-      tagBg: 'bg-cyan-950/80 text-cyan-200 border-cyan-300/50',
+      textColor: 'text-sky-50',
+      tagBg: 'bg-sky-950/80 text-sky-200 border-sky-300/50',
       label: 'Normal Flow',
       glowAura: '',
-      waterLevelColor: 'text-cyan-300',
+      waterLevelColor: 'text-sky-300',
     };
   })();
 
@@ -4413,13 +4413,13 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
       <header className="fixed top-3 left-3 right-3 sm:top-5 sm:left-6 sm:right-6 z-40 flex items-center justify-between pointer-events-auto gap-2 sm:gap-4">
         {/* ZONE 1 (Left): Status Telemetry & Live Regime Indicator */}
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="flex items-center gap-2.5 bg-slate-950/85 backdrop-blur-xl border border-white/10 hover:border-cyan-400/40 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-2xl transition-all">
+          <div className="flex items-center gap-2.5 bg-slate-950/85 backdrop-blur-xl border border-white/10 hover:border-sky-400/40 px-3.5 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-2xl transition-all">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-80" />
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500 shadow-[0_0_8px_#10b981]" />
             </span>
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono tracking-[0.2em] font-bold text-cyan-300 uppercase">
+              <span className="text-[10px] font-mono tracking-[0.2em] font-bold text-sky-300 uppercase">
                 {currentPhase === 'peaks' && '1/3 • TWIN PEAKS'}
                 {currentPhase === 'waterfall' && '2/3 • WATERFALL SURGE'}
                 {currentPhase === 'reveal' && '3/3 • SAMVARTAKA AI'}
@@ -4489,7 +4489,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
             }}
             className={`px-3 py-1 rounded-full text-[11px] font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
               timeOfDay === 'night'
-                ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/60 shadow-[0_0_14px_rgba(6,182,212,0.45)]'
+                ? 'bg-sky-500/25 text-sky-200 border border-sky-400/60 shadow-[0_0_14px_rgba(6,182,212,0.45)]'
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'
             }`}
           >
@@ -4506,7 +4506,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
             className={`px-3 py-2 rounded-full border backdrop-blur-xl transition-all cursor-pointer shadow-lg active:scale-95 flex items-center gap-2.5 ${
               isMuted 
                 ? 'bg-slate-900/90 hover:bg-slate-800 text-slate-400 border-white/10' 
-                : 'bg-cyan-950/85 hover:bg-cyan-900 text-cyan-200 border-cyan-400/60 shadow-[0_0_20px_rgba(6,182,212,0.4)]'
+                : 'bg-sky-950/85 hover:bg-sky-900 text-sky-200 border-sky-400/60 shadow-[0_0_20px_rgba(6,182,212,0.4)]'
             }`}
             title={isMuted ? 'Click to Enable Procedural Soundscape' : 'Click to Mute Audio'}
           >
@@ -4607,12 +4607,12 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               }}
               className={`px-2.5 py-0.5 rounded-full border text-[10px] font-mono flex items-center gap-1 cursor-pointer transition-all ${
                 isUltraClarity
-                  ? 'bg-cyan-500/30 text-cyan-200 border-cyan-400/80 shadow-[0_0_12px_rgba(6,182,212,0.6)] font-bold'
+                  ? 'bg-sky-500/30 text-sky-200 border-sky-400/80 shadow-[0_0_12px_rgba(6,182,212,0.6)] font-bold'
                   : 'bg-slate-900/80 hover:bg-slate-800 border-purple-500/25 text-slate-300'
               }`}
               title="Ultra Clarity Mode: Removes all lens blur and fog for crystal-clear HD view"
             >
-              <Eye size={11} className={isUltraClarity ? "text-cyan-300" : "text-slate-400"} />
+              <Eye size={11} className={isUltraClarity ? "text-sky-300" : "text-slate-400"} />
               <span>{isUltraClarity ? 'Ultra Clear: ON' : 'Ultra Clarity'}</span>
             </button>
 
@@ -4627,7 +4627,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               }`}
               title="Toggle Hydrological Water Meter Deck"
             >
-              <Activity size={11} className={showWaterMeterDeck ? "text-blue-300" : "text-cyan-400"} />
+              <Activity size={11} className={showWaterMeterDeck ? "text-blue-300" : "text-sky-400"} />
               <span>{showWaterMeterDeck ? 'Water Meter: ON' : 'Water Meter'}</span>
             </button>
 
@@ -4649,7 +4649,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               }`}
               title="Defog / Fog Camera Lens Glass"
             >
-              <Droplets size={11} className={showCondensation ? "text-sky-300" : "text-cyan-400"} />
+              <Droplets size={11} className={showCondensation ? "text-sky-300" : "text-sky-400"} />
               <span>{showCondensation ? 'Defog Lens' : 'Fog Lens'}</span>
             </button>
 
@@ -4661,12 +4661,12 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                 rainMode === 'monsoon'
                   ? 'bg-blue-600/40 text-blue-200 border-blue-400/80 shadow-[0_0_12px_rgba(59,130,246,0.6)] font-bold animate-pulse'
                   : rainMode === 'drizzle'
-                  ? 'bg-cyan-600/30 text-cyan-200 border-cyan-400/80 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold'
+                  ? 'bg-sky-600/30 text-sky-200 border-sky-400/80 shadow-[0_0_10px_rgba(6,182,212,0.4)] font-bold'
                   : 'bg-slate-900/80 hover:bg-slate-800 border-purple-500/25 text-slate-300'
               }`}
               title="Toggle 3D Rain Mode: Off / Drizzle / Monsoon Torrent"
             >
-              <CloudRain size={11} className={rainMode !== 'off' ? "text-cyan-300" : "text-slate-400"} />
+              <CloudRain size={11} className={rainMode !== 'off' ? "text-sky-300" : "text-slate-400"} />
               <span>Rain: {rainMode === 'monsoon' ? 'Monsoon' : rainMode === 'drizzle' ? 'Drizzle' : 'Off'}</span>
             </button>
           </div>
@@ -4740,7 +4740,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-10 sm:h-12 bg-black/95 z-28 pointer-events-none border-t border-white/5 flex items-center justify-between px-6">
                 <span className="text-[9px] font-mono text-slate-500 hidden sm:inline">COLOR: ACES-CCT / 4K 60FPS</span>
-                <span className="text-[9px] font-mono text-cyan-400/80 font-bold">{focalLength}mm T/1.5 PRIME</span>
+                <span className="text-[9px] font-mono text-sky-400/80 font-bold">{focalLength}mm T/1.5 PRIME</span>
               </div>
             </>
           )}
@@ -4776,15 +4776,15 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               className="absolute z-30 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-3"
               style={{ left: waterHoverInfo.x, top: Math.max(30, waterHoverInfo.y - 10) }}
             >
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border border-cyan-400/80 shadow-[0_0_25px_rgba(6,182,212,0.6)] text-[11px] font-mono text-cyan-200 backdrop-blur-xl whitespace-nowrap animate-in fade-in zoom-in duration-150">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/95 border border-sky-400/80 shadow-[0_0_25px_rgba(6,182,212,0.6)] text-[11px] font-mono text-sky-200 backdrop-blur-xl whitespace-nowrap animate-in fade-in zoom-in duration-150">
+                <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
                 <span className="font-bold text-white tracking-wider">DEPTH: {waterHoverInfo.depthM}m</span>
-                <span className="text-cyan-400/50">•</span>
+                <span className="text-sky-400/50">•</span>
                 <span>FLOW: {waterHoverInfo.currentMps} m/s</span>
-                <span className="text-cyan-400/50">•</span>
-                <span className="text-[10px] font-sans font-semibold text-cyan-300">Click to Splash 🌊</span>
+                <span className="text-sky-400/50">•</span>
+                <span className="text-[10px] font-sans font-semibold text-sky-300">Click to Splash 🌊</span>
               </div>
-              <div className="w-2 h-2 bg-cyan-400 rotate-45 mx-auto -mt-1 shadow-sm" />
+              <div className="w-2 h-2 bg-sky-400 rotate-45 mx-auto -mt-1 shadow-sm" />
             </div>
           )}
 
@@ -4831,7 +4831,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                   onClick={() => setIsMacroFocus(prev => !prev)}
                   className={`hidden sm:flex px-2 py-1 rounded-xl border text-[9px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
                     isMacroFocus
-                      ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                      ? 'bg-sky-500/25 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                       : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-white'
                   }`}
                   title="Toggle Macro Telemetry vs Landscape Infinity"
@@ -4882,7 +4882,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                       onClick={() => setViewfinderMode(mode)}
                       className={`px-2 py-0.5 rounded-lg text-[8.5px] font-mono font-bold uppercase transition-all cursor-pointer ${
                         viewfinderMode === mode
-                          ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/80 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                          ? 'bg-sky-500/30 text-sky-200 border border-sky-400/80 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
                           : 'text-slate-400 hover:text-white border border-transparent'
                       }`}
                     >
@@ -4895,11 +4895,11 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               {/* Center Crosshair & Horizon Reticle */}
               <div className="absolute inset-0 pointer-events-none z-24 flex items-center justify-center">
                 <div className="relative w-12 h-12 flex items-center justify-center opacity-30">
-                  <div className="w-3 h-[1px] bg-cyan-300 absolute left-0" />
-                  <div className="w-3 h-[1px] bg-cyan-300 absolute right-0" />
-                  <div className="h-3 w-[1px] bg-cyan-300 absolute top-0" />
-                  <div className="h-3 w-[1px] bg-cyan-300 absolute bottom-0" />
-                  <div className="w-1.5 h-1.5 rounded-full border border-cyan-300" />
+                  <div className="w-3 h-[1px] bg-sky-300 absolute left-0" />
+                  <div className="w-3 h-[1px] bg-sky-300 absolute right-0" />
+                  <div className="h-3 w-[1px] bg-sky-300 absolute top-0" />
+                  <div className="h-3 w-[1px] bg-sky-300 absolute bottom-0" />
+                  <div className="w-1.5 h-1.5 rounded-full border border-sky-300" />
                 </div>
               </div>
             </>
@@ -4911,9 +4911,9 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               <button
                 type="button"
                 onClick={() => setViewfinderMode('director')}
-                className="px-2.5 py-1 rounded-xl bg-slate-950/90 border border-cyan-400/50 text-[9px] font-mono font-bold text-cyan-200 backdrop-blur-xl shadow-lg hover:bg-cyan-950 cursor-pointer flex items-center gap-1.5"
+                className="px-2.5 py-1 rounded-xl bg-slate-950/90 border border-sky-400/50 text-[9px] font-mono font-bold text-sky-200 backdrop-blur-xl shadow-lg hover:bg-sky-950 cursor-pointer flex items-center gap-1.5"
               >
-                <Camera size={11} className="text-cyan-400" />
+                <Camera size={11} className="text-sky-400" />
                 <span>SHOW CAMERA HUD</span>
               </button>
             </div>
@@ -4928,10 +4928,10 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: isPlunging ? 0 : 1, y: 0 }}
               transition={{ delay: 0.15, duration: 0.4 }}
-              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-950/80 border border-cyan-500/30 backdrop-blur-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] mb-2 pointer-events-auto"
+              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-950/80 border border-sky-500/30 backdrop-blur-xl shadow-[0_0_20px_rgba(6,182,212,0.3)] mb-2 pointer-events-auto"
             >
-              <Sparkles size={11} className="text-cyan-300 animate-pulse" />
-              <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-cyan-300 uppercase">
+              <Sparkles size={11} className="text-sky-300 animate-pulse" />
+              <span className="text-[10px] font-mono font-bold tracking-[0.25em] text-sky-300 uppercase">
                 PRECISION • SPEED • INTELLIGENCE
               </span>
             </motion.div>
@@ -4993,7 +4993,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                         </span>
 
                         {isDirectlyHovered && (
-                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_#38bdf8] animate-ping pointer-events-none" />
+                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-sky-300 shadow-[0_0_12px_#38bdf8] animate-ping pointer-events-none" />
                         )}
                       </span>
                     );
@@ -5039,7 +5039,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                         </span>
 
                         {isDirectlyHovered && (
-                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-cyan-300 shadow-[0_0_12px_#38bdf8] animate-ping pointer-events-none" />
+                          <span className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-sky-300 shadow-[0_0_12px_#38bdf8] animate-ping pointer-events-none" />
                         )}
                       </span>
                     );
@@ -5079,16 +5079,16 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               >
                 <button
                   onClick={handleEnterWaterfall}
-                  className="group relative flex items-center gap-2.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(6,182,212,0.45),0_6px_20px_rgba(0,0,0,0.6)] border border-cyan-300/70 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
+                  className="group relative flex items-center gap-2.5 px-5 sm:px-6 py-2 sm:py-2.5 rounded-full bg-gradient-to-r from-cyan-500 via-sky-500 to-blue-600 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-[0_0_25px_rgba(6,182,212,0.45),0_6px_20px_rgba(0,0,0,0.6)] border border-sky-300/70 hover:brightness-110 active:scale-95 transition-all cursor-pointer"
                   title="Launch Operational Dashboard (Press Enter or Space)"
                 >
                   <span className="flex items-center gap-2">
                     <span>ENTER DASHBOARD</span>
-                    <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded bg-black/30 border border-white/20 text-cyan-200">
+                    <span className="hidden sm:inline-block text-[9px] px-1.5 py-0.5 rounded bg-black/30 border border-white/20 text-sky-200">
                       SPACE ↵
                     </span>
                   </span>
-                  <SkipForward size={14} className="transition-transform group-hover:translate-x-1 text-cyan-200" />
+                  <SkipForward size={14} className="transition-transform group-hover:translate-x-1 text-sky-200" />
                 </button>
               </motion.div>
             </motion.div>
@@ -5112,9 +5112,9 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               // Dynamic color scheme & glowing aura based on water level
               let theme = {
                 gradient: 'from-cyan-500 via-teal-600 to-blue-700',
-                border: 'border-cyan-300',
+                border: 'border-sky-300',
                 glow: 'shadow-[0_0_35px_rgba(6,182,212,0.85),0_0_70px_rgba(6,182,212,0.4)]',
-                textColor: 'text-cyan-200',
+                textColor: 'text-sky-200',
                 fillColor: '#06b6d4',
                 label: 'LOW FLOW'
               };
@@ -5145,9 +5145,9 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                   id: 'splash',
                   label: 'Splash Water Surface Ripples',
                   shortLabel: 'Splash',
-                  icon: <Waves size={15} className="text-cyan-400" />,
+                  icon: <Waves size={15} className="text-sky-400" />,
                   action: () => triggerWaterSplashFnRef.current?.(undefined, undefined, 1.8),
-                  colorClass: 'bg-cyan-950/90 border-cyan-400/80 text-cyan-200 hover:bg-cyan-900 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
+                  colorClass: 'bg-sky-950/90 border-sky-400/80 text-sky-200 hover:bg-sky-900 shadow-[0_0_15px_rgba(6,182,212,0.5)]'
                 },
                 {
                   id: 'float',
@@ -5197,7 +5197,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                       title="Tap anywhere on this circle to toggle interactive water tools menu"
                     >
                       {/* Outer Pulsing Dashed Target Ring Indicator */}
-                      <div className="absolute -inset-1 rounded-full border border-dashed border-cyan-400/80 animate-spin-slow pointer-events-none" />
+                      <div className="absolute -inset-1 rounded-full border border-dashed border-sky-400/80 animate-spin-slow pointer-events-none" />
 
                       {/* Animated Hydro Water Level Liquid Fill inside Circle */}
                       <div
@@ -5217,7 +5217,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                         <span className={`text-[7.5px] sm:text-[8px] font-mono font-bold tracking-wider ${theme.textColor} uppercase mt-0.5`}>
                           {percent}% • {theme.label}
                         </span>
-                        <span className="text-[7px] font-sans font-extrabold text-cyan-200 tracking-wider uppercase mt-1 px-1.5 py-0.5 rounded-full bg-cyan-950/90 border border-cyan-400/80 shadow-md">
+                        <span className="text-[7px] font-sans font-extrabold text-sky-200 tracking-wider uppercase mt-1 px-1.5 py-0.5 rounded-full bg-sky-950/90 border border-sky-400/80 shadow-md">
                           {isCircleHubOpen ? '▲ HIDE' : '✦ TOOLS'}
                         </span>
                       </div>
@@ -5276,11 +5276,11 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               transition={{ delay: 0.45, duration: 0.5 }}
               className="relative z-30 w-full max-w-3xl mx-auto pointer-events-auto mt-2 flex flex-col items-center gap-1.5 select-none"
             >
-              <div className="flex items-center flex-wrap justify-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-cyan-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.7)]">
+              <div className="flex items-center flex-wrap justify-center gap-2 px-3 py-1.5 rounded-2xl bg-slate-950/85 backdrop-blur-xl border border-sky-500/25 shadow-[0_8px_32px_rgba(0,0,0,0.7)]">
                 {/* Cine Camera Modes */}
                 <div className="flex items-center gap-1">
                   <div className="hidden sm:flex items-center gap-1 text-[9px] font-mono font-bold text-slate-400 uppercase tracking-wider pr-1">
-                    <Film size={11} className="text-cyan-400" />
+                    <Film size={11} className="text-sky-400" />
                     <span>CINE:</span>
                   </div>
                   {(
@@ -5299,7 +5299,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                       title={cm.desc}
                       className={`px-2 py-1 rounded-xl text-[9px] font-mono font-bold transition-all cursor-pointer ${
                         cameraCineMode === cm.id
-                          ? 'bg-cyan-500/30 text-cyan-200 border border-cyan-400/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
+                          ? 'bg-sky-500/30 text-sky-200 border border-sky-400/80 shadow-[0_0_10px_rgba(6,182,212,0.4)]'
                           : 'text-slate-400 hover:text-white hover:bg-white/5 border border-transparent'
                       }`}
                     >
@@ -5321,7 +5321,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                   >
                     <Minus size={11} />
                   </button>
-                  <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono font-bold text-cyan-300 min-w-[42px] text-center font-feature-tabular-nums">
+                  <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono font-bold text-sky-300 min-w-[42px] text-center font-feature-tabular-nums">
                     {userZoomPct}%
                   </span>
                   <button
@@ -5432,12 +5432,12 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                     rainMode === 'monsoon'
                       ? 'bg-blue-600/40 text-blue-200 border-blue-400/80 shadow-[0_0_10px_rgba(59,130,246,0.6)] animate-pulse'
                       : rainMode === 'drizzle'
-                      ? 'bg-cyan-600/30 text-cyan-200 border-cyan-400/80 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
+                      ? 'bg-sky-600/30 text-sky-200 border-sky-400/80 shadow-[0_0_8px_rgba(6,182,212,0.4)]'
                       : 'bg-slate-900/80 text-slate-400 hover:text-white border-slate-700/80'
                   }`}
                   title="Toggle 3D Rain Particle Simulation: Off / Drizzle / Monsoon Downpour"
                 >
-                  <CloudRain size={10} className={rainMode !== 'off' ? 'text-cyan-300' : 'text-slate-400'} />
+                  <CloudRain size={10} className={rainMode !== 'off' ? 'text-sky-300' : 'text-slate-400'} />
                   <span>RAIN: {rainMode.toUpperCase()}</span>
                 </button>
               </div>
@@ -5459,13 +5459,13 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
 
               {/* Intuitive Keyboard & Mouse Control Guide */}
               <div className="flex items-center gap-2 text-[8.5px] font-mono text-slate-400/80 px-2 py-0.5 rounded-full bg-slate-950/60 border border-slate-800/80">
-                <span className="text-cyan-400">⌨ WASD / Arrows:</span>
+                <span className="text-sky-400">⌨ WASD / Arrows:</span>
                 <span>Pan Up/Down/Left/Right</span>
                 <span className="text-slate-600">•</span>
-                <span className="text-cyan-400">🖱 Scroll:</span>
+                <span className="text-sky-400">🖱 Scroll:</span>
                 <span>Zoom In/Out</span>
                 <span className="text-slate-600">•</span>
-                <span className="text-cyan-400">Drag:</span>
+                <span className="text-sky-400">Drag:</span>
                 <span>Orbit View</span>
                 <span className="text-slate-600">•</span>
                 <span className="text-amber-400">Space:</span>
@@ -5493,17 +5493,17 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.92, y: 20 }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              className="relative w-full max-w-lg bg-slate-950/95 border border-cyan-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_60px_rgba(6,182,212,0.3)] backdrop-blur-2xl text-slate-100 flex flex-col gap-4 overflow-hidden"
+              className="relative w-full max-w-lg bg-slate-950/95 border border-sky-500/40 rounded-3xl p-5 sm:p-6 shadow-[0_0_60px_rgba(6,182,212,0.3)] backdrop-blur-2xl text-slate-100 flex flex-col gap-4 overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <div className="p-2 rounded-xl bg-cyan-500/20 border border-cyan-400/40 text-cyan-300">
+                  <div className="p-2 rounded-xl bg-sky-500/20 border border-sky-400/40 text-sky-300">
                     <Activity size={18} />
                   </div>
                   <div>
-                    <h3 className="font-mono font-bold text-sm text-cyan-200 tracking-wide uppercase">
+                    <h3 className="font-mono font-bold text-sm text-sky-200 tracking-wide uppercase">
                       Hydrological Water Meter & Flow Control
                     </h3>
                     <p className="text-[11px] text-slate-400 font-mono">
@@ -5522,10 +5522,10 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
 
               {/* Gauge & Level Visualizer */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                <div className="p-3 rounded-2xl bg-slate-900/80 border border-cyan-500/30 flex flex-col items-center justify-center text-center">
-                  <span className="text-[10px] font-mono text-cyan-300 font-semibold uppercase">Water Depth</span>
+                <div className="p-3 rounded-2xl bg-slate-900/80 border border-sky-500/30 flex flex-col items-center justify-center text-center">
+                  <span className="text-[10px] font-mono text-sky-300 font-semibold uppercase">Water Depth</span>
                   <span className="text-2xl font-mono font-black text-white mt-1">+{currentDepthM}m</span>
-                  <span className="text-[9px] font-mono text-cyan-400">({Math.round(waterLevelRatio * 100)}% capacity)</span>
+                  <span className="text-[9px] font-mono text-sky-400">({Math.round(waterLevelRatio * 100)}% capacity)</span>
                 </div>
                 <div className="p-3 rounded-2xl bg-slate-900/80 border border-purple-500/30 flex flex-col items-center justify-center text-center">
                   <span className="text-[10px] font-mono text-purple-300 font-semibold uppercase">Stage Regime</span>
@@ -5545,10 +5545,10 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               <div className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-col gap-3">
                 <div className="flex items-center justify-between text-xs font-mono font-bold">
                   <span className="text-slate-300 flex items-center gap-1.5">
-                    <Sliders size={14} className="text-cyan-400" />
+                    <Sliders size={14} className="text-sky-400" />
                     Water Depth Scale
                   </span>
-                  <span className="text-cyan-300 font-mono text-sm">
+                  <span className="text-sky-300 font-mono text-sm">
                     {Math.round(waterLevelRatio * 100)}% (+{currentDepthM}m)
                   </span>
                 </div>
@@ -5557,7 +5557,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                   <button
                     type="button"
                     onClick={() => handleSetWaterLevel(waterLevelRatio - 0.05)}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 cursor-pointer transition-all active:scale-90"
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sky-300 cursor-pointer transition-all active:scale-90"
                     title="Decrease 5%"
                   >
                     <Minus size={14} />
@@ -5570,13 +5570,13 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                     step="0.01"
                     value={waterLevelRatio}
                     onChange={(e) => handleSetWaterLevel(parseFloat(e.target.value))}
-                    className="flex-1 h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
+                    className="flex-1 h-3 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-sky-400"
                   />
 
                   <button
                     type="button"
                     onClick={() => handleSetWaterLevel(waterLevelRatio + 0.05)}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-cyan-300 cursor-pointer transition-all active:scale-90"
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-600 text-sky-300 cursor-pointer transition-all active:scale-90"
                     title="Increase 5%"
                   >
                     <Plus size={14} />
@@ -5597,7 +5597,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                       onClick={() => handleSetWaterLevel(preset.ratio)}
                       className={`py-1.5 px-2 rounded-xl text-[10px] font-mono font-bold transition-all cursor-pointer border flex flex-col items-center justify-center ${
                         Math.abs(waterLevelRatio - preset.ratio) < 0.15
-                          ? 'bg-cyan-500/25 border-cyan-400 text-cyan-200 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                          ? 'bg-sky-500/25 border-sky-400 text-sky-200 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
                           : 'bg-slate-800/80 border-slate-700 text-slate-400 hover:text-white'
                       }`}
                     >
@@ -5615,9 +5615,9 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                   onClick={() => {
                     triggerWaterSplashFnRef.current?.(undefined, undefined, 2.2);
                   }}
-                  className="p-2.5 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
+                  className="p-2.5 rounded-xl bg-sky-950/80 hover:bg-sky-900 border border-sky-500/40 text-sky-200 text-xs font-mono font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95"
                 >
-                  <Waves size={14} className="text-cyan-400" />
+                  <Waves size={14} className="text-sky-400" />
                   <span>Splash Lake</span>
                 </button>
 
@@ -5684,7 +5684,7 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
               initial={{ scale: 0.4, opacity: 0.8 }}
               animate={{ scale: 2.2, opacity: 0 }}
               transition={{ duration: 0.9, ease: 'easeOut' }}
-              className="absolute inset-0 rounded-full border-[6px] border-cyan-400/40 shadow-[0_0_80px_rgba(6,182,212,0.6)]"
+              className="absolute inset-0 rounded-full border-[6px] border-sky-400/40 shadow-[0_0_80px_rgba(6,182,212,0.6)]"
             />
             
             {/* Freefall Telemetry Readout */}
@@ -5693,9 +5693,9 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
                 initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.3 }}
-                className="px-5 py-2 rounded-full bg-slate-950/90 backdrop-blur-xl border border-cyan-400/60 shadow-[0_8px_32px_rgba(6,182,212,0.4)]"
+                className="px-5 py-2 rounded-full bg-slate-950/90 backdrop-blur-xl border border-sky-400/60 shadow-[0_8px_32px_rgba(6,182,212,0.4)]"
               >
-                <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.35em] uppercase text-cyan-200 drop-shadow-sm">
+                <span className="text-xs sm:text-sm font-mono font-bold tracking-[0.35em] uppercase text-sky-200 drop-shadow-sm">
                   Entering Interface
                 </span>
               </motion.div>
