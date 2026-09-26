@@ -1,5 +1,4 @@
-import { GoogleGenAI } from '@google/genai';
-import { generateMeteorologicalResponse } from '../src/utils/meteorologicalChatEngine';
+import { generateMeteorologicalResponse } from './_meteorologicalEngine';
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -98,14 +97,26 @@ export default async function handler(req: any, res: any) {
   contents.push({ role: 'user', parts: [{ text: userQuery }] });
 
   try {
-    const ai = new GoogleGenAI({
-      apiKey: apiKey.trim(),
-      httpOptions: {
-        headers: {
-          'User-Agent': 'samvartka-ai',
+    let ai: any = null;
+    try {
+      const genAiMod = await import('@google/genai');
+      ai = new genAiMod.GoogleGenAI({
+        apiKey: apiKey.trim(),
+        httpOptions: {
+          headers: {
+            'User-Agent': 'samvartka-ai',
+          }
         }
-      }
-    });
+      });
+    } catch (importErr: any) {
+      console.warn("Notice: GoogleGenAI import error in chat:", sanitizeLog(String(importErr)));
+      const fallbackText = generateMeteorologicalResponse(userQuery);
+      return res.status(200).json({ 
+        text: fallbackText, 
+        modelUsed: 'samvartka-synoptic-core', 
+        isLive: false 
+      });
+    }
 
     const requestedModel = modelConfig?.model || 'gemini-2.0-flash';
     const candidates = [
