@@ -43,6 +43,13 @@
 
 ---
 
+## 🌐 Live Deployment
+
+- **Application URL**: [https://sih26080-monsoon-rainfall-post-proc.vercel.app/](https://sih26080-monsoon-rainfall-post-proc.vercel.app/)
+
+
+---  
+
 ## 🔬 Overview & Architecture
 
 Raw Numerical Weather Prediction (NWP) models frequently suffer from two persistent systematic errors during the Indian Summer Monsoon (ISM):
