@@ -190,6 +190,15 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Header Status & Actions on the Right */}
           <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+            <button
+              id="header-ai-chat-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-blue-600/30 via-indigo-600/30 to-purple-600/30 hover:from-blue-600/50 hover:to-indigo-600/50 border border-blue-500/40 hover:border-blue-400 text-blue-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Launch AI Meteorologist Assistant"
+            >
+              <Bot className="w-3.5 h-3.5 text-cyan-400" />
+              <span>AI Meteorologist</span>
+            </button>
             {onOpenBulletin && (
               <button
                 id="header-bulletin-quick-btn"

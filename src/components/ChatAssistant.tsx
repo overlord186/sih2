@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { MessageSquare, Send, X, Bot, User, Globe, ChevronDown, Check, Loader2, RotateCcw, Key, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import { MessageSquare, Send, X, Bot, User, Globe, ChevronDown, Check, Loader2, RotateCcw, Sparkles, ShieldCheck, Zap } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { generateMeteorologicalResponse } from '../utils/meteorologicalChatEngine';
 
@@ -24,21 +24,18 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
   const [useSearch, setUseSearch] = useState(false);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
   const [isSearchPopoverOpen, setIsSearchPopoverOpen] = useState(false);
-  const [isKeyPopoverOpen, setIsKeyPopoverOpen] = useState(false);
-  const [customApiKey, setCustomApiKey] = useState<string>(() => {
+  const [customApiKey] = useState<string>(() => {
     try {
       return localStorage.getItem('samvartka_gemini_api_key') || '';
     } catch {
       return '';
     }
   });
-  const [keyInput, setKeyInput] = useState(customApiKey);
   const [engineStatus, setEngineStatus] = useState<'live' | 'synoptic' | 'idle'>('idle');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const modelDropdownRef = useRef<HTMLDivElement>(null);
   const searchPopoverRef = useRef<HTMLDivElement>(null);
-  const keyPopoverRef = useRef<HTMLDivElement>(null);
 
   // Synchronize state with external events (Sidebar button, Navigation drawer, keyboard shortcut)
   useEffect(() => {
@@ -71,9 +68,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
       if (searchPopoverRef.current && !searchPopoverRef.current.contains(event.target as Node)) {
         setIsSearchPopoverOpen(false);
       }
-      if (keyPopoverRef.current && !keyPopoverRef.current.contains(event.target as Node)) {
-        setIsKeyPopoverOpen(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -87,41 +81,49 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
     scrollToBottom();
   }, [messages, isOpen]);
 
-  const handleSaveApiKey = () => {
-    const trimmed = keyInput.trim();
-    setCustomApiKey(trimmed);
-    try {
-      if (trimmed) {
-        localStorage.setItem('samvartka_gemini_api_key', trimmed);
-      } else {
-        localStorage.removeItem('samvartka_gemini_api_key');
-      }
-    } catch (e) {
-      console.warn("Could not access localStorage", e);
-    }
-    setIsKeyPopoverOpen(false);
-  };
-
   const handleSend = async (overridePrompt?: string) => {
     const promptToSend = (overridePrompt || input).trim();
     if (!promptToSend || isLoading) return;
 
     const userMessage: ChatMessage = { role: 'user', parts: [{ text: promptToSend }] };
-    const newMessages = [...messages, userMessage];
     
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMessage]);
     if (!overridePrompt) {
       setInput('');
     }
     setIsLoading(true);
 
     try {
-      // Filter history: must only contain valid turns and start with user turn
-      const historyToPass = messages.length > 1 
-        ? messages
-            .filter(m => m && m.parts && m.parts[0]?.text && !m.parts[0].text.startsWith('⚠️'))
-            .map(m => ({ role: m.role, parts: [{ text: m.parts[0].text }] })) 
-        : [];
+      const effectiveKey = customApiKey || 
+        (typeof window !== 'undefined' ? (localStorage.getItem('samvartka_gemini_api_key') || '') : '') || 
+        (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+        (import.meta as any).env?.GEMINI_API_KEY || 
+        '';
+
+      // Sanitize chat history for Gemini API:
+      // Filter out warnings, guarantee valid alternating turns, and ensure first turn is user
+      const validHistory: { role: 'user' | 'model'; parts: [{ text: string }] }[] = [];
+      for (const m of messages) {
+        if (!m || !m.parts || !m.parts[0]?.text) continue;
+        const text = m.parts[0].text.trim();
+        if (!text || text.startsWith('⚠️')) continue;
+
+        if (validHistory.length === 0) {
+          if (m.role === 'user') {
+            validHistory.push({ role: 'user', parts: [{ text }] });
+          }
+        } else {
+          const lastRole = validHistory[validHistory.length - 1].role;
+          if (m.role !== lastRole) {
+            validHistory.push({ role: m.role, parts: [{ text }] });
+          }
+        }
+      }
+
+      // If last item in validHistory is already a user message, remove it so it won't duplicate with current user prompt
+      if (validHistory.length > 0 && validHistory[validHistory.length - 1].role === 'user') {
+        validHistory.pop();
+      }
 
       let responseText = '';
       let isLive = false;
@@ -129,7 +131,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
       // Tier 1: Try local or hosted /api/chat server with timeout
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 18000);
+        const timeoutId = setTimeout(() => controller.abort(), 12000);
 
         const response = await fetch('/api/chat', {
           method: 'POST',
@@ -137,12 +139,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
           headers: { 
             'Content-Type': 'application/json',
             'Accept': 'application/json',
-            ...(customApiKey ? { 'x-gemini-api-key': customApiKey } : {})
+            ...(effectiveKey ? { 'x-gemini-api-key': effectiveKey } : {})
           },
           body: JSON.stringify({
-            history: historyToPass,
+            history: validHistory,
             message: userMessage.parts[0].text,
-            apiKey: customApiKey || undefined,
+            apiKey: effectiveKey || undefined,
             modelConfig: {
               model: model,
               useSearch: useSearch
@@ -168,25 +170,26 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
         console.warn("Backend /api/chat unavailable, attempting direct inference or synoptic engine:", backendErr);
       }
 
-      // Tier 2: If backend returned no text, and an API key is present in client, call Google Gemini directly
-      const effectiveKey = customApiKey || (typeof window !== 'undefined' ? localStorage.getItem('samvartka_gemini_api_key') : null) || (import.meta as any).env?.VITE_GEMINI_API_KEY;
+      // Tier 2: If backend returned no text, and an API key is available, call Google Gemini directly from client
       let keyNotice = '';
 
       if (!responseText && effectiveKey) {
-        const candidateModels = [model, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'].filter((m, idx, arr) => arr.indexOf(m) === idx);
+        const candidateModels = [model, 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'].filter((m, idx, arr) => arr.indexOf(m) === idx);
         for (const m of candidateModels) {
           try {
             const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${effectiveKey}`;
             const systemInstruction = "You are SAMVARTAKA AI, a senior research meteorologist and synoptic forecaster for the Indian Summer Monsoon. You specialize in regime-aware post-processing, Quantile Regression Forests (QRF), Doppler radar diagnostics (dBZ), orographic convection over the Western Ghats and Himalayas, and WMO statistical verification metrics (CRPS, CSI, Taylor diagram). Provide authoritative, mathematically sound, practical, and insightful explanations.";
             
+            const contentsForGemini = [
+              ...validHistory,
+              { role: 'user', parts: [{ text: userMessage.parts[0].text }] }
+            ];
+
             const gRes = await fetch(geminiEndpoint, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                contents: [
-                  ...historyToPass.map(h => ({ role: h.role, parts: [{ text: h.parts[0].text }] })),
-                  { role: 'user', parts: [{ text: userMessage.parts[0].text }] }
-                ],
+                contents: contentsForGemini,
                 systemInstruction: { parts: [{ text: systemInstruction }] },
                 generationConfig: {
                   temperature: 0.4,
@@ -207,10 +210,10 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
               const errText = await gRes.text();
               console.warn(`Direct client Gemini call (${m}) returned status ${gRes.status}:`, errText);
               if (errText.includes('API_KEY_INVALID') || errText.includes('key not valid')) {
-                keyNotice = '⚠️ **API Key Notice:** The configured Gemini API key appears invalid. Please verify it in the 🔑 settings.';
+                keyNotice = '⚠️ **Notice:** Cloud API credentials unavailable or invalid. Seamlessly utilizing offline Synoptic Intelligence.';
                 break;
               } else if (errText.includes('RESOURCE_EXHAUSTED') || gRes.status === 429) {
-                keyNotice = '⚠️ **Quota Notice:** Google Gemini API rate limit reached. Utilizing offline Synoptic Intelligence.';
+                keyNotice = '⚠️ **Quota Notice:** API rate limit reached. Utilizing offline Synoptic Intelligence.';
                 break;
               }
             }
@@ -231,12 +234,12 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
       }
       
       setEngineStatus(isLive ? 'live' : 'synoptic');
-      setMessages([...newMessages, { role: 'model', parts: [{ text: responseText }] }]);
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: responseText }] }]);
     } catch (error: any) {
       console.warn("Client assistant request exception, falling back to embedded synoptic intelligence:", error);
       const fallbackAnalysis = generateMeteorologicalResponse(promptToSend);
       setEngineStatus('synoptic');
-      setMessages([...newMessages, { role: 'model', parts: [{ text: fallbackAnalysis }] }]);
+      setMessages(prev => [...prev, { role: 'model', parts: [{ text: fallbackAnalysis }] }]);
     } finally {
       setIsLoading(false);
     }
@@ -249,7 +252,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
     }
   };
 
-  // When closed, return null so lower-right corner is clear (accessible from workstation sidebar & navigation)
+  // When closed, do not render any floating button in the bottom right corner
   if (!isOpen) {
     return null;
   }
@@ -262,7 +265,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
   ];
 
   return (
-    <div className="fixed bottom-6 right-6 w-[22rem] sm:w-96 md:w-[28rem] max-h-[85vh] h-[620px] bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.1)] flex flex-col z-[160] overflow-hidden border border-slate-700/80 flex-shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-300 pointer-events-auto">
+    <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-[22rem] sm:w-96 md:w-[28rem] max-h-[85vh] h-[620px] bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.15)] flex flex-col z-[99999] overflow-hidden border border-slate-700/80 flex-shrink-0 animate-in slide-in-from-bottom-8 fade-in duration-300 pointer-events-auto">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-600 via-indigo-600 to-indigo-700 text-white p-4 sm:p-5 flex flex-col gap-3 shrink-0 relative z-30 overflow-visible">
         <div className="absolute inset-0 overflow-hidden pointer-events-none rounded-t-3xl -z-10">
@@ -278,94 +281,20 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
             <div>
               <div className="flex items-center gap-1.5">
                 <h3 className="font-bold text-[14.5px] tracking-wide text-white">AI Meteorologist</h3>
-                <span className={`text-[9.5px] px-1.5 py-0.5 rounded-full font-medium flex items-center gap-1 ${
-                  engineStatus === 'live' 
-                    ? 'bg-emerald-500/25 text-emerald-200 border border-emerald-400/40' 
-                    : engineStatus === 'synoptic'
-                    ? 'bg-cyan-500/25 text-cyan-200 border border-cyan-400/40'
-                    : 'bg-white/15 text-blue-100 border border-white/20'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${engineStatus === 'live' ? 'bg-emerald-400 animate-pulse' : engineStatus === 'synoptic' ? 'bg-cyan-400' : 'bg-blue-300'}`} />
-                  {engineStatus === 'live' ? 'Live Gemini' : engineStatus === 'synoptic' ? 'Synoptic Core' : 'Ready'}
+                <span className="text-[9.5px] px-2 py-0.5 rounded-full font-medium bg-white/15 text-blue-100 border border-white/20 flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                  Synoptic Core
                 </span>
               </div>
-              <p className="text-[10px] text-blue-100/85 font-medium uppercase tracking-widest mt-0.5">SAMVARTAKA Synoptic Copilot</p>
+              <p className="text-[10px] text-blue-100/85 font-medium uppercase tracking-widest mt-0.5">SAMVARTAKA Synoptic Intelligence</p>
             </div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            {/* Custom API Key Configuration Button */}
-            <div className="relative" ref={keyPopoverRef}>
-              <button 
-                onClick={() => {
-                  setIsKeyPopoverOpen(prev => !prev);
-                  setIsModelDropdownOpen(false);
-                  setIsSearchPopoverOpen(false);
-                }}
-                className={`p-2 rounded-xl transition-all ${
-                  customApiKey 
-                    ? 'bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 hover:bg-emerald-500/30' 
-                    : 'hover:bg-white/20 text-white/80 hover:text-white'
-                }`}
-                title={customApiKey ? "Gemini API Key Active (Click to edit)" : "Configure Gemini API Key (Optional)"}
-              >
-                <Key size={16} />
-              </button>
-
-              {/* API Key Modal / Popover */}
-              {isKeyPopoverOpen && (
-                <div className="absolute top-full right-0 mt-2 w-72 bg-slate-900/95 backdrop-blur-xl text-white rounded-2xl shadow-2xl border border-white/20 p-3.5 z-50 ring-1 ring-black/40 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                    <div className="flex items-center gap-1.5">
-                      <Key size={15} className="text-amber-400" />
-                      <span className="font-semibold text-xs text-slate-100">Gemini API Key</span>
-                    </div>
-                    {customApiKey && (
-                      <span className="text-[9px] px-1.5 py-0.5 bg-emerald-500/20 text-emerald-300 rounded font-mono font-semibold">Active</span>
-                    )}
-                  </div>
-
-                  <p className="mt-2 text-[11px] text-slate-300 leading-relaxed">
-                    Provide a Google Gemini API Key for direct live model reasoning. If omitted, SAMVARTAKA uses the embedded synoptic meteorological intelligence core.
-                  </p>
-
-                  <div className="mt-2.5 space-y-2">
-                    <input 
-                      type="password"
-                      value={keyInput}
-                      onChange={(e) => setKeyInput(e.target.value)}
-                      placeholder="AIzaSy..."
-                      className="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-2.5 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-400"
-                    />
-
-                    <div className="flex items-center justify-between pt-1">
-                      <button 
-                        onClick={() => {
-                          setKeyInput('');
-                          setCustomApiKey('');
-                          try { localStorage.removeItem('samvartka_gemini_api_key'); } catch {}
-                          setIsKeyPopoverOpen(false);
-                        }}
-                        className="text-[10.5px] text-slate-400 hover:text-rose-300 transition-colors"
-                      >
-                        Clear Key
-                      </button>
-                      <button 
-                        onClick={handleSaveApiKey}
-                        className="text-[11px] font-semibold bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded-lg transition-colors"
-                      >
-                        Save
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
             {/* Close Button */}
             <button 
               onClick={() => setIsOpen(false)} 
-              className="hover:bg-white/20 p-2 rounded-xl transition-colors active:scale-95 text-white/90 hover:text-white"
+              className="hover:bg-white/20 p-2 rounded-xl transition-colors active:scale-95 text-white/90 hover:text-white cursor-pointer"
               title="Close AI Assistant"
             >
               <X size={18} />
@@ -381,7 +310,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
               onClick={() => {
                 setIsModelDropdownOpen((prev) => !prev);
                 setIsSearchPopoverOpen(false);
-                setIsKeyPopoverOpen(false);
               }}
               className="flex items-center gap-1.5 bg-black/25 hover:bg-black/35 backdrop-blur-md border border-white/15 hover:border-white/30 px-2.5 py-1.5 rounded-lg transition-all text-white font-medium shadow-sm cursor-pointer"
               title="Select AI Model"
@@ -481,7 +409,6 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ isIntroActive }) =
               onClick={() => {
                 setIsSearchPopoverOpen((prev) => !prev);
                 setIsModelDropdownOpen(false);
-                setIsKeyPopoverOpen(false);
               }}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg transition-all border font-medium shadow-sm cursor-pointer ${
                 useSearch 

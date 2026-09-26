@@ -187,6 +187,9 @@ async function startServer() {
           contents = validHistory.slice(firstUserIdx);
         }
       }
+      if (contents.length > 0 && contents[contents.length - 1].role === 'user') {
+        contents.pop();
+      }
       contents.push({ role: "user", parts: [{ text: message || "Hello" }] });
 
       const headerKey = req.headers['x-gemini-api-key'] as string | undefined;
@@ -265,7 +268,7 @@ async function startServer() {
       console.warn("Plan API error caught, utilizing synoptic fallback:", sanitizeLog(error?.message || error));
       const { location, occupation, weatherContext } = req.body || {};
       const fallbackText = generateMeteorologicalFallback([{ role: 'user', parts: [{ text: `Plan for ${location} as ${occupation}` }] }], { tools: [] }, 'plan', { location, occupation, weatherContext });
-      return res.json({ text: fallbackText, modelUsed: 'samvartka-synoptic-core' });
+      return res.json({ text: fallbackText, modelUsed: 'samvartka-synoptic-core', isLive: false });
     }
   });
 
@@ -275,7 +278,11 @@ async function startServer() {
   });
 
   // Standard Vite Middleware in dev, Static serving in production
-  const isProduction = process.env.NODE_ENV === "production";
+  const isProduction =
+    process.env.NODE_ENV === "production" ||
+    process.argv.includes("--production") ||
+    process.env.npm_lifecycle_event === "start" ||
+    (typeof __filename !== "undefined" && __filename.endsWith(".cjs"));
 
   if (!isProduction) {
     console.log("Mounting Vite development middleware...");
@@ -356,34 +363,50 @@ async function startServer() {
     res.status(200).json({ status: "ok", text: "Atmospheric synoptic post-processing services active." });
   });
 
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.error(`Primary port ${PORT} is already in use.`);
-    } else {
-      console.error('Server error:', err);
-    }
-  });
+  // Helper to safely bind an HTTP server to both IPv4 (0.0.0.0) and IPv6 (::)
+  const bindDualStack = (srv: http.Server, port: number, label: string) => {
+    srv.on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.warn(`[${label}] Port ${port} is occupied; continuing gracefully.`);
+      } else {
+        console.error(`[${label}] Server error:`, err?.message || err);
+      }
+    });
 
-  // Listen without restrictive host string so Node binds dual-stack (IPv4 0.0.0.0 and IPv6 ::1/localhost)
-  server.listen(PORT, () => {
-    console.log(`Server running on:`);
-    console.log(`  > Local:     http://localhost:${PORT}`);
-    console.log(`  > Loopback:  http://127.0.0.1:${PORT}`);
-  });
+    // Explicitly bind 0.0.0.0 to guarantee 127.0.0.1, localhost (IPv4), and LAN IP connectivity on Windows
+    srv.listen(port, '0.0.0.0', () => {
+      console.log(`[${label}] Server active on:`);
+      console.log(`  > Local:     http://localhost:${port}`);
+      console.log(`  > Loopback:  http://127.0.0.1:${port}`);
+    });
+
+    // Also attempt IPv6 binding on '::' for dual-stack Windows environments
+    try {
+      const ipv6Srv = http.createServer(app);
+      ipv6Srv.on('error', () => {
+        // Silently ignore if port is handled by dual-stack or unavailable
+      });
+      ipv6Srv.on('upgrade', (req, socket, head) => {
+        srv.emit('upgrade', req, socket, head);
+      });
+      ipv6Srv.listen(port, '::', () => {
+        // Dual-stack IPv6 active
+      });
+    } catch {
+      // IPv6 optional
+    }
+  };
+
+  bindDualStack(server, PORT, 'Primary');
 
   // Also bind alternate port (8080 or 3000) so user can access either port seamlessly
   const SECONDARY_PORT = PORT === 3000 ? 8080 : (PORT === 8080 ? 3000 : null);
   if (SECONDARY_PORT) {
     const secondaryServer = http.createServer(app);
-    secondaryServer.on('error', (err: any) => {
-      console.log(`Alternate port ${SECONDARY_PORT} unavailable (${err.message}), continuing on port ${PORT}.`);
-    });
     secondaryServer.on('upgrade', (req, socket, head) => {
       server.emit('upgrade', req, socket, head);
     });
-    secondaryServer.listen(SECONDARY_PORT, () => {
-      console.log(`  > Alternate: http://localhost:${SECONDARY_PORT}`);
-    });
+    bindDualStack(secondaryServer, SECONDARY_PORT, 'Secondary');
   }
 }
 

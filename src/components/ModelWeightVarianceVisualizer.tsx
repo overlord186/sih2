@@ -46,19 +46,26 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
   // Climatology-NWP synoptic cross-correlation (typical monsoon range 0.28 - 0.35)
   const rho = 0.32;
 
+  // Defensive sanitization of numeric props to prevent NaN in charts and SVGs
+  const safeHistStd = Number.isFinite(historicalStdDev) && historicalStdDev > 0 ? historicalStdDev : 10.5;
+  const safeRealStd = Number.isFinite(realtimeStdDev) && realtimeStdDev > 0 ? realtimeStdDev : 12.8;
+  const safeHistMm = Number.isFinite(historicalClimatologyMm) ? historicalClimatologyMm : 24.0;
+  const safeRealMm = Number.isFinite(realtimePredictionMm) ? realtimePredictionMm : 28.5;
+  const safeWeight = Number.isFinite(realtimeWeight) ? realtimeWeight : 0.70;
+
   // Active weights
-  const alpha = Math.max(0, Math.min(1, realtimeWeight));
+  const alpha = Math.max(0, Math.min(1, safeWeight));
   const wHist = 1 - alpha;
   const wReal = alpha;
 
   // Blended output calculation
-  const blendedOutput = Math.round((wHist * historicalClimatologyMm + wReal * realtimePredictionMm) * 10) / 10;
+  const blendedOutput = Math.round((wHist * safeHistMm + wReal * safeRealMm) * 10) / 10;
 
   // Variance calculation: Var(Y) = w_h^2 * Var_h + w_r^2 * Var_r + 2 * w_h * w_r * Cov(h, r)
-  const varHist = Math.pow(historicalStdDev, 2);
-  const varReal = Math.pow(realtimeStdDev, 2);
-  const covTerm = 2 * wHist * wReal * rho * historicalStdDev * realtimeStdDev;
-  const outputVariance = Math.round((Math.pow(wHist, 2) * varHist + Math.pow(wReal, 2) * varReal + covTerm) * 10) / 10;
+  const varHist = Math.pow(safeHistStd, 2);
+  const varReal = Math.pow(safeRealStd, 2);
+  const covTerm = 2 * wHist * wReal * rho * safeHistStd * safeRealStd;
+  const outputVariance = Math.max(0.1, Math.round((Math.pow(wHist, 2) * varHist + Math.pow(wReal, 2) * varReal + covTerm) * 10) / 10);
   const outputStdDev = Math.round(Math.sqrt(outputVariance) * 10) / 10;
 
   // Pure real-time variance for comparison
@@ -73,19 +80,19 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
 
   // Mathematically optimal Bayesian weight (Minimizes output variance)
   const optimalAlpha = useMemo(() => {
-    const num = varHist - rho * historicalStdDev * realtimeStdDev;
-    const den = varHist + varReal - 2 * rho * historicalStdDev * realtimeStdDev;
+    const num = varHist - rho * safeHistStd * safeRealStd;
+    const den = varHist + varReal - 2 * rho * safeHistStd * safeRealStd;
     if (den <= 0) return 0.5;
     const opt = num / den;
     return Math.max(0.05, Math.min(0.95, Math.round(opt * 100) / 100));
-  }, [varHist, varReal, historicalStdDev, realtimeStdDev]);
+  }, [varHist, varReal, safeHistStd, safeRealStd]);
 
   const optimalVariance = useMemo(() => {
     const wH = 1 - optimalAlpha;
     const wR = optimalAlpha;
-    const cov = 2 * wH * wR * rho * historicalStdDev * realtimeStdDev;
-    return Math.round((Math.pow(wH, 2) * varHist + Math.pow(wR, 2) * varReal + cov) * 10) / 10;
-  }, [optimalAlpha, varHist, varReal, historicalStdDev, realtimeStdDev]);
+    const cov = 2 * wH * wR * rho * safeHistStd * safeRealStd;
+    return Math.max(0.1, Math.round((Math.pow(wH, 2) * varHist + Math.pow(wR, 2) * varReal + cov) * 10) / 10);
+  }, [optimalAlpha, varHist, varReal, safeHistStd, safeRealStd]);
 
   // Generate 21 discrete sensitivity evaluation steps (0% to 100% in 5% increments)
   const varianceSensitivityData = useMemo(() => {
@@ -94,10 +101,10 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
       const stepAlpha = i * 0.05;
       const stepWH = 1 - stepAlpha;
       const stepWR = stepAlpha;
-      const stepCov = 2 * stepWH * stepWR * rho * historicalStdDev * realtimeStdDev;
-      const stepVar = Math.round((Math.pow(stepWH, 2) * varHist + Math.pow(stepWR, 2) * varReal + stepCov) * 10) / 10;
+      const stepCov = 2 * stepWH * stepWR * rho * safeHistStd * safeRealStd;
+      const stepVar = Math.max(0.1, Math.round((Math.pow(stepWH, 2) * varHist + Math.pow(stepWR, 2) * varReal + stepCov) * 10) / 10);
       const stepStd = Math.round(Math.sqrt(stepVar) * 10) / 10;
-      const stepPred = Math.round((stepWH * historicalClimatologyMm + stepWR * realtimePredictionMm) * 10) / 10;
+      const stepPred = Math.round((stepWH * safeHistMm + stepWR * safeRealMm) * 10) / 10;
 
       points.push({
         weightPct: i * 5,
@@ -112,7 +119,7 @@ export const ModelWeightVarianceVisualizer: React.FC<ModelWeightVarianceProps> =
       });
     }
     return points;
-  }, [alpha, varHist, varReal, historicalStdDev, realtimeStdDev, historicalClimatologyMm, realtimePredictionMm]);
+  }, [alpha, varHist, varReal, safeHistStd, safeRealStd, safeHistMm, safeRealMm]);
 
   // Stability Classification
   const stabilityInfo = useMemo(() => {

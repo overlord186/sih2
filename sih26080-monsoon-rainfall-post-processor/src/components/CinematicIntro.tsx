@@ -5722,15 +5722,6 @@ export function CinematicIntro({ onComplete, isAudioMuted, onToggleAudio }: Cine
             </button>
           )}
           <button
-            id="intro-ask-ai-btn"
-            onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
-            className="hover:text-white flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-blue-900/60 to-purple-900/60 hover:from-blue-800/80 hover:to-purple-800/80 border border-purple-400/40 text-purple-200 transition-all cursor-pointer font-medium active:scale-95 shadow-[0_0_15px_rgba(168,85,247,0.3)] text-xs"
-            title="Open SAMVARTAKA AI Meteorological Assistant"
-          >
-            <Bot size={13} className="text-purple-300 animate-pulse" />
-            <span>Ask AI Assistant</span>
-          </button>
-          <button
             onClick={handleReplay}
             className="hover:text-white flex items-center gap-1 transition-colors cursor-pointer text-slate-300 font-medium active:scale-95 text-xs ml-0.5"
             title="Replay sequence"

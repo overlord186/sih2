@@ -4,6 +4,7 @@ import { Briefcase, MapPin, Sparkles, Loader2, AlertCircle, CloudRain, Check, Co
 import Markdown from 'react-markdown';
 import { fetchDailyForecastData } from '../utils/weatherApi';
 import { IMDRainfallBadge } from '../utils/imdRainfall';
+import { generateMeteorologicalPlan } from '../utils/meteorologicalChatEngine';
 
 interface ActionPlannerProps {
   selectedStationId?: string;
@@ -36,6 +37,14 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
   const [forecastData, setForecastData] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [engineUsed, setEngineUsed] = useState<'gemini' | 'synoptic'>('synoptic');
+  const [customApiKey] = useState<string>(() => {
+    try {
+      return localStorage.getItem('samvartka_gemini_api_key') || '';
+    } catch {
+      return '';
+    }
+  });
 
   // Sync location if selected station changes externally
   useEffect(() => {
@@ -56,14 +65,17 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
     setPlan(null);
     setForecastData(null);
     
+    let weatherContext: string | null = null;
+    let localWData: any = null;
+
     try {
-      let weatherContext = null;
       if (useLiveWeather) {
         const station = MET_STATIONS.find(s => s.name === location) || MET_STATIONS[0];
         try {
           const wData = await fetchDailyForecastData(station.lat, station.lon);
           if (wData && wData.daily) {
             setForecastData(wData.daily);
+            localWData = wData.daily;
             weatherContext = JSON.stringify({
               daily_forecast: wData.daily,
               timezone: wData.timezone || 'Asia/Kolkata',
@@ -75,92 +87,133 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
         }
       }
 
-      const apiKey = typeof window !== 'undefined' ? (localStorage.getItem('samvartka_gemini_api_key') || '') : '';
+      const effectiveKey = customApiKey || 
+        (typeof window !== 'undefined' ? (localStorage.getItem('samvartka_gemini_api_key') || '') : '') || 
+        (import.meta as any).env?.VITE_GEMINI_API_KEY || 
+        (import.meta as any).env?.GEMINI_API_KEY || 
+        '';
 
-      const response = await fetch('/api/plan', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          ...(apiKey ? { 'x-gemini-api-key': apiKey } : {})
-        },
-        body: JSON.stringify({ 
-          location, 
-          occupation, 
-          weatherContext,
-          apiKey: apiKey || undefined 
-        })
-      });
-      
       let planText = '';
+      let isLiveAI = false;
+
+      // Tier 1: Try local or hosted /api/plan server with 10s timeout
       try {
-        const rawBody = await response.text();
-        const trimmed = rawBody.trim();
-        if (trimmed.startsWith('{')) {
-          const parsed = JSON.parse(trimmed);
-          if (parsed.error) {
-            throw new Error(parsed.error);
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+        const response = await fetch('/api/plan', {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            ...(effectiveKey ? { 'x-gemini-api-key': effectiveKey } : {})
+          },
+          body: JSON.stringify({ 
+            location, 
+            occupation, 
+            weatherContext,
+            apiKey: effectiveKey || undefined 
+          })
+        });
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const rawBody = await response.text();
+          const trimmed = rawBody.trim();
+          if (trimmed.startsWith('{')) {
+            const parsed = JSON.parse(trimmed);
+            if (!parsed.error && parsed.text) {
+              planText = parsed.text;
+              isLiveAI = Boolean(parsed.isLive);
+            }
+          } else if (trimmed.length > 0 && !trimmed.startsWith('<')) {
+            planText = trimmed;
           }
-          planText = parsed.text || '';
-        } else if (trimmed.length > 0 && !trimmed.startsWith('<')) {
-          planText = trimmed;
         }
-      } catch (parseErr: any) {
-        if (parseErr.message && !parseErr.message.includes('JSON')) {
-          throw parseErr;
-        }
+      } catch (backendErr) {
+        console.warn("Backend /api/plan unavailable, checking direct client AI or synoptic core:", backendErr);
       }
-      
-      if (!planText.trim()) {
-        planText = `### 🌦️ Synoptic Action & Resilience Plan: ${location}
+
+      // Tier 2: If backend returned no text, and an API key is available, call Google Gemini directly from client
+      if (!planText && effectiveKey) {
+        const candidateModels = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+        for (const m of candidateModels) {
+          try {
+            const geminiEndpoint = `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${effectiveKey}`;
+            const sysInstruction = `You are an elite research meteorologist and operational disaster resilience advisor embedded inside SAMVARTAKA (India Monsoon Rainfall Post-Processor).
+Formulate a crisp, highly structured, authoritative, and sector-tailored Synoptic Action & Resilience Plan. Format your output strictly in professional GitHub Markdown with these exact sections:
+### 🌦️ Synoptic Action & Resilience Plan: ${location}
 **Target Sector:** ${occupation}  
-**Meteorological Engine:** SAMVARTAKA Synoptic Intelligence (Active)
+**Meteorological Engine:** SAMVARTAKA Synoptic Intelligence (Active Live AI - ${m})  
+**IMD Alert Classification:** [🟢 Green / 🟡 Yellow / 🟠 Orange / 🔴 Red Alert with exact quantitative mm/24h threshold]
 
 ---
 
-#### 1. Synoptic Risk Profile (${location})
-* **Regime Classification:** Convective moisture convergence with localized precipitation volatility.
-* **Atmospheric Drivers:** Boundary-layer shear along with low-level moisture advection from maritime corridors.
-* **Hydrological Vulnerability:** High surface run-off probability during peak cloudburst bursts (>20 mm/hr).
+#### 1. 🛰️ Synoptic Risk Profile & Agro-Ecological State
+- Atmospheric regime classification, moisture convergence, low-level jet velocity, and local topographic dynamics.
+- Numerical weather telemetry synthesis: 7-day expected precipitation total (mm), peak rain date and single-day max rain (mm), rain probability %, and peak wind gusts.
 
-#### 2. Sector Impact & Hazard Mitigation (${occupation})
-* **Operational Sensitivity:** Direct exposure to rapid downpours, localized flash flooding, and severe visibility attenuation.
-* **Asset Exposure:** Critical infrastructure and field operations vulnerable to localized pooling and soil saturation.
+#### 2. 🎯 Sector Hazard Matrix & Asset Impact (${occupation})
+- Specific operational vulnerabilities (e.g. for Farmers: specific crops like Cotton, Soybean, Pulses, Oranges, Vertisol/black-cotton soil drainage, fertilizer/pesticide wash-off; for Construction: crane wind limit, trench slumping; for Logistics: highway choke points, container sealing).
 
-#### 3. Phased Tactical Action Plan
-* **T-48h to T-24h (Readiness Phase):**
-  * Clear stormwater grates, inspect retention sumps, and elevate critical inventory 30 cm above baseline floor level.
-  * Continuously check SAMVARTAKA regime updates and localized Doppler radar reflectivity (dBZ > 45).
-* **T-0h (Precipitation Peak / Synoptic Event):**
-  * Restrict non-emergency transit and field deployments during sustained high-intensity convective episodes.
-  * Switch to auxiliary drainage systems and enforce flood buffer perimeters.
-* **Post-Event (Recovery & Assessment):**
-  * Conduct immediate structural subsidence checks and verify runoff dispersal across perimeter channels.
-  * Log recorded peak rainfall data to refine localized bias correction weights.
+#### 3. ⏱️ Phased Tactical Action Protocol
+- T-48h to T-24h (Readiness Phase): Concrete preventative actions.
+- T-12h to T-0h (Active Storm Event): Operational stoppage triggers and live protection.
+- Post-Event (Recovery & Assessment): Field drainage, structural checks, crop/asset revival.
 
-#### 4. Safety & Operational Safeguards
-* [x] Real-time synoptic alerts enabled across primary mobile channels.
-* [x] Primary and secondary egress corridors verified clear of flood obstructions.
-* [x] Emergency reserves and standby pump apparatus tested.`;
+#### 4. 🛡️ Critical Go / No-Go Decision Matrix
+- Explicit quantitative threshold triggers (e.g. wind speed cutoff, rainfall intensity mm/hr, standing water limits).
+
+#### 5. ✅ Immediate Tactical Readiness Checklist
+- Actionable checkboxes [ ] for rapid operational sign-off.`;
+
+            let promptText = `Generate a crisp, operational, sector-tailored Synoptic Action & Resilience Plan for location: "${location}", target sector: "${occupation}".`;
+            if (weatherContext) {
+              promptText += `\n\nReal-time 7-day weather telemetry:\n${weatherContext}\n\nPlease base your predictions heavily on this live forecast data.`;
+            }
+
+            const gRes = await fetch(geminiEndpoint, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ role: 'user', parts: [{ text: promptText }] }],
+                systemInstruction: { parts: [{ text: sysInstruction }] },
+                generationConfig: {
+                  temperature: 0.3,
+                  maxOutputTokens: 2500,
+                }
+              })
+            });
+
+            if (gRes.ok) {
+              const gJson = await gRes.json();
+              const candidate = gJson.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (candidate && candidate.trim()) {
+                planText = candidate.trim();
+                isLiveAI = true;
+                break;
+              }
+            }
+          } catch (directErr) {
+            console.warn(`Direct client Gemini call with ${m} failed:`, directErr);
+          }
+        }
       }
-      
+
+      // Tier 3: Resilient high-fidelity meteorological intelligence engine
+      if (!planText || !planText.trim()) {
+        planText = generateMeteorologicalPlan(location, occupation, weatherContext || (localWData ? JSON.stringify({ daily_forecast: localWData }) : undefined));
+        isLiveAI = false;
+      }
+
+      setEngineUsed(isLiveAI ? 'gemini' : 'synoptic');
       setPlan(planText);
     } catch (err: any) {
       console.warn("Planner API request encountered exception, generating local resilient plan:", err);
-      setPlan(`### 🌦️ Synoptic Action & Resilience Plan: ${location}
-**Target Sector:** ${occupation}  
-**Meteorological Engine:** SAMVARTAKA Synoptic Intelligence (Fallback Mode)
-
----
-
-#### 1. Synoptic Risk Profile (${location})
-* **Atmospheric State:** High-resolution moisture convergence tracking and localized precipitation risk mitigation.
-* **Operational Vulnerability:** High sensitivity to intense convective bursts and flash runoff.
-
-#### 2. Phased Action Protocol
-* **T-24h (Readiness):** Verify drainage integrity, inspect backup power and secure field equipment.
-* **T-0h (Active Rain):** Suspend non-essential high-exposure activities during intense convective rainfall (>15 mm/hr).
-* **Post-Event (Inspection):** Check perimeter drains and verify transit route clearances.`);
+      const fallbackPlan = generateMeteorologicalPlan(location, occupation, weatherContext);
+      setEngineUsed('synoptic');
+      setPlan(fallbackPlan);
     } finally {
       setLoading(false);
     }
@@ -196,9 +249,12 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 text-xs text-slate-400 font-mono bg-slate-950/60 px-3.5 py-2 rounded-xl border border-slate-800">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
-            <span>Regime-Aware Risk Modeling Active</span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 text-xs text-slate-400 font-mono bg-slate-950/60 px-3.5 py-1.5 rounded-xl border border-slate-800">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="hidden sm:inline">Regime-Aware Risk Modeling Active</span>
+              <span className="sm:hidden">Active</span>
+            </div>
           </div>
         </div>
       </div>
@@ -219,84 +275,68 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
             >
               {MET_STATIONS.map(stn => (
                 <option key={stn.id} value={stn.name} className="bg-slate-900 text-white">
-                  {stn.name} ({stn.subdivision})
+                  {stn.name} ({stn.state}) — {stn.climateZone}
                 </option>
               ))}
             </select>
+            <p className="text-[11px] text-slate-400">
+              Synchronizes with 36 regional meteorological subdivisions and IMD automatic weather stations.
+            </p>
           </div>
-          
-          {/* Target Occupation Input */}
+
+          {/* Target Occupation / Sector */}
           <div className="space-y-2">
             <label className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-indigo-400" />
-              Sector / Operational Role
+              Target Sector / Operational Domain
             </label>
-            <input
-              type="text"
+            <select
               value={occupation}
               onChange={(e) => setOccupation(e.target.value)}
-              placeholder="e.g. Farmer, Site Engineer, Logistics Manager..."
-              className="w-full bg-slate-950/80 border border-slate-700 hover:border-slate-600 rounded-xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-colors"
+              className="w-full bg-slate-950/80 border border-slate-700 hover:border-slate-600 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-colors cursor-pointer"
+            >
+              {OCCUPATION_PRESETS.map(occ => (
+                <option key={occ.value} value={occ.value} className="bg-slate-900 text-white">
+                  {occ.label}
+                </option>
+              ))}
+            </select>
+            <p className="text-[11px] text-slate-400">
+              Customizes operational lead times, critical thresholds, and asset vulnerability models.
+            </p>
+          </div>
+        </div>
+
+        {/* Live Weather Toggle & Options */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 mb-6">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={useLiveWeather}
+              onChange={(e) => setUseLiveWeather(e.target.checked)}
+              className="w-4 h-4 rounded text-indigo-600 bg-slate-800 border-slate-700 focus:ring-indigo-500 focus:ring-offset-slate-900 cursor-pointer"
             />
-          </div>
-        </div>
-
-        {/* Occupation Quick Preset Chips */}
-        <div className="mb-6 space-y-2">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-            Quick-Select Common Operational Sectors:
+            <div className="flex items-center gap-2">
+              <CloudRain className="w-4 h-4 text-cyan-400" />
+              <span className="text-sm font-semibold text-slate-200">
+                Incorporate Real-Time 7-Day Numerical Weather Telemetry
+              </span>
+            </div>
+          </label>
+          <span className="text-xs text-slate-400 font-mono">
+            {useLiveWeather ? 'Open-Meteo High-Resolution Ingestion Active' : 'Climatological Baseline Modeling'}
           </span>
-          <div className="flex flex-wrap gap-2">
-            {OCCUPATION_PRESETS.map((preset, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setOccupation(preset.value)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
-                  occupation === preset.value
-                    ? 'bg-indigo-600 text-white border-indigo-500 shadow-md shadow-indigo-600/30'
-                    : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
-                }`}
-              >
-                {preset.label}
-              </button>
-            ))}
-          </div>
         </div>
 
-        {/* Live Weather Toggle */}
-        <div className="mb-6 flex items-center justify-between p-4 rounded-xl bg-slate-950/60 border border-slate-800">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl">
-              <CloudRain className="w-5 h-5" />
-            </div>
-            <div>
-              <h4 className="text-sm font-semibold text-white">Ingest Live 7-Day Atmospheric Weather Data</h4>
-              <p className="text-xs text-slate-400">Grounds tactical advice using temperature, humidity, and rainfall probability telemetry.</p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={() => setUseLiveWeather(!useLiveWeather)}
-            className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors cursor-pointer ${
-              useLiveWeather ? 'bg-indigo-600' : 'bg-slate-700'
-            }`}
-          >
-            <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-              useLiveWeather ? 'translate-x-6' : 'translate-x-1'
-            }`} />
-          </button>
-        </div>
-        
-        {/* Generate Plan Button */}
+        {/* Action Button */}
         <button
           onClick={handleGeneratePlan}
-          disabled={loading || !occupation.trim()}
-          className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-600 hover:from-indigo-500 hover:to-blue-500 text-white font-bold py-3.5 px-6 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-600/30 cursor-pointer active:scale-[0.99]"
+          disabled={loading}
+          className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-700 to-violet-700 hover:from-indigo-500 hover:via-indigo-600 hover:to-violet-600 text-white font-bold text-sm tracking-wide shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2.5 transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {loading ? (
             <>
-              <Loader2 className="w-5 h-5 animate-spin text-white" />
+              <Loader2 className="w-5 h-5 animate-spin" />
               <span>Analyzing Atmospheric Telemetry & Formulating Sector Plan...</span>
             </>
           ) : (
@@ -372,20 +412,26 @@ export const ActionPlanner: React.FC<ActionPlannerProps> = ({
       {/* Generated Action Plan Output Card */}
       {plan && (
         <div className="bg-slate-900/90 border border-indigo-500/40 rounded-2xl p-6 md:p-8 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-500">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-4 mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-4 mb-6 gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0">
                 <Briefcase className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-bold text-white text-lg">Customized Sector Action Plan</h4>
-                <p className="text-xs text-slate-400 font-mono">{location} &bull; {occupation}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h4 className="font-bold text-white text-lg">Customized Sector Action Plan</h4>
+                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider flex items-center gap-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                    <Sparkles className="w-3 h-3 text-cyan-400" />
+                    Synoptic Core
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 font-mono mt-0.5">{location} &bull; {occupation}</p>
               </div>
             </div>
 
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-colors cursor-pointer self-start sm:self-auto"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
               <span>{copied ? 'Copied' : 'Copy Plan'}</span>
