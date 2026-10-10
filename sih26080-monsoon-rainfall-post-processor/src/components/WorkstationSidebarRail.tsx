@@ -55,14 +55,6 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
 }) => {
   const navItems: NavRailItem[] = [
     {
-      id: 'cockpit',
-      label: 'Cockpit 4.0',
-      category: 'core',
-      icon: Gauge,
-      accentColor: 'text-cyan-400 group-hover:text-cyan-300',
-      badge: 'v4.0',
-    },
-    {
       id: 'dashboard',
       label: 'Main Dashboard',
       category: 'core',

@@ -237,18 +237,13 @@ export const Header: React.FC<HeaderProps> = ({
             <TacticalDisasterOpsToggle />
 
             <button
-              id="header-cockpit-btn"
-              onClick={() => onTabChange('cockpit')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95 ${
-                activeTab === 'cockpit'
-                  ? 'bg-cyan-600 text-white border-cyan-400 shadow-cyan-900/50 ring-2 ring-cyan-400/50'
-                  : 'bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border-cyan-600/50 text-cyan-200 hover:text-white'
-              }`}
-              title="Switch to SAMVARTAKA 4.0 Unified Operational Cockpit (Supreme Master Plan 1)"
+              id="header-3d-twin-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-3d-simulator'))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-purple-950/90 to-indigo-950/90 hover:from-purple-900 hover:to-indigo-900 border border-purple-500/50 text-purple-200 hover:text-white text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95"
+              title="Launch 3D Ground Digital Twin Simulator Modal (On-Demand)"
             >
-              <Gauge className="w-3.5 h-3.5 text-cyan-300" />
-              <span>Cockpit 4.0</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <Globe className="w-3.5 h-3.5 text-purple-300" />
+              <span>3D Ground Twin</span>
             </button>
 
             <button

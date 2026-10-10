@@ -38,7 +38,7 @@ import { predictWithTrainedWeights, TrainedModelWeights } from './ml/modelTraine
 import trainedSnapshotData from './data/trainedModelSnapshot.json';
 import { MONSOON_DATASET, MET_STATIONS } from './data/monsoonDataset';
 import { calculateMetrics, calculateRegimeBreakdown } from './ml/postProcessor';
-import { ShieldCheck, CloudRain, Activity, Sparkles, ChevronRight } from 'lucide-react';
+import { ShieldCheck, CloudRain, Activity, Sparkles, ChevronRight, Globe } from 'lucide-react';
 import { ChatAssistant } from './components/ChatAssistant';
 import { LocalStationSimulatorModal } from './components/observatory/local3d/LocalStationSimulatorModal';
 import { CommandPalette } from './components/CommandPalette';
@@ -107,13 +107,13 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavigationTab>(() => {
     try {
       const saved = localStorage.getItem('monsoonDashboard_activeTab');
-      if (saved && ['cockpit', 'dashboard', 'regimes', 'probabilities', 'districts', 'verification', 'diagnostics', 'uploader', 'predictor', 'planner', 'methodology', 'help', 'impact'].includes(saved)) {
+      if (saved && saved !== 'cockpit' && ['dashboard', 'regimes', 'probabilities', 'districts', 'verification', 'diagnostics', 'uploader', 'predictor', 'planner', 'methodology', 'help', 'impact'].includes(saved)) {
         return saved as NavigationTab;
       }
     } catch {
       // ignore
     }
-    return 'cockpit';
+    return 'dashboard';
   });
 
   useEffect(() => {
@@ -575,45 +575,37 @@ export default function App() {
           )}
 
       {/* Supreme Operational Status Ribbon */}
-      <div className="bg-gradient-to-r from-slate-950 via-cyan-950/80 to-slate-950 border-b border-cyan-500/30 px-3 sm:px-6 py-2 text-xs shadow-md">
+      <div className="bg-slate-900/90 border-b border-slate-800 px-3 sm:px-6 py-2 text-xs shadow-md backdrop-blur-md">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex items-center gap-2 text-cyan-200">
+          <div className="flex items-center gap-2 text-slate-200">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
             <span className="font-bold text-white tracking-wide">
-              SAMVARTAKA 4.0 Active:
+              SAMVARTAKA AI Operational Workstation:
             </span>
             <span className="text-cyan-300 font-mono text-[11px]">
-              {activeTab === 'cockpit'
-                ? 'Unified Cockpit View (GIS Map + Telemetry + 3D Ground Twin + Temporal Scrubber)'
-                : `Active Mode: ${activeTab.toUpperCase()}`}
+              Assimilated Meteorological Telemetry & Physical Post-Processor
             </span>
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setActiveTab('cockpit')}
-              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
-                activeTab === 'cockpit'
-                  ? 'bg-cyan-600 text-white shadow-xs'
-                  : 'bg-slate-900 text-cyan-300 hover:bg-slate-800 border border-cyan-800/60'
-              }`}
-            >
-              Cockpit 4.0
-            </button>
-            <button
               onClick={() => handleOpenLocal3dSimulator()}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-600/30 hover:bg-purple-600 border border-purple-500/50 text-purple-200 hover:text-white transition-all cursor-pointer"
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-gradient-to-r from-purple-900/60 to-indigo-900/60 hover:from-purple-800 hover:to-indigo-800 border border-purple-500/40 text-purple-200 hover:text-white transition-all cursor-pointer flex items-center gap-1.5 shadow-xs"
+              title="Launch 3D Ground Digital Twin Simulator Modal (On-Demand)"
             >
-              3D Ground Simulator (60fps)
+              <Globe className="w-3.5 h-3.5 text-purple-300" />
+              <span>3D Ground Simulator (On-Demand)</span>
             </button>
             <button
-              onClick={() => setActiveTab(activeTab === 'cockpit' ? 'dashboard' : 'cockpit')}
-              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
+              onClick={() => setIsMasterPlansOpen(true)}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 hover:text-white transition-all cursor-pointer flex items-center gap-1.5"
+              title="Open Architectural Master Plans & Evolution Studio"
             >
-              {activeTab === 'cockpit' ? 'Switch to Classic Dashboard' : 'Return to Cockpit 4.0'}
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+              <span>Master Plans Studio</span>
             </button>
           </div>
         </div>
@@ -622,20 +614,7 @@ export default function App() {
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <ErrorBoundary fallbackTitle="Active View Module Recovery">
-        {activeTab === 'cockpit' && (
-          <UnifiedWorkstationCockpit
-            data={filteredData}
-            selectedStationId={selectedStationId}
-            onSelectStation={setSelectedStationId}
-            selectedYear={selectedYear}
-            onSelectYear={setSelectedYear}
-            selectedLeadTime={selectedLeadTime}
-            onSelectLeadTime={setSelectedLeadTime}
-            onOpenLocal3dSimulatorModal={handleOpenLocal3dSimulator}
-          />
-        )}
-
-        {activeTab === 'dashboard' && (
+        {(activeTab === 'dashboard' || (activeTab as string) === 'cockpit') && (
           <div className="space-y-4 sm:space-y-6">
             {/* Historical Extreme Deluge Benchmark Switcher */}
             <ExtremeEventBenchmarks

@@ -122,7 +122,7 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
             }`}
           >
             <Award className="w-3.5 h-3.5 text-amber-300" />
-            <span>Supreme Plan 1: Cockpit Redesign</span>
+            <span>Supreme Plan 1: Assimilated Dashboard</span>
           </button>
 
           <button
@@ -540,40 +540,51 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: SUPREME MASTER PLAN 1 (COCKPIT REDESIGN) */}
+          {/* TAB 2: SUPREME MASTER PLAN 1 (ASSIMILATED DASHBOARD ARCHITECTURE) */}
           {activeTab === 'supreme_master_plan_1' && (
             <div className="space-y-4">
               <div className="p-4 rounded-xl bg-slate-950/80 border border-indigo-500/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div>
                   <h3 className="text-base font-bold text-white flex items-center gap-2 mb-1">
                     <Award className="w-4 h-4 text-indigo-400" />
-                    Supreme Master Plan 1: SAMVARTAKA 4.0 Unified Operational Cockpit
+                    Supreme Master Plan 1: Assimilated Operational Dashboard & Zero-Clutter Architecture
                   </h3>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Platform-wide architectural redesign unifying GIS synoptic mapping, live AI downscaled telemetry deck, embedded 3D ground digital twin, and spring temporal scrubber into an enterprise console.
+                    Platform-wide architectural refinement assimilating Cockpit 4.0's real-time telemetry, station ribbon, and multi-horizon temporal progression directly into the unified Operational Dashboard. Eliminates redundant radar map instances, prevents visual disruption from background 3D canvas blocks, and provides an on-demand modal for the 3D Ground Simulator.
                   </p>
                 </div>
                 <button
                   onClick={() => {
                     onClose();
-                    onNavigateTab?.('cockpit');
+                    onNavigateTab?.('dashboard');
                   }}
                   className="px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg flex items-center gap-2 cursor-pointer shrink-0 transition-all hover:scale-105"
                 >
                   <Gauge className="w-4 h-4 text-white" />
-                  <span>Launch Live Cockpit 4.0</span>
+                  <span>Launch Operational Dashboard</span>
                 </button>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider text-cyan-400">
-                    Pillar 1: Multi-Pane Synchronous Console
+                    Pillar 1: Full Telemetry & Radar Assimilation
                   </h4>
                   <ul className="space-y-1.5 text-xs text-slate-400 list-disc pl-4">
-                    <li>Single-screen operational view combining Synoptic GIS Map, Telemetry, and 3D Ground Twin.</li>
-                    <li>No tab thrashing: forecasters view spatial radar composite alongside station-level flood depths.</li>
-                    <li>Responsive multi-column glassmorphic grid with zero frame latency.</li>
+                    <li>Single primary GIS radar map instance eliminating dual-viewport header duplication.</li>
+                    <li>Real-time telemetry cards, station elevation, and microclimate biomes unified in the main view.</li>
+                    <li>Zero cognitive friction: operational forecasters work from one canonical dashboard.</li>
+                  </ul>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-2">
+                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-purple-400">
+                    Pillar 2: On-Demand 3D Digital Twin Studio
+                  </h4>
+                  <ul className="space-y-1.5 text-xs text-slate-400 list-disc pl-4">
+                    <li>3D ground physics, spatial rain acoustics, and solar angle sliders isolated in an on-demand modal.</li>
+                    <li>Prevents heavy WebGL canvases from blocking critical meteorological charts and radar overlays.</li>
+                    <li>1080p 60fps video capture available instantly without impacting main thread responsiveness.</li>
                   </ul>
                 </div>
 
