@@ -70,11 +70,8 @@ export const WindVectorAdvectionOverlay: React.FC<WindVectorAdvectionOverlayProp
       const width = rect.width;
       const height = rect.height;
 
-      // Semi-transparent trailing fade for elegant streamline persistence
-      ctx.save();
-      ctx.fillStyle = 'rgba(7, 13, 27, 0.12)';
-      ctx.fillRect(0, 0, width, height);
-      ctx.restore();
+      // Clear canvas on every frame so map remains 100% crisp and transparent
+      ctx.clearRect(0, 0, width, height);
 
       // Step particles
       const particles = engineRef.current.step(0.0024 * speedMultiplier);

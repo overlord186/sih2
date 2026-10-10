@@ -233,6 +233,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Quick Header Status & Actions on the Right */}
           <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
+            <DataSourceSwitcher />
             <TacticalDisasterOpsToggle />
 
             <button

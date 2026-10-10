@@ -48,6 +48,7 @@ import {
   Sunset,
   Sunrise,
   Radio,
+  Droplets,
 } from 'lucide-react';
 import { RainfallDataPoint, StationMetadata } from '../types';
 import { MET_STATIONS } from '../data/monsoonDataset';
@@ -57,6 +58,9 @@ import { LocalStationScene3D } from './observatory/local3d/LocalStationScene3D';
 import { getStationBiome, WEATHER_SCENARIO_PRESETS, WeatherScenarioPreset } from '../data/localBiomeTerrains';
 import { weatherSynth } from '../utils/audio';
 import { videoRecorder } from '../services/videoRecorderService';
+import { ExtremeEventBenchmarks } from './ExtremeEventBenchmarks';
+import { HydrologicalCatchmentRoutingView } from './HydrologicalCatchmentRoutingView';
+import { MultiModelStackingVisualizer } from './MultiModelStackingVisualizer';
 
 interface UnifiedWorkstationCockpitProps {
   data: RainfallDataPoint[];
@@ -104,6 +108,9 @@ export const UnifiedWorkstationCockpit: React.FC<UnifiedWorkstationCockpitProps>
   // Temporal Animation timeline player
   const [isPlayingTimeline, setIsPlayingTimeline] = useState<boolean>(false);
   const [timelineIndex, setTimelineIndex] = useState<number>(0);
+
+  // Master Plans Innovations Suite active tab
+  const [activeInnovationModule, setActiveInnovationModule] = useState<'EVT' | 'HYDRO' | 'STACKING'>('EVT');
 
   // Station metadata resolution
   const activeStation = useMemo(() => {
@@ -417,6 +424,7 @@ export const UnifiedWorkstationCockpit: React.FC<UnifiedWorkstationCockpitProps>
                   selectedStationId={selectedStationId}
                   data={data}
                   onSelectStation={onSelectStation}
+                  isEmbedded={true}
                 />
               </div>
             </div>
@@ -681,6 +689,92 @@ export const UnifiedWorkstationCockpit: React.FC<UnifiedWorkstationCockpitProps>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* MASTER PLANS INNOVATION CONSOLE: Breakthrough Scientific Modules */}
+      <div className="bg-slate-900/90 backdrop-blur-2xl border border-white/10 rounded-2xl p-4 shadow-2xl space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-500/20 to-purple-500/20 border border-amber-500/30 flex items-center justify-center">
+              <Sparkles className="w-4 h-4 text-amber-400" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider font-mono">
+                  Operational Breakthrough Innovations Suite
+                </h3>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950/80 text-amber-300 border border-amber-800/60 font-bold">
+                  Master Plan 2
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 mt-0.5">
+                EVT Tail Un-Capping • Catchment Hydrology (cm) • Multi-Model Stacking (BMA)
+              </p>
+            </div>
+          </div>
+
+          {/* Module Selector Tabs */}
+          <div className="flex items-center bg-slate-950/90 p-1 rounded-xl border border-slate-800 overflow-x-auto scrollbar-none">
+            <button
+              onClick={() => setActiveInnovationModule('EVT')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeInnovationModule === 'EVT'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5 text-amber-300" />
+              <span>EVT Tail Deluges</span>
+            </button>
+            <button
+              onClick={() => setActiveInnovationModule('HYDRO')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeInnovationModule === 'HYDRO'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Droplets className="w-3.5 h-3.5 text-blue-300" />
+              <span>Catchment Hydrology (cm)</span>
+            </button>
+            <button
+              onClick={() => setActiveInnovationModule('STACKING')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeInnovationModule === 'STACKING'
+                  ? 'bg-purple-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5 text-purple-300" />
+              <span>NWP Stacking (BMA)</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Selected Module Content */}
+        {activeInnovationModule === 'EVT' && (
+          <ExtremeEventBenchmarks
+            activeStationId={selectedStationId}
+            onSelectEvent={(preset) => {
+              onSelectStation(preset.stationId);
+            }}
+            onResetBaseline={() => {}}
+          />
+        )}
+
+        {activeInnovationModule === 'HYDRO' && (
+          <HydrologicalCatchmentRoutingView
+            currentRainfall24hMm={stationTelemetry.observedRain}
+          />
+        )}
+
+        {activeInnovationModule === 'STACKING' && (
+          <MultiModelStackingVisualizer
+            stationId={selectedStationId}
+            leadHours={selectedLeadTime === 0 ? 24 : selectedLeadTime * 24}
+            baseForecastRainMm={stationTelemetry.observedRain}
+          />
+        )}
       </div>
 
       {/* PANE 4: Master Spring Temporal Scrubber & Progression Controller */}
