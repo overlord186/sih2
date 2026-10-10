@@ -15,17 +15,13 @@ import {
   Volume2,
   VolumeX,
   ArrowUpRight,
+  ArrowLeftRight,
   Bot,
   MessageSquare,
   Moon,
   Printer,
   FileText,
-  Upload,
-  Gamepad2,
   Globe,
-  Trophy,
-  Award,
-  Flame,
   Search,
   X,
   Mountain,
@@ -34,14 +30,22 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
+  RefreshCw,
+  Wifi,
+  WifiOff,
+  Database,
+  FileCode2,
 } from 'lucide-react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { DashboardEngineControls } from './DashboardEngineControls';
-import { loadUserEngagement, UserEngagementState } from '../utils/achievements';
 import { useExploreTour } from './exploreTour/ExploreTourContext';
 import { ExploreBeacon } from './exploreTour/ExploreBeacon';
+import { getTelemetrySyncStatus, TelemetrySyncStatus, fetchLiveWeatherData } from '../utils/weatherApi';
+import { TacticalDisasterOpsToggle } from './TacticalDisasterOpsToggle';
+import { DataSourceSwitcher } from './DataSourceSwitcher';
 
 export type NavigationTab =
+  | 'cockpit'
   | 'dashboard'
   | 'regimes'
   | 'probabilities'
@@ -51,9 +55,6 @@ export type NavigationTab =
   | 'uploader'
   | 'predictor'
   | 'planner'
-  | 'sandbox'
-  | 'challenge'
-  | 'achievements'
   | 'methodology'
   | 'help'
   | 'impact';
@@ -72,12 +73,11 @@ interface HeaderProps {
   totalSamples: number;
   onDownloadReport?: () => void;
   onOpenBulletin?: () => void;
-  onReplayIntro?: () => void;
   isAudioMuted?: boolean;
   onToggleAudio?: () => void;
-  onOpenAchievements?: () => void;
   onOpenLocal3dSimulator?: (stationId: string) => void;
   onOpenTrainingGuide?: (tab?: 'explore' | 'ml_guide' | 'ml_trainer' | 'ui_spec') => void;
+  onOpenModelTraining?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -94,16 +94,39 @@ export const Header: React.FC<HeaderProps> = ({
   totalSamples,
   onDownloadReport,
   onOpenBulletin,
-  onReplayIntro,
   isAudioMuted,
   onToggleAudio,
-  onOpenAchievements,
   onOpenLocal3dSimulator,
   onOpenTrainingGuide,
+  onOpenModelTraining,
 }) => {
   const [isNightMode, setIsNightMode] = useState(() => document.body.classList.contains('dark-black-font-mode'));
   const [stationSearchQuery, setStationSearchQuery] = useState<string>('');
   const { openTourModal, seenIds, totalCount } = useExploreTour();
+  const [syncStatus, setSyncStatus] = useState<TelemetrySyncStatus>(() => getTelemetrySyncStatus());
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+
+  useEffect(() => {
+    const handleSyncUpdate = (e: Event) => {
+      const detail = (e as CustomEvent).detail as TelemetrySyncStatus;
+      if (detail) setSyncStatus(detail);
+    };
+    window.addEventListener('weather-sync-status', handleSyncUpdate);
+    return () => window.removeEventListener('weather-sync-status', handleSyncUpdate);
+  }, []);
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      const stn = MET_STATIONS.find(s => s.id === selectedStationId) || MET_STATIONS[0];
+      await fetchLiveWeatherData(stn.lat, stn.lon);
+      setSyncStatus(getTelemetrySyncStatus());
+    } catch (err) {
+      console.warn('Manual sync failed:', err);
+    } finally {
+      setTimeout(() => setIsSyncing(false), 600);
+    }
+  };
 
   const filteredHeaderStations = useMemo(() => {
     const q = stationSearchQuery.trim().toLowerCase();
@@ -162,18 +185,38 @@ export const Header: React.FC<HeaderProps> = ({
                     : "2023 Historical Benchmark (June - Sept)"}
                 </span>
 
-                {onReplayIntro && (
+                {/* Real-Time Stream / Persistent Offline Vault Badge */}
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full border text-xs bg-slate-950/60 border-slate-800 shadow-inner">
+                  {syncStatus.isOffline ? (
+                    <span
+                      className="flex items-center gap-1.5 text-amber-300"
+                      title={`Offline Vault Active: Telemetry saved up to ${new Date(syncStatus.lastSyncedAt || Date.now()).toLocaleString('en-IN')}`}
+                    >
+                      <WifiOff className="w-3 h-3 text-amber-400" />
+                      <span className="font-mono text-[11px] font-semibold">Offline Vault</span>
+                      <span className="text-[10px] text-amber-400/80 hidden xl:inline">
+                        (Preserved to {new Date(syncStatus.lastSyncedAt || Date.now()).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })})
+                      </span>
+                    </span>
+                  ) : (
+                    <span
+                      className="flex items-center gap-1.5 text-emerald-300"
+                      title={`Live Open-Meteo High-Resolution Telemetry Stream Active (Synced: ${new Date(syncStatus.lastSyncedAt || Date.now()).toLocaleTimeString('en-IN')})`}
+                    >
+                      <Wifi className="w-3 h-3 text-emerald-400 animate-pulse" />
+                      <span className="font-mono text-[11px] font-semibold">Live Open-Meteo Sync</span>
+                    </span>
+                  )}
                   <button
-                    id="replay-intro-showcase-btn"
-                    onClick={onReplayIntro}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-purple-900/80 via-fuchsia-900/70 to-indigo-900/80 hover:from-purple-800 hover:to-indigo-800 border border-purple-400/50 text-purple-200 text-xs font-bold shadow-[0_0_20px_rgba(168,85,247,0.35)] transition-all hover:scale-105 active:scale-95 cursor-pointer ml-auto sm:ml-2"
-                    title="Watch SAMVARTAKA AI Cinematic Intro (Twin Peaks & Cascading Waterfall)"
+                    type="button"
+                    onClick={handleManualSync}
+                    disabled={isSyncing}
+                    className="p-0.5 rounded-full hover:bg-slate-800 text-slate-400 hover:text-white transition-all cursor-pointer"
+                    title="Force re-sync weather telemetry from live API"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-purple-300 animate-spin" />
-                    <span>Intro Showcase</span>
-                    <ArrowUpRight className="w-3 h-3 text-purple-300" />
+                    <RefreshCw className={`w-3 h-3 ${isSyncing ? 'animate-spin text-sky-400' : ''}`} />
                   </button>
-                )}
+                </div>
               </div>
               <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white mt-1 flex flex-wrap items-center gap-2">
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-sky-300 to-indigo-300 font-black tracking-tight">
@@ -189,7 +232,45 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
 
           {/* Quick Header Status & Actions on the Right */}
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0">
+          <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
+            <TacticalDisasterOpsToggle />
+
+            <button
+              id="header-cockpit-btn"
+              onClick={() => onTabChange('cockpit')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-bold transition-all cursor-pointer shadow-md active:scale-95 ${
+                activeTab === 'cockpit'
+                  ? 'bg-cyan-600 text-white border-cyan-400 shadow-cyan-900/50 ring-2 ring-cyan-400/50'
+                  : 'bg-gradient-to-r from-cyan-950/90 to-blue-950/90 hover:from-cyan-900 hover:to-blue-900 border-cyan-600/50 text-cyan-200 hover:text-white'
+              }`}
+              title="Switch to SAMVARTAKA 4.0 Unified Operational Cockpit (Supreme Master Plan 1)"
+            >
+              <Gauge className="w-3.5 h-3.5 text-cyan-300" />
+              <span>Cockpit 4.0</span>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+            </button>
+
+            <button
+              id="header-master-plans-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-master-plans-modal'))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-indigo-900/80 to-blue-900/80 hover:from-indigo-800 hover:to-blue-800 border border-indigo-500/50 text-indigo-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-md active:scale-95 ring-1 ring-indigo-400/30"
+              title="Open Architectural Master Plans & Evolution Studio"
+            >
+              <FileCode2 className="w-3.5 h-3.5 text-cyan-300 animate-pulse" />
+              <span>Master Plans Studio</span>
+              <span className="w-2 h-2 rounded-full bg-cyan-400" />
+            </button>
+
+            <button
+              id="header-dual-swipe-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-dual-swipe-modal'))}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/60 hover:bg-cyan-900/70 border border-cyan-800/60 text-cyan-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Launch Dual-Viewport NWP vs AI Comparison Swipe (UI-MP 3)"
+            >
+              <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden lg:inline">NWP Split Swipe</span>
+            </button>
+
             <button
               id="header-ai-chat-btn"
               onClick={() => window.dispatchEvent(new CustomEvent('toggle-chat-assistant'))}
@@ -198,6 +279,22 @@ export const Header: React.FC<HeaderProps> = ({
             >
               <Bot className="w-3.5 h-3.5 text-sky-400" />
               <span>AI Meteorologist</span>
+            </button>
+            <button
+              id="header-train-model-btn"
+              onClick={() => {
+                if (onOpenModelTraining) {
+                  onOpenModelTraining();
+                } else if (onOpenTrainingGuide) {
+                  onOpenTrainingGuide('ml_trainer');
+                }
+                window.dispatchEvent(new CustomEvent('open-model-training-modal'));
+              }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600/30 via-teal-600/30 to-cyan-600/30 hover:from-emerald-600/50 hover:to-teal-600/50 border border-emerald-500/40 hover:border-emerald-400 text-emerald-200 hover:text-white text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Open SAMVARTAKA ML Model Training & 7 Enterprise Pillars Studio"
+            >
+              <BrainCircuit className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Train Model & 7 Pillars</span>
             </button>
             {onOpenBulletin && (
               <button
@@ -227,10 +324,13 @@ export const Header: React.FC<HeaderProps> = ({
         {/* Filter Toolbar */}
         <div className="mt-4 pt-3 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-3">
+            {/* Live Real Telemetry vs. Climatology Benchmark Switcher */}
+            <DataSourceSwitcher />
+
             {/* Monsoon Season Year Filter (Recent vs Multi-Year) */}
             <div className="flex items-center gap-2">
               <History className="w-3.5 h-3.5 text-blue-400" />
-              <span className="text-slate-400 font-medium">Monsoon Season:</span>
+              <span className="text-slate-400 font-medium">Season:</span>
               <div className="inline-flex rounded-md shadow-xs bg-slate-800 p-0.5 border border-slate-700">
                 <button
                   id="year-2025-btn"

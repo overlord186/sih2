@@ -224,7 +224,7 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
             )}
 
             {/* Callout Label Tag */}
-            <Html distanceFactor={11} position={[0, 0.12, 0]}>
+            <Html center position={[0, 0.12, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
               <div
                 className={`px-2 py-0.5 rounded-md border text-[9px] font-mono cursor-pointer transition-all hover:scale-105 flex items-center gap-1 whitespace-nowrap shadow-lg select-none ${
                   isSelected
@@ -232,9 +232,9 @@ export const SatelliteConstellation3D: React.FC<SatelliteConstellation3DProps> =
                     : 'bg-slate-950/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
                 }`}
               >
-                <Satellite className="w-2.5 h-2.5 text-sky-400" />
-                <span>{sat.code}</span>
-                <span className="text-[8px] text-slate-400">({sat.sensorType.slice(0, 12)}...)</span>
+                <Satellite className="w-2.5 h-2.5 text-sky-400 shrink-0" />
+                <span className="whitespace-nowrap">{sat.code}</span>
+                <span className="text-[8px] text-slate-400 shrink-0">({sat.sensorType.slice(0, 12)}...)</span>
               </div>
             </Html>
           </group>

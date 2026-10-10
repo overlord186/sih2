@@ -54,6 +54,8 @@ import { ErrorBoundary } from './ErrorBoundary';
 import { fetchLiveWeatherData } from '../utils/weatherApi';
 import { D3RadarReflectivityOverlay } from './D3RadarReflectivityOverlay';
 import { D3SpatialRainfallHeatmapOverlay } from './D3SpatialRainfallHeatmapOverlay';
+import { ContinuousRainfallKrigingOverlay } from './ContinuousRainfallKrigingOverlay';
+import { WindVectorAdvectionOverlay } from './WindVectorAdvectionOverlay';
 
 export interface TileDiagnosticLog {
   id: string;
@@ -302,7 +304,8 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
   const [selectedRegimeFilter, setSelectedRegimeFilter] = useState<'ALL' | 'DELUGE' | 'MODERATE' | 'LIGHT' | 'DRY'>('ALL');
 
   // Remote Sensing State
-  const [remoteLayer, setRemoteLayer] = useState<'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP'>('NONE');
+  const [remoteLayer, setRemoteLayer] = useState<'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP' | 'KRIGING'>('NONE');
+  const [showWindVectors, setShowWindVectors] = useState<boolean>(true);
   const [satelliteChannel, setSatelliteChannel] = useState<SatelliteChannel>('TIR1_10_8');
   const [satelliteOpacity, setSatelliteOpacity] = useState<number>(0.65);
   const [selectedRadarSite, setSelectedRadarSite] = useState<RadarSiteId>('MUMBAI');
@@ -608,7 +611,7 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
     return () => window.removeEventListener('engine-radar-toggle', handleEngineRadar);
   }, []);
 
-  const handleSetRemoteLayer = (layer: 'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP') => {
+  const handleSetRemoteLayer = (layer: 'NONE' | 'INSAT_3D' | 'DOPPLER_RADAR' | 'HEATMAP' | 'KRIGING') => {
     try {
       setRemoteLayer(layer);
       window.dispatchEvent(
@@ -711,7 +714,7 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
   }, []);
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-6 relative z-10">
+    <div id="live-map" data-explore-id="live-map" className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mt-6 relative z-10">
       {/* Top Header Controls */}
       <div className="px-5 py-3.5 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between bg-gradient-to-r from-blue-50/50 via-sky-50/30 to-white gap-3">
         <div className="flex items-center gap-2.5">
@@ -771,6 +774,19 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
               >
                 <Radio className={`w-3.5 h-3.5 ${showHazardZones ? 'text-amber-600 animate-pulse' : 'text-slate-400'}`} />
                 <span>{showHazardZones ? 'Alert Envelopes On' : 'Alert Envelopes Off'}</span>
+              </button>
+
+              <button
+                onClick={() => setShowWindVectors(!showWindVectors)}
+                className={`px-2.5 py-1 text-xs font-medium rounded-lg border flex items-center gap-1.5 transition-all cursor-pointer ${
+                  showWindVectors
+                    ? 'bg-cyan-50 border-cyan-300 text-cyan-900 font-semibold shadow-xs'
+                    : 'bg-white border-slate-200 text-slate-500 hover:text-slate-700'
+                }`}
+                title="Toggle Real-time Lagrangian Wind Vector Streamlines (RK2 Midpoint Integration)"
+              >
+                <Wind className={`w-3.5 h-3.5 ${showWindVectors ? 'text-cyan-600 animate-pulse' : 'text-slate-400'}`} />
+                <span>{showWindVectors ? 'Wind Streamlines On' : 'Wind Streamlines Off'}</span>
               </button>
             </>
           )}
@@ -842,6 +858,17 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
                 >
                   <Flame className="w-3 h-3 text-amber-300 animate-pulse" />
                   <span>Spatial Heatmap (D3)</span>
+                </button>
+                <button
+                  onClick={() => handleSetRemoteLayer('KRIGING')}
+                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-all flex items-center gap-1 ${
+                    remoteLayer === 'KRIGING'
+                      ? 'bg-cyan-600 text-white font-semibold shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Sparkles className="w-3 h-3 text-cyan-200" />
+                  <span>Kriging Surface (Matérn GP)</span>
                 </button>
               </div>
 
@@ -1039,6 +1066,14 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
             ref={diagnosticCanvasRef}
             className="absolute inset-0 pointer-events-none z-[350] w-full h-full"
           />
+
+          {/* Master Plan 8 & 18: Lagrangian Wind Vector Streamline Overlay */}
+          <div className="absolute inset-0 z-[360] pointer-events-none">
+            <WindVectorAdvectionOverlay
+              isVisible={showWindVectors && !is3DMode}
+              onToggleVisible={() => setShowWindVectors(false)}
+            />
+          </div>
           
           <MapContainer center={mapCenter} zoom={mapZoom} scrollWheelZoom={true} minZoom={3} maxZoom={18} zoomControl={true} className="h-full w-full z-0">
           <MapController center={mapCenter} zoom={mapZoom} bounds={bounds} />
@@ -1121,6 +1156,15 @@ export const LiveMap: React.FC<Props> = ({ selectedStationId, data, onSelectStat
           {/* High-Performance D3 Spatial Rainfall Intensity Heatmap Overlay */}
           {remoteLayer === 'HEATMAP' && (
             <D3SpatialRainfallHeatmapOverlay
+              stations={filteredStations}
+              stationStats={stationStats}
+              opacity={0.8}
+            />
+          )}
+
+          {/* High-Resolution Universal Kriging Continuous Isosurface Overlay */}
+          {remoteLayer === 'KRIGING' && (
+            <ContinuousRainfallKrigingOverlay
               stations={filteredStations}
               stationStats={stationStats}
               opacity={0.8}

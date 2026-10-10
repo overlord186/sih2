@@ -176,6 +176,30 @@ export interface PredictionResult {
     impact: 'Suppressive' | 'Enhancing' | 'Neutral';
     description: string;
   }[];
+  // Master Plan Additions
+  multiModelStacking?: any;
+  hydrologicalRouting?: any;
+  extremeTailCalibration?: {
+    isExtremeExceedance: boolean;
+    exceedanceOverThresholdMm: number;
+    evtCalibratedRainfallMm: number;
+    estimatedReturnPeriodYears: number;
+    gpdShapeXi: number;
+    gpdScaleSigma: number;
+    cloudburstProbabilityPct: number;
+  };
+  krigingCovariates?: {
+    elevationM: number;
+    isOrographicActive: boolean;
+    orographicBoostFactor: number;
+    spatialSmoothnessScore: number;
+  };
+  stGnnNeighborhood?: {
+    gnnCorrectedMm: number;
+    moistureDivergenceMmPerHr: number;
+    spatialConsistencyScore: number;
+    algebraicConnectivity: number;
+  };
 }
 
 // Spatial Reliability & Sub-Basin Types

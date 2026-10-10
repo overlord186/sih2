@@ -2,7 +2,6 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { SynopticWeatherRegime, RainfallDataPoint } from '../types';
 import { classifySynopticRegime } from '../ml/postProcessor';
 import { MET_STATIONS } from '../data/monsoonDataset';
-import { trackSynopticRegimeView } from '../utils/achievements';
 import {
   Compass,
   Wind,
@@ -51,11 +50,6 @@ export const WeatherRegimeClassifierView: React.FC<WeatherRegimeClassifierViewPr
     });
   }, [rawNwpMm, relativeHumidity, surfacePressure, lowLevelJetKnots, troughShift, regionType]);
 
-  useEffect(() => {
-    if (classification?.synopticRegime) {
-      trackSynopticRegimeView(classification.synopticRegime);
-    }
-  }, [classification?.synopticRegime]);
 
   // Statistics across the loaded dataset
   const regimeDistribution = useMemo(() => {

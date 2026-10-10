@@ -11,9 +11,6 @@ import {
   Upload,
   Cpu,
   Briefcase,
-  Globe,
-  Flame,
-  Award,
   HelpCircle,
   Bot,
   FileText,
@@ -24,7 +21,6 @@ import {
   Moon,
   Printer,
   Download,
-  Trophy,
   SlidersHorizontal,
   ChevronRight,
   ArrowUpRight,
@@ -34,7 +30,6 @@ import {
 } from 'lucide-react';
 import { NavigationTab } from './Header';
 import { DashboardEngineControls } from './DashboardEngineControls';
-import { UserEngagementState } from '../utils/achievements';
 import { weatherSynth } from '../utils/audio';
 
 interface NavigationDrawerProps {
@@ -48,13 +43,9 @@ interface NavigationDrawerProps {
   onToggleNightMode?: () => void;
   onDownloadReport?: () => void;
   onOpenBulletin?: () => void;
-  onReplayIntro?: () => void;
-  onOpenAchievements?: () => void;
   onOpenLocal3dSimulator?: (stationId: string) => void;
   onOpenTrainingGuide?: (tab?: 'explore' | 'ml_guide' | 'ml_trainer' | 'ui_spec') => void;
   selectedStationId: string;
-  engagement: UserEngagementState;
-  unlockedBadgesCount: number;
   seenTourCount?: number;
   totalTourCount?: number;
 }
@@ -70,13 +61,9 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   onToggleNightMode,
   onDownloadReport,
   onOpenBulletin,
-  onReplayIntro,
-  onOpenAchievements,
   onOpenLocal3dSimulator,
   onOpenTrainingGuide,
   selectedStationId,
-  engagement,
-  unlockedBadgesCount,
   seenTourCount = 0,
   totalTourCount = 12,
 }) => {
@@ -165,14 +152,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     badge?: string;
   }> = [
     {
-      id: 'sandbox',
-      label: '3D Earth Observatory',
-      description: 'Global 3D Earth, cyclone tracks & live station telemetry',
-      icon: Globe,
-      accentColor: 'text-sky-300',
-      badge: '3D WebGL',
-    },
-    {
       id: '3d-ground',
       label: '3D Ground Station Sim',
       description: 'Physical station environment with rain & micro-climate physics',
@@ -217,7 +196,7 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
   ];
 
   const learningGamification: Array<{
-    id: NavigationTab | 'tour' | 'ui-spec' | 'ml-guide' | 'intro';
+    id: NavigationTab | 'tour' | 'ui-spec' | 'ml-guide';
     label: string;
     description: string;
     icon: React.ComponentType<{ className?: string }>;
@@ -225,23 +204,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
     action?: () => void;
     badge?: string;
   }> = [
-    {
-      id: 'challenge',
-      label: 'Daily Monsoon Challenge',
-      description: 'Daily gamified forecast scenario with regime betting',
-      icon: Flame,
-      accentColor: 'text-orange-400',
-      badge: `${engagement.currentStreak > 0 ? `${engagement.currentStreak}🔥 Streak` : 'Daily'}`,
-    },
-    {
-      id: 'achievements',
-      label: 'Achievements & Badges',
-      description: `Meteorologist Rank (Lvl ${engagement.level}) • ${unlockedBadgesCount} unlocked`,
-      icon: Trophy,
-      accentColor: 'text-amber-400',
-      action: onOpenAchievements,
-      badge: `Lvl ${engagement.level}`,
-    },
     {
       id: 'tour',
       label: 'Interactive UI Tour',
@@ -280,17 +242,6 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
       accentColor: 'text-sky-300',
       action: () => {
         if (onOpenTrainingGuide) onOpenTrainingGuide('ui_spec');
-        onClose();
-      },
-    },
-    {
-      id: 'intro',
-      label: 'Replay Cinematic Intro',
-      description: 'Twin Peaks 3D waterfall and atmospheric opening sequence',
-      icon: Sparkles,
-      accentColor: 'text-purple-400',
-      action: () => {
-        if (onReplayIntro) onReplayIntro();
         onClose();
       },
     },
@@ -547,12 +498,12 @@ export const NavigationDrawer: React.FC<NavigationDrawerProps> = ({
                 </div>
               )}
 
-              {/* SECTION 3: GAMIFICATION & METHODOLOGY */}
+              {/* SECTION 3: SCIENTIFIC RESOURCES & METHODOLOGY */}
               {(activeCategory === 'all' || activeCategory === 'learning') && filteredLearning.length > 0 && (
                 <div className="space-y-1.5">
                   <div className="flex items-center justify-between px-2 pb-1 text-[10px] font-mono uppercase tracking-wider text-slate-400 font-bold border-b border-slate-800">
-                    <span>Gamification & Guides</span>
-                    <span className="text-slate-400 font-normal">Training</span>
+                    <span>Scientific Resources & Guides</span>
+                    <span className="text-slate-400 font-normal">Reference</span>
                   </div>
                   <div className="space-y-1">
                     {filteredLearning.map((item) => {

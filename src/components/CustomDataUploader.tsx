@@ -15,7 +15,8 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { classifySynopticRegime, classifyRegime, applyRegimeAwareCorrection, calculateHeavyRainProbabilities } from '../ml/postProcessor';
-import { SynopticWeatherRegime } from '../types';
+import { SynopticWeatherRegime, RainfallDataPoint, RainfallRegime } from '../types';
+import { MET_STATIONS } from '../data/monsoonDataset';
 
 interface CustomRecord {
   id: string;
@@ -23,6 +24,7 @@ interface CustomRecord {
   subdivision: string;
   state: string;
   rawForecastMm: number;
+  observedMm?: number;
   relativeHumidity: number;
   surfacePressure: number;
   windSpeed: number;
@@ -81,11 +83,69 @@ export const CustomDataUploader: React.FC = () => {
   const [rawRecords, setRawRecords] = useState<CustomRecord[]>(PRESET_SCENARIOS[0].data);
   const [processedRecords, setProcessedRecords] = useState<ProcessedRecord[]>([]);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [isPromoted, setIsPromoted] = useState<boolean>(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedScenarioIndex, setSelectedScenarioIndex] = useState<number>(0);
 
+  const handlePromoteToActive = () => {
+    if (processedRecords.length === 0) return;
+    const points: RainfallDataPoint[] = processedRecords.map((r, i) => {
+      const reg = r.synopticRegime === SynopticWeatherRegime.BREAK_MONSOON
+        ? RainfallRegime.DRY
+        : r.rawForecastMm < 2.5
+        ? RainfallRegime.DRY
+        : r.rawForecastMm < 15.6
+        ? RainfallRegime.LIGHT
+        : r.rawForecastMm < 64.5
+        ? RainfallRegime.MODERATE
+        : RainfallRegime.HEAVY_EXTREME;
+
+      const matchedStation = MET_STATIONS.find(
+        (s) =>
+          s.name.toLowerCase().includes(r.stationName.toLowerCase()) ||
+          r.stationName.toLowerCase().includes(s.name.toLowerCase()) ||
+          s.id.toLowerCase() === r.stationName.toLowerCase() ||
+          s.subdivision.toLowerCase() === r.subdivision.toLowerCase()
+      );
+      const stnId = matchedStation ? matchedStation.id : (r.stationName || `STN_${i}`).replace(/[^a-zA-Z0-9]/g, '_').toUpperCase();
+
+      return {
+        id: `CUSTOM_STN_${r.id}_${i}`,
+        year: 2026,
+        date: new Date().toISOString().split('T')[0],
+        dayOfYear: 200 + (i % 60),
+        stationId: stnId,
+        stationName: r.stationName,
+        subdivision: r.subdivision,
+        leadTimeDays: r.leadTimeDays,
+        rawForecastMm: r.rawForecastMm,
+        observedMm: r.observedMm !== undefined ? r.observedMm : r.correctedForecastMm,
+        relativeHumidity850hPa: r.relativeHumidity,
+        temp2mC: 28.5,
+        surfacePressureHpa: r.surfacePressure,
+        windSpeed10mKmh: r.windSpeed,
+        prevDayObsMm: Math.max(0, r.rawForecastMm * 0.8),
+        detectedRegime: reg,
+        synopticRegime: r.synopticRegime,
+        baselineLinearMm: Math.max(0, Math.round((r.rawForecastMm * 0.86 + 0.5) * 10) / 10),
+        correctedForecastMm: r.correctedForecastMm,
+      };
+    });
+
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem('SAMVARTAKA_CUSTOM_ACTIVE_DATASET', JSON.stringify(points));
+        window.dispatchEvent(new CustomEvent('promote-custom-dataset', { detail: points }));
+        setIsPromoted(true);
+      } catch (err) {
+        console.warn('Unable to persist custom dataset:', err);
+      }
+    }
+  };
+
   const handleProcess = () => {
     setIsProcessing(true);
+    setIsPromoted(false);
     setTimeout(() => {
       const results: ProcessedRecord[] = rawRecords.map((rec) => {
         const { regime } = classifyRegime(rec.rawForecastMm, rec.relativeHumidity, rec.surfacePressure, rec.windSpeed, 30);
@@ -151,6 +211,7 @@ export const CustomDataUploader: React.FC = () => {
         const presIdx = headers.findIndex((h) => h.includes('pressure') || h.includes('mslp'));
         const windIdx = headers.findIndex((h) => h.includes('wind') || h.includes('speed'));
         const leadIdx = headers.findIndex((h) => h.includes('lead') || h.includes('day'));
+        const obsIdx = headers.findIndex((h) => h.includes('observed') || h.includes('actual') || h.includes('gauge') || h.includes('ground') || h.includes('truth'));
 
         const records: CustomRecord[] = [];
         for (let i = 1; i < lines.length; i++) {
@@ -161,6 +222,7 @@ export const CustomDataUploader: React.FC = () => {
           const subdivision = subIdx >= 0 ? cols[subIdx] : 'Indian Region';
           const state = stateIdx >= 0 ? cols[stateIdx] : 'India';
           const rawForecastMm = rawIdx >= 0 ? parseFloat(cols[rawIdx]) || 20 : 20;
+          const observedMm = obsIdx >= 0 && cols[obsIdx] !== undefined ? parseFloat(cols[obsIdx]) : undefined;
           const relativeHumidity = rhIdx >= 0 ? parseFloat(cols[rhIdx]) || 80 : 80;
           const surfacePressure = presIdx >= 0 ? parseFloat(cols[presIdx]) || 1004 : 1004;
           const windSpeed = windIdx >= 0 ? parseFloat(cols[windIdx]) || 20 : 20;
@@ -172,6 +234,7 @@ export const CustomDataUploader: React.FC = () => {
             subdivision,
             state,
             rawForecastMm,
+            observedMm: isNaN(Number(observedMm)) ? undefined : observedMm,
             relativeHumidity,
             surfacePressure,
             windSpeed,
@@ -337,13 +400,28 @@ export const CustomDataUploader: React.FC = () => {
               </span>
             </div>
 
-            <button
-              onClick={handleExportProcessedCSV}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5 text-emerald-200" />
-              <span>Export Calibrated CSV</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handlePromoteToActive}
+                className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-white text-xs font-bold shadow-md transition-all cursor-pointer ${
+                  isPromoted
+                    ? 'bg-purple-600 border border-purple-400 ring-2 ring-purple-400/40'
+                    : 'bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600 hover:from-purple-500 hover:to-indigo-500 border border-purple-500/50 hover:scale-[1.02]'
+                }`}
+                title="Inject this real dataset to drive the entire workstation dashboard (GIS Map, Forecast Charts & Contingency Metrics)"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-purple-200" />
+                <span>{isPromoted ? '✓ Active in Dashboard' : 'Promote to Active Dashboard'}</span>
+              </button>
+
+              <button
+                onClick={handleExportProcessedCSV}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow-sm transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5 text-emerald-200" />
+                <span>Export Calibrated CSV</span>
+              </button>
+            </div>
           </div>
 
           <div className="overflow-x-auto rounded-xl border border-slate-800 bg-slate-950/80">

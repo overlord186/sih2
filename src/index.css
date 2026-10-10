@@ -704,3 +704,36 @@ body.cine-4k-grain::after {
 
 .leaflet-container { width: 100% !important; height: 100% !important; min-height: 400px; }
 .map-wrapper:not(:has(.leaflet-container)) #map-loading-overlay { opacity: 1; pointer-events: auto; }
+
+/* 120 FPS Fluidity & GPU Hardware Acceleration Rules */
+.gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform, opacity;
+}
+
+.contain-layout-paint {
+  contain: layout paint;
+}
+
+.contain-strict {
+  contain: strict;
+}
+
+/* Smooth cubic-bezier spring approximations for CSS transitions */
+:root {
+  --spring-snappy: cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  --spring-critically-damped: cubic-bezier(0.16, 1, 0.3, 1);
+  --spring-gentle: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.transition-spring-snappy {
+  transition-timing-function: var(--spring-snappy);
+}
+
+.transition-spring-smooth {
+  transition-timing-function: var(--spring-critically-damped);
+}

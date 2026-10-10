@@ -178,7 +178,7 @@ export const DailyChallengeRewardVFX3D: React.FC<DailyChallengeRewardVFX3DProps>
 
       {/* 4. 3D Floating Holographic Telemetry Card */}
       <group position={surfacePos.clone().add(normal.clone().multiplyScalar(0.75))}>
-        <Html center distanceFactor={14} zIndexRange={[100, 0]}>
+        <Html center zIndexRange={[100, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
           <div className="w-72 bg-slate-950/90 backdrop-blur-md border border-sky-400/80 rounded-xl p-3 shadow-[0_0_30px_rgba(56,189,248,0.45)] text-white font-sans pointer-events-auto transform -translate-y-2 select-none animate-in fade-in zoom-in duration-300">
             {/* Header pill */}
             <div className="flex items-center justify-between border-b border-sky-500/30 pb-2 mb-2">

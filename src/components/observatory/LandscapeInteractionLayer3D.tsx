@@ -341,11 +341,11 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                   </mesh>
 
                   {/* 3D Crest Label */}
-                  <Html distanceFactor={8} position={[0, 0.06, 0]} zIndexRange={[100, 0]}>
-                    <div className="bg-slate-950/95 backdrop-blur-md border border-amber-500/70 px-2 py-1 rounded-lg text-white font-mono text-[10px] whitespace-nowrap shadow-lg flex items-center gap-1.5 pointer-events-none transform -translate-x-1/2">
-                      <Mountain className="w-3 h-3 text-amber-400" />
-                      <span className="font-bold text-amber-300">{r.barrier.peakName}</span>
-                      <span className="text-slate-400">({r.barrier.maxPeakM}m)</span>
+                  <Html center position={[0, 0.06, 0]} zIndexRange={[100, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+                    <div className="bg-slate-950/95 backdrop-blur-md border border-amber-500/70 px-2 py-1 rounded-lg text-white font-mono text-[10px] whitespace-nowrap shadow-lg flex items-center gap-1.5 pointer-events-none">
+                      <Mountain className="w-3 h-3 text-amber-400 shrink-0" />
+                      <span className="font-bold text-amber-300 whitespace-nowrap">{r.barrier.peakName}</span>
+                      <span className="text-slate-400 shrink-0">({r.barrier.maxPeakM}m)</span>
                     </div>
                   </Html>
                 </group>
@@ -442,39 +442,41 @@ export const LandscapeInteractionLayer3D: React.FC<LandscapeInteractionLayer3DPr
                 />
               </mesh>
 
-              {/* Compact 3D Label Badge */}
-              <Html distanceFactor={8} position={[0, 0.045, 0]} zIndexRange={[90, 0]}>
-                <div
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedStation(isSelected ? null : station);
-                  }}
-                  className={`font-mono transition-all transform -translate-x-1/2 cursor-pointer select-none ${
-                    isHovered || isSelected ? 'scale-105 z-40' : 'opacity-85 hover:opacity-100 scale-90'
-                  }`}
-                >
+              {/* Compact 3D Label Badge - only when hovered or selected to prevent screen clutter */}
+              {(isHovered || isSelected) && (
+                <Html center position={[0, 0.045, 0]} zIndexRange={[90, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
                   <div
-                    className={`px-1.5 py-0.5 rounded flex items-center gap-1 text-[8px] border backdrop-blur-md shadow-md ${
-                      isCrest
-                        ? 'bg-amber-950/90 text-amber-300 border-amber-500/80'
-                        : isWindward
-                        ? 'bg-sky-950/90 text-sky-300 border-sky-500/80'
-                        : 'bg-rose-950/90 text-rose-300 border-rose-500/80'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedStation(isSelected ? null : station);
+                    }}
+                    className={`font-mono transition-all cursor-pointer select-none whitespace-nowrap ${
+                      isHovered || isSelected ? 'scale-105 z-40' : 'opacity-85 hover:opacity-100 scale-90'
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full ${isCrest ? 'bg-amber-400' : isWindward ? 'bg-sky-400' : 'bg-rose-400'}`} />
-                    <span className="font-bold whitespace-nowrap">{station.name}</span>
-                    <span className="text-[7px] text-slate-300 opacity-80">
-                      {isCrest ? `${station.elevationM}m` : isWindward ? 'Windward' : 'Leeward'}
-                    </span>
+                    <div
+                      className={`px-1.5 py-0.5 rounded flex items-center gap-1 text-[8px] border backdrop-blur-md shadow-md whitespace-nowrap ${
+                        isCrest
+                          ? 'bg-amber-950/90 text-amber-300 border-amber-500/80'
+                          : isWindward
+                          ? 'bg-sky-950/90 text-sky-300 border-sky-500/80'
+                          : 'bg-rose-950/90 text-rose-300 border-rose-500/80'
+                      }`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isCrest ? 'bg-amber-400' : isWindward ? 'bg-sky-400' : 'bg-rose-400'}`} />
+                      <span className="font-bold whitespace-nowrap">{station.name}</span>
+                      <span className="text-[7px] text-slate-300 opacity-80 shrink-0">
+                        {isCrest ? `${station.elevationM}m` : isWindward ? 'Windward' : 'Leeward'}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              </Html>
+                </Html>
+              )}
 
               {/* Station Label & Telemetry Popup */}
               {isSelected && (
-                <Html distanceFactor={7} position={[0, 0.08, 0]} zIndexRange={[120, 0]}>
-                  <div className="bg-slate-950/95 backdrop-blur-xl border border-sky-500/80 p-2.5 rounded-xl text-white font-mono text-[10px] whitespace-nowrap shadow-2xl min-w-[200px] transform -translate-x-1/2 select-none z-50">
+                <Html center position={[0, 0.09, 0]} zIndexRange={[120, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+                  <div className="bg-slate-950/95 backdrop-blur-xl border border-sky-500/80 p-2.5 rounded-xl text-white font-mono text-[10px] whitespace-nowrap shadow-2xl min-w-[200px] select-none z-50">
                     <div className="flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
                       <div className="flex items-center gap-1.5">
                         <span
