@@ -72,9 +72,8 @@ export default defineConfig(() => {
       },
     },
     server: {
-      hmr: false,
-      ws: false as const,
-      watch: null,
+      hmr: process.env.DISABLE_HMR === 'true' ? false : undefined,
+      watch: process.env.DISABLE_HMR === 'true' ? null : undefined,
       proxy: {
         '/api': {
           target: 'http://localhost:3000',

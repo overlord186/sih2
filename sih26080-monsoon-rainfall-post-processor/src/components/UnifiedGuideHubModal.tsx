@@ -651,6 +651,26 @@ export const UnifiedGuideHubModal: React.FC<UnifiedGuideHubModalProps> = ({
                       <span className="text-[9px] text-amber-500/80 block mt-0.5">q10 &amp; q90 Bands</span>
                     </div>
                   </div>
+
+                  {/* 7 Enterprise Pillars Status Bar */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-[10px] font-mono">
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-400">Pillar 1 Hurdle:</span>
+                      <span className="text-emerald-400 font-bold">θ = 0.42 Active</span>
+                    </div>
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-400">Pillar 2 Blend:</span>
+                      <span className="text-purple-300 font-bold">ECMWF+NCUM+GFS</span>
+                    </div>
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-400">Pillar 3 Froude:</span>
+                      <span className="text-sky-300 font-bold">Fr Lift Verified</span>
+                    </div>
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 flex items-center justify-between">
+                      <span className="text-slate-400">Pillars 4–7:</span>
+                      <span className="text-amber-300 font-bold">QC+SHAP+API Ready</span>
+                    </div>
+                  </div>
                 </div>
               )}
 

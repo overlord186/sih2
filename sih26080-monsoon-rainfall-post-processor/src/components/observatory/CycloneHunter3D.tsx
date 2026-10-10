@@ -1,4 +1,4 @@
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { Html } from '@react-three/drei';
@@ -122,7 +122,19 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
     return new THREE.Line(orbitPathGeom, mat);
   }, [orbitPathGeom]);
 
+  const [isAircraftVisible, setIsAircraftVisible] = useState(true);
+  const [isHovered, setIsHovered] = useState(false);
+
   useFrame((state, delta) => {
+    // Check horizon visibility for aircraft
+    const camDir = state.camera.position.clone().normalize();
+    const planeVec = aircraftPos.clone().normalize();
+    const dot = planeVec.dot(camDir);
+    const visible = dot > 0.12;
+    if (visible !== isAircraftVisible) {
+      setIsAircraftVisible(visible);
+    }
+
     // Spin turboprops
     if (!isPaused) {
       const spinSpeed = 28 * delta * (timeSpeed / 2);
@@ -233,20 +245,49 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
         <pointLight ref={strobeLightRef} position={[0, -0.08, 0.05]} color="#ffffff" distance={0.6} intensity={0.5} />
 
         {/* Floating Callout Label */}
-        {showAircraftLabel && (
-          <Html distanceFactor={10} position={[0, 0.16, 0]}>
+        {showAircraftLabel && isAircraftVisible && (
+          <Html center position={[0, 0.10, 0.04]} zIndexRange={[110, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
             <div 
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                setIsHovered(true);
+              }}
+              onPointerOut={() => setIsHovered(false)}
               onClick={(e) => {
                 e.stopPropagation();
-                if (onEjectDropsonde) onEjectDropsonde();
+                if (onDeployDropsonde) {
+                  const newSonde: Dropsonde = {
+                    id: `SONDE_${Date.now()}`,
+                    lat: currentAircraft.lat,
+                    lon: currentAircraft.lon,
+                    currentAltKm: currentAircraft.altitudeKm,
+                    fallSpeedKmH: 45,
+                    status: 'FALLING',
+                    deployedAt: Date.now(),
+                    capeJoulesPerKg: 2850,
+                    liftedIndex: -5.2,
+                    verificationConfidenceBoost: 20,
+                    soundingData: [
+                      { altKm: 12.0, pressureHpa: 200, tempC: -53, dewPointC: -62, windSpeedKmH: 140, windDirDeg: 280, rhPct: 35 },
+                      { altKm: 9.0, pressureHpa: 300, tempC: -36, dewPointC: -45, windSpeedKmH: 120, windDirDeg: 270, rhPct: 45 },
+                      { altKm: 5.5, pressureHpa: 500, tempC: -8, dewPointC: -12, windSpeedKmH: 85, windDirDeg: 250, rhPct: 75 },
+                      { altKm: 3.0, pressureHpa: 700, tempC: 8, dewPointC: 6, windSpeedKmH: 60, windDirDeg: 240, rhPct: 88 },
+                      { altKm: 1.5, pressureHpa: 850, tempC: 21, dewPointC: 19, windSpeedKmH: 52, windDirDeg: 235, rhPct: 92 },
+                      { altKm: 0.1, pressureHpa: 1005, tempC: 29.5, dewPointC: 27, windSpeedKmH: 42, windDirDeg: 220, rhPct: 94 },
+                    ],
+                  };
+                  onDeployDropsonde(newSonde);
+                } else if (onEjectDropsonde) {
+                  onEjectDropsonde();
+                }
               }}
-              className="bg-slate-900/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-slate-700 shadow-xl text-[9px] font-sans text-slate-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:border-sky-400 hover:bg-slate-800 transition-all select-none"
+              className="bg-slate-950/90 backdrop-blur-md px-2.5 py-1 rounded-full border border-sky-400/60 shadow-xl text-[10px] font-sans text-slate-200 flex items-center gap-1.5 whitespace-nowrap cursor-pointer hover:border-sky-300 hover:bg-slate-900 transition-all select-none"
               title="Click to deploy dropsonde atmospheric sounder"
             >
-              <Plane className="w-3 h-3 text-sky-400" />
-              <span className="font-semibold text-white">{currentAircraft.callsign}</span>
-              <span className="text-slate-400 font-mono text-[8px]">FL{Math.round(currentAircraft.altitudeKm * 32.8)}</span>
-              <span className="px-1.5 py-0.2 bg-sky-950/80 rounded-full text-[8px] font-medium text-sky-300 border border-sky-800/60">
+              <Plane className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+              <span className="font-semibold text-white whitespace-nowrap">{currentAircraft.callsign}</span>
+              <span className="text-slate-400 font-mono text-[9px] shrink-0">FL{Math.round(currentAircraft.altitudeKm * 32.8)}</span>
+              <span className="px-1.5 py-0.5 bg-sky-950/90 rounded-full text-[8px] font-bold text-sky-300 border border-sky-700/60 uppercase shrink-0">
                 EJECT SONDE
               </span>
             </div>
@@ -300,7 +341,7 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
             </mesh>
 
             {/* Clickable Hover Tag */}
-            <Html distanceFactor={10} position={[0, 0.06, 0]}>
+            <Html center position={[0, 0.05, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
               <div
                 className={`px-1.5 py-0.5 rounded border text-[8px] font-mono cursor-pointer transition-transform hover:scale-110 flex items-center gap-1 whitespace-nowrap shadow-md ${
                   isSplashed
@@ -308,9 +349,9 @@ export const CycloneHunter3D: React.FC<CycloneHunter3DProps> = ({
                     : 'bg-sky-950/90 text-sky-300 border-sky-400/60 animate-pulse'
                 }`}
               >
-                <Radio className="w-2.5 h-2.5" />
-                <span>SONDE {sonde.id.slice(-4)}</span>
-                <span className="text-slate-400">{Math.round(sonde.currentAltKm * 10) / 10}km</span>
+                <Radio className="w-2.5 h-2.5 shrink-0" />
+                <span className="whitespace-nowrap">SONDE {sonde.id.slice(-4)}</span>
+                <span className="text-slate-400 shrink-0">{Math.round(sonde.currentAltKm * 10) / 10}km</span>
               </div>
             </Html>
           </group>

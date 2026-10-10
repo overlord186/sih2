@@ -34,8 +34,10 @@ import { metCache } from './meteorologicalDataCache';
  * Checks whether the platform is currently operating on Live Real Data or Climatological Benchmarks
  */
 export function getIsLiveRealDataActive(): boolean {
-  if (typeof window === 'undefined' || !window.localStorage) return false;
-  return window.localStorage.getItem(REAL_DATA_ACTIVE_KEY) === 'true';
+  if (typeof window === 'undefined' || !window.localStorage) return true;
+  const stored = window.localStorage.getItem(REAL_DATA_ACTIVE_KEY);
+  if (stored === null) return true; // Default to live real data
+  return stored === 'true';
 }
 
 /**

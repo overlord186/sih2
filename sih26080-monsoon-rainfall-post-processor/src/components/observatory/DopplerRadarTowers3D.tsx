@@ -252,7 +252,7 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
 
             {/* Station Callout Tag (Only visible when hovered or selected to prevent canvas clutter) */}
             {(isSelected || isHovered) && (
-              <Html distanceFactor={10} position={[0, colHeight + 0.04, 0]}>
+              <Html center position={[0, colHeight + 0.05, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
                 <div
                   className={`px-2 py-0.5 rounded-full border text-[9px] font-sans cursor-pointer transition-all hover:scale-105 flex items-center gap-1.5 whitespace-nowrap shadow-xl select-none backdrop-blur-md ${
                     isSelected
@@ -260,12 +260,12 @@ export const DopplerRadarTowers3D: React.FC<DopplerRadarTowers3DProps> = ({
                       : 'bg-slate-900/90 text-slate-300 border-slate-700/80 hover:border-slate-500'
                   }`}
                 >
-                  <Radio className="w-2.5 h-2.5 text-rose-400" />
-                  <span className="font-semibold text-white">{radar.code}</span>
-                  <span className={`text-[8px] font-mono px-1 rounded-full ${radar.maxDbz > 55 ? 'bg-rose-950 text-rose-300 border border-rose-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60'}`}>
+                  <Radio className="w-2.5 h-2.5 text-rose-400 shrink-0" />
+                  <span className="font-semibold text-white whitespace-nowrap">{radar.code}</span>
+                  <span className={`text-[8px] font-mono px-1 rounded-full shrink-0 ${radar.maxDbz > 55 ? 'bg-rose-950 text-rose-300 border border-rose-800/60' : 'bg-amber-950 text-amber-300 border border-amber-800/60'}`}>
                     {radar.maxDbz} dBZ
                   </span>
-                  <span className="text-[8px] text-slate-400 font-mono">ET {radar.echoTopKm}km</span>
+                  <span className="text-[8px] text-slate-400 font-mono shrink-0">ET {radar.echoTopKm}km</span>
                 </div>
               </Html>
             )}

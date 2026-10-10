@@ -91,6 +91,22 @@ import {
 } from './observatory/types';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { ExploreBeacon } from './exploreTour/ExploreBeacon';
+import { EarthNullschoolHUD } from './observatory/EarthNullschoolHUD';
+import { FloatingTacticalDeck } from './observatory/FloatingTacticalDeck';
+import { SlideOverTelemetryDrawer } from './observatory/SlideOverTelemetryDrawer';
+import { NullschoolVectorField3D } from './observatory/NullschoolVectorField3D';
+import { NullschoolScalarHeatmap3D } from './observatory/NullschoolScalarHeatmap3D';
+import { NullschoolTargetReticle3D } from './observatory/NullschoolTargetReticle3D';
+import { NullschoolLatLonGrid3D } from './observatory/NullschoolLatLonGrid3D';
+import { NullschoolPhysicsEngine } from '../services/nullschoolPhysicsEngine';
+import { 
+  NullschoolMode, 
+  NullschoolAnimate, 
+  NullschoolHeight, 
+  NullschoolOverlay, 
+  NullschoolProjection, 
+  NullschoolProbeData 
+} from './observatory/nullschoolTypes';
 
 interface GlobeSandbox3DSimulatorProps {
   onOpenLocal3dSimulator?: (stationId: string) => void;
@@ -738,6 +754,7 @@ interface EarthSphereProps {
   useLiveCloudMode: boolean;
   liveCloudData: LiveStationCloudData[] | null;
   elevationMultiplier?: number;
+  onGlobeClick?: (lat: number, lon: number, worldPoint: THREE.Vector3) => void;
 }
 
 const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
@@ -757,6 +774,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
   useLiveCloudMode,
   liveCloudData,
   elevationMultiplier = 1.0,
+  onGlobeClick,
 }) => {
   const globeGroupRef = useRef<THREE.Group>(null);
   const atmosphereRef = useRef<THREE.Mesh>(null);
@@ -1487,7 +1505,16 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
         shockwaveRingRef.current.scale.set(1, 1, 1);
       }
     }
+
+    const camDir = state.camera.position.clone().normalize();
+    const targetVec = targetPos.clone().normalize();
+    const isVisible = targetVec.dot(camDir) > 0.12;
+    if (isVisible !== isTargetFacingCamera) {
+      setIsTargetFacingCamera(isVisible);
+    }
   });
+
+  const [isTargetFacingCamera, setIsTargetFacingCamera] = useState(true);
 
   const targetPos = useMemo(() => {
     return latLonToVector3(selectedTarget.lat, selectedTarget.lon, GLOBE_RADIUS + 0.08);
@@ -1544,6 +1571,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               selectedTarget
             );
             setInspectTooltip(tooltipData);
+            onGlobeClick?.(lat, lon, e.point);
           }
         }}
         onPointerOver={() => {
@@ -1700,13 +1728,15 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
           <ringGeometry args={[0.14, 0.16, 32]} />
           <meshBasicMaterial color="#f59e0b" side={THREE.DoubleSide} transparent opacity={0.45} />
         </mesh>
-        <Html distanceFactor={10} position={[0, 0.12, 0]} zIndexRange={[150, 0]}>
-          <div className="bg-slate-900/90 backdrop-blur-md text-slate-200 px-3 py-1 rounded-full border border-slate-700/80 shadow-xl text-[10px] font-sans whitespace-nowrap flex items-center gap-2 pointer-events-none select-none">
-            <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-            <span className="font-semibold text-white">{selectedTarget.name}</span>
-            <span className="text-slate-400 font-mono text-[9px]">({selectedTarget.lat.toFixed(1)}°, {selectedTarget.lon.toFixed(1)}°)</span>
-          </div>
-        </Html>
+        {isTargetFacingCamera && (
+          <Html center position={[0, 0.12, 0]} zIndexRange={[150, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+            <div className="bg-slate-900/90 backdrop-blur-md text-slate-200 px-3 py-1 rounded-full border border-slate-700/80 shadow-xl text-[10px] font-sans whitespace-nowrap flex items-center gap-2 pointer-events-none select-none">
+              <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+              <span className="font-semibold text-white whitespace-nowrap">{selectedTarget.name}</span>
+              <span className="text-slate-400 font-mono text-[9px] shrink-0">({selectedTarget.lat.toFixed(1)}°, {selectedTarget.lon.toFixed(1)}°)</span>
+            </div>
+          </Html>
+        )}
       </group>
 
       {/* User Click Trigger Shockwaves */}
@@ -1722,7 +1752,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
               <ringGeometry args={[0.06, 0.10, 32]} />
               <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.6} />
             </mesh>
-            <Html distanceFactor={11} position={[0, 0.08, 0]} zIndexRange={[90, 0]}>
+            <Html center position={[0, 0.08, 0]} zIndexRange={[90, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
               <div className="px-1.5 py-0.5 rounded bg-slate-900/90 text-sky-300 border border-slate-600 text-[8px] font-mono whitespace-nowrap pointer-events-none">
                 🔵 Probe ({trig.lat.toFixed(1)}°, {trig.lon.toFixed(1)}°)
               </div>
@@ -1776,31 +1806,31 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
 
             {/* 3D Observatory Tooltip (Only shown on hover so cities do not clutter the globe) */}
             {isHovered && (
-              <Html distanceFactor={10} position={[0, 0.07, 0]} zIndexRange={[110, 0]}>
+              <Html center position={[0, 0.07, 0]} zIndexRange={[110, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
                 <div 
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelectTarget(target);
                   }}
-                  className="font-sans transition-all transform -translate-x-1/2 cursor-pointer select-none scale-105 z-50 pointer-events-auto"
+                  className="font-sans transition-all cursor-pointer select-none scale-105 z-50 pointer-events-auto whitespace-nowrap"
                 >
-                  <div className="px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[9px] border border-slate-700 bg-slate-900/95 text-slate-200 backdrop-blur-md shadow-xl">
-                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400" />
+                  <div className="px-2.5 py-1 rounded-full flex items-center gap-1.5 text-[9px] border border-slate-700 bg-slate-900/95 text-slate-200 backdrop-blur-md shadow-xl whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-sky-400 shrink-0" />
                     <span className="font-semibold whitespace-nowrap text-white">{target.name}</span>
-                    <span className="text-[8px] text-slate-400">({target.country})</span>
+                    <span className="text-[8px] text-slate-400 shrink-0">({target.country})</span>
                   </div>
 
                   {/* Hover Telemetry Card */}
-                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2.5 rounded-xl bg-slate-950/95 border border-slate-800 text-white text-[9px] shadow-2xl min-w-[200px] pointer-events-none">
-                    <div className="font-semibold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-1 mb-1">
+                  <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2.5 rounded-xl bg-slate-950/95 border border-slate-800 text-white text-[9px] shadow-2xl min-w-[200px] pointer-events-none whitespace-nowrap">
+                    <div className="font-semibold text-slate-200 flex items-center justify-between border-b border-slate-800 pb-1 mb-1 whitespace-nowrap gap-2">
                       <span className="text-sky-400">Weather Station</span>
                       <span className="text-slate-400 font-mono text-[8px]">{target.lat.toFixed(1)}°N, {target.lon.toFixed(1)}°E</span>
                     </div>
-                    <div className="flex items-center justify-between text-[8px] text-slate-300 mb-1">
+                    <div className="flex items-center justify-between text-[8px] text-slate-300 mb-1 whitespace-nowrap gap-2">
                       <span>Metro Pop: {target.populationM}M</span>
                       <span className="text-emerald-400 font-semibold">Click to Center</span>
                     </div>
-                    <div className="text-[8px] text-slate-400">
+                    <div className="text-[8px] text-slate-400 whitespace-nowrap">
                       Surface barometric, moisture & wind monitoring hub.
                     </div>
                   </div>
@@ -1825,7 +1855,7 @@ const EarthGlobeMesh: React.FC<EarthSphereProps> = ({
           </mesh>
 
           {/* 3D Floating Hover-Card Tooltip */}
-          <Html distanceFactor={11} zIndexRange={[200, 0]} style={{ pointerEvents: 'auto' }}>
+          <Html center zIndexRange={[200, 0]} style={{ pointerEvents: 'auto' }}>
             <div className="w-72 sm:w-80 bg-slate-950/95 backdrop-blur-xl border border-slate-600/70 rounded-xl p-3.5 shadow-[0_16px_50px_rgba(0,0,0,0.9)] text-white transform -translate-x-1/2 -translate-y-full mb-3 select-none animate-in fade-in zoom-in-95 duration-150">
               {/* Header */}
               <div className="flex items-start justify-between gap-2 pb-2 mb-2 border-b border-slate-800">
@@ -2021,6 +2051,44 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
 
   // 8. Daily Monsoon Challenge Planetary Visual Effect
   const [activeRewardScenario, setActiveRewardScenario] = useState<MonsoonChallengeScenario | null>(null);
+
+  // 9. Earth Nullschool Observational State
+  const [nullschoolProbe, setNullschoolProbe] = useState<NullschoolProbeData | null>(null);
+  const [nullschoolMode, setNullschoolMode] = useState<NullschoolMode>('Air');
+  const [nullschoolAnimate, setNullschoolAnimate] = useState<NullschoolAnimate>('Wind');
+  const [nullschoolHeight, setNullschoolHeight] = useState<NullschoolHeight>('Sfc');
+  const [nullschoolOverlay, setNullschoolOverlay] = useState<NullschoolOverlay>('Wind');
+  const [nullschoolProjection, setNullschoolProjection] = useState<NullschoolProjection>('O');
+  const [nullschoolIsPlaying, setNullschoolIsPlaying] = useState<boolean>(true);
+  const [nullschoolIsHd, setNullschoolIsHd] = useState<boolean>(false);
+  const [nullschoolShowGrid, setNullschoolShowGrid] = useState<boolean>(false);
+  const [nullschoolSimulationTime, setNullschoolSimulationTime] = useState<Date>(new Date());
+  const [nullschoolIsUtcTime, setNullschoolIsUtcTime] = useState<boolean>(false);
+  const [showTelemetryDrawer, setShowTelemetryDrawer] = useState<boolean>(false);
+
+  const handleGlobeProbeClick = (lat: number, lon: number) => {
+    const probe = NullschoolPhysicsEngine.samplePointProbe(
+      lat,
+      lon,
+      nullschoolHeight,
+      nullschoolOverlay,
+      0
+    );
+    setNullschoolProbe(probe);
+  };
+
+  useEffect(() => {
+    if (nullschoolProbe) {
+      const updated = NullschoolPhysicsEngine.samplePointProbe(
+        nullschoolProbe.lat,
+        nullschoolProbe.lon,
+        nullschoolHeight,
+        nullschoolOverlay,
+        0
+      );
+      setNullschoolProbe(updated);
+    }
+  }, [nullschoolHeight, nullschoolOverlay, nullschoolMode]);
 
   useEffect(() => {
     const handleChallengeReward = (e: Event) => {
@@ -2332,1044 +2400,44 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
   return (
     <div 
       id="globe-simulator"
-      className="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl text-slate-100 flex flex-col font-sans relative"
+      className="w-full h-[calc(100vh-75px)] min-h-[700px] relative overflow-hidden bg-slate-950 flex flex-col font-sans select-none border border-slate-800 rounded-2xl shadow-2xl"
     >
-      {/* HUD Header Bar */}
-      <div className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3 z-20">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex items-center justify-center shadow-lg shadow-blue-500/30">
-            <GlobeIcon className="w-5 h-5 animate-spin-slow" />
+      {/* Sleek Top Brand Bar (Earth Nullschool Style) */}
+      <div className="h-10 px-4 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 flex items-center justify-between z-30 shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-5 h-5 rounded-md bg-gradient-to-br from-emerald-500 to-sky-600 flex items-center justify-center shadow-sm">
+            <GlobeIcon className="w-3.5 h-3.5 text-white animate-spin-slow" />
           </div>
-          <div>
-            <h2 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <span>3D Planetary Earth Observatory</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 border border-slate-700 text-sky-300 font-bold">
-                REAL-TIME SIMULATOR v4.5
-              </span>
-              <ExploreBeacon id="globe-simulator" size="sm" />
-            </h2>
-            <p className="text-[11px] text-slate-400 font-mono">
-              Photorealistic Biomes • Atmosphere Rayleigh Scattering • Dynamic Wind & Weather Streamlines
-            </p>
-          </div>
+          <span className="text-xs font-black tracking-widest text-slate-100 uppercase">
+            EARTH <span className="text-emerald-400 font-mono font-normal text-[11px]">OBSERVATORY</span>
+          </span>
+          <span className="text-[10px] font-mono text-slate-400 border border-slate-800 bg-slate-900/80 px-2 py-0.5 rounded-full hidden sm:inline-block">
+            NULLSCHOOL CORE v5.0 • 14K PARTICLES
+          </span>
+          <ExploreBeacon id="globe-simulator" size="sm" />
         </div>
-
-        {/* View Mode & Layer Controls */}
-        <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
-          {/* Earth View Mode Toggle */}
-          <div className="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-xl p-1 text-[11px]">
-            <span className="text-[10px] uppercase font-bold text-slate-400 px-1.5 flex items-center gap-1">
-              <Layers className="w-3.5 h-3.5 text-sky-400" />
-              <span>View Mode:</span>
-            </span>
-            <button
-              onClick={() => setViewMode('REALISTIC_PHOTOREAL')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
-                viewMode === 'REALISTIC_PHOTOREAL'
-                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400/50'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-              title="Photorealistic Earth Biomes & Oceans Mode"
-            >
-              Photoreal Earth
-            </button>
-            <button
-              onClick={() => setViewMode('NIGHT_SATELLITE')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
-                viewMode === 'NIGHT_SATELLITE'
-                  ? 'bg-amber-600/40 text-amber-200 border border-amber-500/50 shadow-sm ring-1 ring-amber-400/50'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-              title="Night Satellite Metropolitan City Lights Mode"
-            >
-              Night Lights
-            </button>
-            <button
-              onClick={() => setViewMode('SYNOPTIC_METEOROLOGY')}
-              className={`px-2.5 py-1 rounded-lg transition-all cursor-pointer font-semibold ${
-                viewMode === 'SYNOPTIC_METEOROLOGY'
-                  ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/40 shadow-sm ring-1 ring-indigo-400/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
-              }`}
-              title="Synoptic Meteorology Vector & Pressure Radar View"
-            >
-              Synoptic Radar
-            </button>
-          </div>
-
-          <button
-            onClick={() => setShowWindVectors(!showWindVectors)}
-            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 font-bold ${
-              showWindVectors
-                ? 'bg-sky-500/20 border-sky-500/50 text-sky-200 shadow-md shadow-sky-500/10 ring-1 ring-sky-400/40'
-                : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-slate-200'
-            }`}
-            title="Toggle Pressure-Responsive Dynamic 3D Wind Streamlines Layer"
-          >
-            <Wind className={`w-4 h-4 ${showWindVectors ? 'text-sky-300 animate-spin-slow' : 'text-slate-400'}`} />
-            <span>3D Streamlines: {showWindVectors ? 'ON' : 'OFF'}</span>
-          </button>
-
-          <button
-            onClick={() => setShowClouds(!showClouds)}
-            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-              showClouds
-                ? 'bg-blue-500/20 border-blue-400 text-blue-300 shadow-md shadow-blue-500/10'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
-            }`}
-            title="Toggle Cloud Layer"
-          >
-            <Cloud className="w-3.5 h-3.5 text-blue-300" />
-            <span className="font-bold">Clouds: {showClouds ? 'ON' : 'OFF'}</span>
-          </button>
-
-          <button
-            onClick={() => {
-              const nextState = !useLiveCloudMode;
-              setUseLiveCloudMode(nextState);
-              if (nextState && !liveCloudData) {
-                fetchLiveCloudData();
-              }
-            }}
-            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-              useLiveCloudMode
-                ? 'bg-emerald-500/20 border-emerald-400 text-emerald-300 shadow-md shadow-emerald-500/10 ring-1 ring-emerald-400/40'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
-            }`}
-            title="Toggle Real-Time Open-Meteo Public Satellite API Live Earth View"
-          >
-            <Radio className={`w-3.5 h-3.5 ${useLiveCloudMode ? 'text-emerald-400 animate-pulse' : 'text-slate-400'}`} />
-            <span className="font-bold">Live Earth API: {useLiveCloudMode ? 'ACTIVE' : 'OFF'}</span>
-          </button>
-
-          <button
-            onClick={() => setShowBorders(!showBorders)}
-            className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer flex items-center gap-1.5 ${
-              showBorders
-                ? 'bg-indigo-500/20 border-indigo-400 text-indigo-300 shadow-md shadow-indigo-500/10'
-                : 'bg-slate-800 border-slate-700 text-slate-400'
-            }`}
-            title="Toggle Country Vector Boundaries"
-          >
-            <Layers className="w-3.5 h-3.5 text-indigo-300" />
-            <span className="font-bold">Borders: {showBorders ? 'ON' : 'OFF'}</span>
-          </button>
-
+        
+        <div className="flex items-center gap-3 text-xs font-mono">
+          <span className="text-slate-400 text-[11px] hidden md:inline-flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
+            <span className="text-slate-300 font-semibold">{LIVE_GLOBAL_STATIONS.length} Observatories Active</span>
+          </span>
           <button
             onClick={() => setIsSoundMuted(!isSoundMuted)}
-            className={`p-1.5 rounded-xl border transition-all cursor-pointer ${
-              isSoundMuted
-                ? 'bg-slate-800 border-slate-700 text-slate-400'
-                : 'bg-blue-600/20 border-blue-500/50 text-blue-300'
+            className={`p-1.5 rounded-lg border transition-colors cursor-pointer ${
+              isSoundMuted ? 'bg-slate-900 border-slate-800 text-slate-500' : 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
             }`}
-            title="Toggle Audio Feedback"
+            title={isSoundMuted ? 'Unmute Audio' : 'Mute Atmospheric Audio'}
           >
-            {isSoundMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-          </button>
-
-          <button
-            onClick={() => handleTriggerDisaster()}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-rose-600 to-amber-600 hover:from-rose-500 hover:to-amber-500 text-white font-bold text-xs flex items-center gap-1.5 shadow-lg shadow-rose-600/30 cursor-pointer active:scale-95 transition-all"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>Spawn Burst</span>
+            {isSoundMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
 
-      {/* DEDICATED ATMOSPHERIC SIMULATION SPEED & TIME CONTROL BAR */}
-      <div className="bg-slate-950 border-b border-slate-800 px-4 py-2 flex flex-wrap items-center justify-between gap-3 z-10 font-mono text-xs shadow-inner">
-        {/* Play/Pause & Live Pacing Status */}
-        <div className="flex items-center gap-2.5">
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            className={`px-3.5 py-1.5 rounded-xl border font-bold flex items-center gap-2 cursor-pointer transition-all shadow-md active:scale-95 ${
-              isPaused
-                ? 'bg-amber-500/20 border-amber-400 text-amber-300 ring-1 ring-amber-400/50 hover:bg-amber-500/30'
-                : 'bg-emerald-500/20 border-emerald-400 text-emerald-300 ring-1 ring-emerald-400/50 hover:bg-emerald-500/30'
-            }`}
-            title={isPaused ? "Resume Atmospheric Motion Simulation" : "Freeze Atmospheric Motion Simulation"}
-          >
-            {isPaused ? (
-              <Play className="w-4 h-4 fill-amber-300 text-amber-300" />
-            ) : (
-              <Pause className="w-4 h-4 fill-emerald-300 text-emerald-300 animate-pulse" />
-            )}
-            <span className="text-[11px] uppercase tracking-wider">{isPaused ? 'Resume' : 'Pause'}</span>
-          </button>
-
-          <div className="flex items-center gap-2 bg-slate-900/90 px-3 py-1.5 rounded-xl border border-slate-800">
-            <Clock className="w-3.5 h-3.5 text-sky-400" />
-            <span className="text-[10px] font-bold text-slate-400 uppercase">Simulation State:</span>
-            <span className={`font-bold text-xs flex items-center gap-1.5 ${isPaused ? 'text-amber-300' : 'text-sky-300'}`}>
-              {!isPaused && <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />}
-              {isPaused ? 'PAUSED (Frozen)' : `${timeSpeed.toFixed(2)}x Speed`}
-            </span>
-          </div>
-        </div>
-
-        {/* Speed Multiplier Presets */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] uppercase font-bold text-slate-500 mr-1 hidden sm:inline">Speed Presets:</span>
-          {[0.25, 0.5, 1, 2, 5, 10].map((spd) => {
-            const isActive = !isPaused && Math.abs(timeSpeed - spd) < 0.05;
-            return (
-              <button
-                key={spd}
-                onClick={() => {
-                  setTimeSpeed(spd);
-                  setIsPaused(false);
-                }}
-                className={`px-2.5 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-indigo-500/25 border-indigo-400/60 text-indigo-200 shadow-sm ring-1 ring-indigo-400/40'
-                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                }`}
-                title={`Set Simulation Speed to ${spd}x`}
-              >
-                {spd === 0.25 ? '0.25x (Slow-Mo)' : spd === 0.5 ? '0.5x' : spd === 1 ? '1.0x (Real)' : `${spd}x`}
-              </button>
-            );
-          })}
-
-          <button
-            onClick={() => {
-              setTimeSpeed(1);
-              setIsPaused(false);
-            }}
-            className="px-2 py-1 rounded-lg bg-slate-900 border border-slate-800 text-slate-400 hover:text-white transition-colors cursor-pointer text-[10px] flex items-center gap-1"
-            title="Reset Simulation Pace to 1.0x Real-time"
-          >
-            <RotateCcw className="w-3 h-3 text-sky-400" />
-            <span>Reset</span>
-          </button>
-        </div>
-
-        {/* Fine-Tuning Range Slider */}
-        <div className="flex items-center gap-2 bg-slate-900 px-3 py-1 rounded-xl border border-slate-800 text-[11px]">
-          <Gauge className="w-3.5 h-3.5 text-amber-400" />
-          <span className="text-slate-400 text-[10px] hidden sm:inline">Pace:</span>
-          <input
-            type="range"
-            min="0.1"
-            max="10.0"
-            step="0.1"
-            value={timeSpeed}
-            onChange={(e) => {
-              setTimeSpeed(parseFloat(e.target.value));
-              if (isPaused) setIsPaused(false);
-            }}
-            className="w-20 sm:w-28 accent-sky-400 cursor-pointer h-1.5 bg-slate-800 rounded-lg"
-            title="Adjust Simulation Speed Slider (0.1x to 10.0x)"
-          />
-          <span className="text-amber-300 font-bold w-12 text-right">{timeSpeed.toFixed(1)}x</span>
-        </div>
-      </div>
-
-      {/* CLIMATE SCENARIOS TOGGLE SELECTOR BAR */}
-      <div className="bg-slate-900/90 border-b border-slate-800 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 z-10 font-mono text-xs">
-        <div className="flex items-center gap-2 text-slate-300">
-          <ThermometerSun className="w-4 h-4 text-amber-400 animate-pulse" />
-          <span className="font-bold text-[11px] uppercase tracking-wider text-slate-400">Extreme Climate Scenario:</span>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-1.5">
-          {(Object.keys(CLIMATE_SCENARIOS) as ClimateScenario[]).map((key) => {
-            const sc = CLIMATE_SCENARIOS[key];
-            const isActive = climateScenario === key;
-            return (
-              <button
-                key={key}
-                onClick={() => setClimateScenario(key)}
-                className={`px-3 py-1.5 rounded-xl border transition-all cursor-pointer font-bold text-[11px] flex items-center gap-1.5 ${
-                  isActive
-                    ? `${sc.badgeColor} shadow-md shadow-amber-500/10 ring-1 ring-amber-400/50`
-                    : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-slate-200'
-                }`}
-              >
-                <span>{sc.label}</span>
-                {isActive && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping" />}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* ADVANCED PLANETARY SYSTEMS & GAMIFICATION CONTROL BAR */}
-      <div className="bg-slate-950/95 border-b border-slate-800/80 px-4 py-2.5 flex flex-wrap items-center justify-between gap-2.5 z-10 font-mono text-xs shadow-md">
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Cyclone Hunter Aircraft */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <button
-              onClick={() => setEnableCycloneHunter(!enableCycloneHunter)}
-              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all ${
-                enableCycloneHunter
-                  ? 'bg-amber-500/25 text-amber-200 border border-amber-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Toggle 3D Reconnaissance Aircraft Patrol Orbit"
-            >
-              <Plane className="w-3.5 h-3.5 text-amber-400" />
-              <span>Cyclone Hunter: {enableCycloneHunter ? 'PATROL' : 'OFF'}</span>
-            </button>
-            {enableCycloneHunter && (
-              <button
-                onClick={() => {
-                  const newSonde: Dropsonde = {
-                    id: `SONDE_${Date.now()}`,
-                    lat: selectedTarget.lat + (Math.random() - 0.5) * 0.8,
-                    lon: selectedTarget.lon + (Math.random() - 0.5) * 0.8,
-                    currentAltKm: 11.2,
-                    fallSpeedKmH: 45,
-                    status: 'FALLING',
-                    deployedAt: Date.now(),
-                    capeJoulesPerKg: Math.round(2200 + Math.random() * 1200),
-                    liftedIndex: -4.5,
-                    verificationConfidenceBoost: 18,
-                    soundingData: [
-                      { altKm: 12.0, pressureHpa: 200, tempC: -53, dewPointC: -62, windSpeedKmH: 140, windDirDeg: 280, rhPct: 35 },
-                      { altKm: 9.0, pressureHpa: 300, tempC: -36, dewPointC: -45, windSpeedKmH: 120, windDirDeg: 270, rhPct: 45 },
-                      { altKm: 5.5, pressureHpa: 500, tempC: -8, dewPointC: -12, windSpeedKmH: 85, windDirDeg: 250, rhPct: 75 },
-                      { altKm: 3.0, pressureHpa: 700, tempC: 8, dewPointC: 6, windSpeedKmH: 60, windDirDeg: 240, rhPct: 88 },
-                      { altKm: 1.5, pressureHpa: 850, tempC: 21, dewPointC: 19, windSpeedKmH: 52, windDirDeg: 235, rhPct: 92 },
-                      { altKm: 0.1, pressureHpa: 1005, tempC: 29.5, dewPointC: 27, windSpeedKmH: 42, windDirDeg: 220, rhPct: 94 },
-                    ],
-                  };
-                  handleDeployDropsonde(newSonde);
-                  setSelectedDropsonde(newSonde);
-                  if (!isSoundMuted) weatherSynth.playDropsondeReleaseSound();
-                }}
-                className="px-2 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-slate-950 font-bold text-[10px] transition-all flex items-center gap-1 shadow"
-                title="Drop GPS Dropsonde from aircraft and view real-time atmospheric sounding"
-              >
-                <Zap className="w-3 h-3 fill-slate-950" />
-                <span>Drop Sonde</span>
-              </button>
-            )}
-          </div>
-
-          {/* Satellite Constellation */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <button
-              onClick={() => setEnableSatellites(!enableSatellites)}
-              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all ${
-                enableSatellites
-                  ? 'bg-sky-500/25 text-sky-200 border border-sky-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Toggle INSAT-3DR, GPM Core, Sentinel-5P Satellite Orbits"
-            >
-              <Satellite className="w-3.5 h-3.5 text-sky-400" />
-              <span>Satellites: {enableSatellites ? '3 ACTIVE' : 'OFF'}</span>
-            </button>
-            {enableSatellites && (
-              <button
-                onClick={() => setShowSatelliteSwaths(!showSatelliteSwaths)}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
-                  showSatelliteSwaths ? 'bg-sky-900/60 text-sky-200 border border-sky-700' : 'text-slate-400 hover:text-white'
-                }`}
-                title="Toggle volumetric sensor scan beam cones projected on Earth"
-              >
-                Swaths {showSatelliteSwaths ? 'ON' : 'OFF'}
-              </button>
-            )}
-          </div>
-
-          {/* Volumetric Wind Ribbons */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <button
-              onClick={() => setEnableWindRibbons(!enableWindRibbons)}
-              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all ${
-                enableWindRibbons
-                  ? 'bg-sky-500/20 text-sky-200 border border-sky-500/30 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Toggle 3D Volumetric Jet Streams (Somali Jet, Monsoon Trough, TEJ)"
-            >
-              <Wind className="w-3.5 h-3.5 text-sky-400" />
-              <span>3D Jets</span>
-            </button>
-            {enableWindRibbons && (
-              <div className="flex items-center gap-0.5">
-                {(['ALL', '850hpa', '500hpa', '200hpa'] as const).map((lvl) => (
-                  <button
-                    key={lvl}
-                    onClick={() => setWindPressureLevel(lvl)}
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      windPressureLevel === lvl
-                        ? 'bg-indigo-600 text-white'
-                        : 'text-slate-400 hover:text-slate-200'
-                    }`}
-                  >
-                    {lvl}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Doppler Radar Towers */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1">
-            <button
-              onClick={() => setEnableDopplerRadar(!enableDopplerRadar)}
-              className={`px-2.5 py-1 rounded-lg font-bold text-[11px] flex items-center gap-1.5 transition-all ${
-                enableDopplerRadar
-                  ? 'bg-rose-500/25 text-rose-200 border border-rose-500/40 shadow-sm'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
-              title="Toggle 3D Doppler Radar Towers with vertical reflectivity echo-top columns"
-            >
-              <Radio className="w-3.5 h-3.5 text-rose-400" />
-              <span>DWR Echo Tops: {enableDopplerRadar ? '5 STATIONS' : 'OFF'}</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Solar Terminator & Lightning */}
-          <div className="flex items-center gap-2 bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1">
-            <Sun className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-[10px] text-slate-400">Sun:</span>
-            <input
-              type="range"
-              min="0"
-              max="24"
-              step="1"
-              value={solarHourUtc}
-              onChange={(e) => setSolarHourUtc(parseInt(e.target.value))}
-              className="w-14 accent-amber-400 cursor-pointer h-1.5 bg-slate-800 rounded"
-              title="Adjust Solar Terminator Time (00:00 to 24:00 UTC)"
-            />
-            <span className="text-[11px] font-bold text-amber-300 w-11">
-              {solarHourUtc < 10 ? `0${solarHourUtc}` : solarHourUtc}:00Z
-            </span>
-
-            <button
-              onClick={() => setEnableLightning(!enableLightning)}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                enableLightning
-                  ? 'bg-amber-950/80 border-amber-500/50 text-amber-300'
-                  : 'border-slate-800 text-slate-500'
-              }`}
-              title="Toggle Volumetric Thunderstorm Lightning Discharges"
-            >
-              ⚡ Lightning
-            </button>
-          </div>
-
-          {/* Landscape Interaction Layer Toggle */}
-          <button
-            onClick={() => {
-              const nextState = !enableLandscapeInteraction;
-              setEnableLandscapeInteraction(nextState);
-              if (nextState) {
-                trackOrographicInspected();
-                if (!isSoundMuted) weatherSynth.playRadarScanPing();
-              }
-            }}
-            className={`px-2.5 py-1.5 rounded-xl font-bold text-[11px] flex items-center gap-1.5 transition-all shadow-sm cursor-pointer border ${
-              enableLandscapeInteraction
-                ? 'bg-emerald-600/30 text-emerald-200 border-emerald-400 shadow-emerald-950/40 ring-1 ring-emerald-400/50'
-                : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-            title="Toggle 3D Landscape Interaction (Western Ghats & Himalayan Orographic Effects)"
-          >
-            <Mountain className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Landscape 3D: {enableLandscapeInteraction ? 'ACTIVE' : 'OFF'}</span>
-          </button>
-
-          {/* Orographic Transect Analyzer Modal Trigger */}
-          <button
-            onClick={() => {
-              setShowOrographicModal(true);
-              trackOrographicInspected();
-            }}
-            className="px-2.5 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 font-bold text-[11px] flex items-center gap-1.5 transition-all shadow-sm cursor-pointer"
-            title="Open Orographic Elevation & Rain Shadow Cross-Section Analyzer"
-          >
-            <Layers className="w-3.5 h-3.5 text-emerald-400" />
-            <span>2D Transects ({elevationMultiplier}x)</span>
-          </button>
-
-          {/* Crisis Command Game Trigger */}
-          <button
-            onClick={() => {
-              setShowCrisisModal(true);
-              if (!isSoundMuted) weatherSynth.playCrisisAlertTone();
-            }}
-            className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-amber-600 to-rose-600 hover:from-amber-500 hover:to-rose-500 text-white font-black text-[11px] flex items-center gap-1.5 shadow-md shadow-amber-600/30 transition-all active:scale-95 cursor-pointer"
-          >
-            <Trophy className="w-3.5 h-3.5 text-amber-200" />
-            <span>CRISIS COMMAND</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Globe Perspective Manager (Global View • Regional Focus • Storm Tracking) */}
-      <div className="p-3 sm:p-4 pb-0 bg-slate-950 z-20">
-        <GlobePerspectiveManager
-          state={perspectiveState}
-          onChangeState={setPerspectiveState}
-          onTriggerPerspectiveChange={handleTriggerPerspectiveChange}
-        />
-      </div>
-
-      {/* 3D Landscape Interaction Layer HUD (Western Ghats, Himalayan Arc & Orographic Rain) */}
-      {enableLandscapeInteraction && (
-        <div className="p-3 sm:p-4 pb-0 bg-slate-950 z-20">
-          <LandscapeInteractionHUD
-            activeBarrierId={activeLandscapeBarrierId}
-            activeRegimeId={activeLandscapeRegimeId}
-            onChangeBarrier={(id) => {
-              setActiveLandscapeBarrierId(id);
-              const barrier = MOUNTAIN_BARRIERS.find((b) => b.id === id);
-              if (barrier) {
-                setCameraPitch(barrier.cameraFocus.pitch);
-                setCameraYaw(barrier.cameraFocus.yaw);
-                setCameraDistance(barrier.cameraFocus.distance);
-                setPerspectiveTrackingCoord({ lat: barrier.cameraFocus.lat, lon: barrier.cameraFocus.lon });
-                setActiveFocusPreset('CUSTOM');
-              }
-            }}
-            onChangeRegime={(id) => setActiveLandscapeRegimeId(id)}
-            showRidgeElevation={showLandscapeRidges}
-            showLiftStreamlines={showLandscapeStreamlines}
-            showRainCurtains={showLandscapeRainCurtains}
-            showRainShadowSwath={showLandscapeRainShadow}
-            showStationPins={showLandscapeStationPins}
-            onToggleLayer={(layerKey) => {
-              if (layerKey === 'ridges') setShowLandscapeRidges((prev) => !prev);
-              if (layerKey === 'streamlines') setShowLandscapeStreamlines((prev) => !prev);
-              if (layerKey === 'curtains') setShowLandscapeRainCurtains((prev) => !prev);
-              if (layerKey === 'shadow') setShowLandscapeRainShadow((prev) => !prev);
-              if (layerKey === 'pins') setShowLandscapeStationPins((prev) => !prev);
-            }}
-            onFlyToBarrier={(barrier) => {
-              setCameraPitch(barrier.cameraFocus.pitch);
-              setCameraYaw(barrier.cameraFocus.yaw);
-              setCameraDistance(barrier.cameraFocus.distance);
-              setPerspectiveTrackingCoord({ lat: barrier.cameraFocus.lat, lon: barrier.cameraFocus.lon });
-              setActiveFocusPreset('CUSTOM');
-              if (!isSoundMuted) weatherSynth.playRadarScanPing();
-            }}
-          />
-        </div>
-      )}
-
-      {/* Main Sandbox Grid Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px] relative">
-        {/* Left Sidebar: Disaster Situations & Granular Controls */}
-        <div className="lg:col-span-3 bg-slate-900/80 border-r border-slate-800 p-4 space-y-4 flex flex-col justify-between z-10">
-          <div className="space-y-4">
-            {/* Situation Selector */}
-            <div>
-              <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
-                <Sliders className="w-4 h-4 text-sky-400" />
-                Disaster Event Trigger
-              </h3>
-
-              <div className="space-y-1.5">
-                <button
-                  onClick={() => { setSelectedDisaster('CLOUDBURST'); handleTriggerDisaster(); }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                    selectedDisaster === 'CLOUDBURST'
-                      ? 'bg-blue-900/30 border-blue-500/80 text-blue-100 shadow-sm'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <CloudRain className="w-4 h-4 text-blue-400" />
-                    <div>
-                      <div className="text-xs font-medium">Cloudburst Deluge</div>
-                    </div>
-                  </div>
-                  {selectedDisaster === 'CLOUDBURST' && <span className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />}
-                </button>
-
-                <button
-                  onClick={() => { setSelectedDisaster('SUPER_TYPHOON'); handleTriggerDisaster(); }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                    selectedDisaster === 'SUPER_TYPHOON'
-                      ? 'bg-sky-900/30 border-sky-500/80 text-sky-100 shadow-sm'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Wind className="w-4 h-4 text-sky-400" />
-                    <div>
-                      <div className="text-xs font-medium">Category 5 Typhoon</div>
-                    </div>
-                  </div>
-                  {selectedDisaster === 'SUPER_TYPHOON' && <span className="w-2 h-2 rounded-full bg-sky-400 animate-pulse" />}
-                </button>
-
-                <button
-                  onClick={() => { setSelectedDisaster('HEATWAVE_DROUGHT'); handleTriggerDisaster(); }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                    selectedDisaster === 'HEATWAVE_DROUGHT'
-                      ? 'bg-amber-900/30 border-amber-500/80 text-amber-100 shadow-sm'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <ThermometerSun className="w-4 h-4 text-amber-400" />
-                    <div>
-                      <div className="text-xs font-medium">Heatwave & Drought</div>
-                    </div>
-                  </div>
-                  {selectedDisaster === 'HEATWAVE_DROUGHT' && <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />}
-                </button>
-
-                <button
-                  onClick={() => { setSelectedDisaster('VOLCANIC_ASH'); handleTriggerDisaster(); }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                    selectedDisaster === 'VOLCANIC_ASH'
-                      ? 'bg-rose-900/30 border-rose-500/80 text-rose-100 shadow-sm'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Flame className="w-4 h-4 text-rose-400" />
-                    <div>
-                      <div className="text-xs font-medium">Volcanic Plume Column</div>
-                    </div>
-                  </div>
-                  {selectedDisaster === 'VOLCANIC_ASH' && <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />}
-                </button>
-
-                <button
-                  onClick={() => { setSelectedDisaster('TSUNAMI_SURGE'); handleTriggerDisaster(); }}
-                  className={`w-full p-2.5 rounded-xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                    selectedDisaster === 'TSUNAMI_SURGE'
-                      ? 'bg-teal-900/30 border-teal-500/80 text-teal-100 shadow-sm'
-                      : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70 hover:border-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Waves className="w-4 h-4 text-teal-400" />
-                    <div>
-                      <div className="text-xs font-medium">Tsunami Storm Surge</div>
-                    </div>
-                  </div>
-                  {selectedDisaster === 'TSUNAMI_SURGE' && <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />}
-                </button>
-              </div>
-            </div>
-
-            {/* QUICK GEOGRAPHIC REGION FOCUS PRESETS */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-2">
-              <h4 className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                <Navigation className="w-3.5 h-3.5 text-sky-400" />
-                Region Focus
-              </h4>
-
-              <div className="grid grid-cols-2 gap-1.5">
-                {REGION_FOCUS_PRESETS.map((p) => {
-                  const isPresetActive = activeFocusPreset === p.id;
-                  return (
-                    <button
-                      key={p.id}
-                      onClick={() => handleSelectRegionPreset(p)}
-                      className={`p-2 rounded-xl border text-left transition-all cursor-pointer flex items-center gap-1.5 text-xs font-medium ${
-                        isPresetActive
-                          ? 'bg-sky-900/30 border-sky-500/80 text-sky-100 shadow-sm'
-                          : 'bg-slate-950/70 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-900/70'
-                      }`}
-                      title={p.description}
-                    >
-                      <span>{p.flag}</span>
-                      <span className="truncate">{p.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* GRANULAR MANUAL CAMERA CONTROLS */}
-            <div className="pt-2 border-t border-slate-800/80 space-y-2.5 font-sans text-xs">
-              <div className="flex items-center justify-between">
-                <h4 className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <Move className="w-3.5 h-3.5 text-sky-400" />
-                  Granular Camera
-                </h4>
-                <button
-                  onClick={() => {
-                    setCameraPitch(25);
-                    setCameraYaw(120);
-                    setCameraDistance(6.2);
-                    setActiveFocusPreset('GLOBAL');
-                  }}
-                  className="text-[10px] text-slate-300 hover:text-white cursor-pointer flex items-center gap-1 bg-slate-800/80 px-2 py-0.5 rounded-md border border-slate-700 transition-colors"
-                  title="Reset Camera Orientation"
-                >
-                  <RotateCcw className="w-2.5 h-2.5" />
-                  Reset
-                </button>
-              </div>
-
-              {/* Pitch Controls */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Tilt Angle (Pitch):</span>
-                  <span className="text-sky-300 font-mono font-medium">{cameraPitch}°</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setCameraPitch((p) => Math.max(10, p - 5));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer"
-                  >
-                    - Tilt
-                  </button>
-                  <input
-                    type="range"
-                    min="10"
-                    max="80"
-                    value={cameraPitch}
-                    onChange={(e) => {
-                      setCameraPitch(Number(e.target.value));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="w-full accent-sky-500 cursor-pointer h-1.5"
-                  />
-                  <button
-                    onClick={() => {
-                      setCameraPitch((p) => Math.min(80, p + 5));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer"
-                  >
-                    + Tilt
-                  </button>
-                </div>
-              </div>
-
-              {/* Yaw Controls */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Rotation (Yaw):</span>
-                  <span className="text-sky-300 font-mono font-medium">{cameraYaw}°</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setCameraYaw((y) => (y - 15 + 360) % 360);
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer flex items-center gap-1"
-                  >
-                    <RotateCcw className="w-2.5 h-2.5" /> 15°
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="360"
-                    value={cameraYaw}
-                    onChange={(e) => {
-                      setCameraYaw(Number(e.target.value));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="w-full accent-sky-500 cursor-pointer h-1.5"
-                  />
-                  <button
-                    onClick={() => {
-                      setCameraYaw((y) => (y + 15) % 360);
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer flex items-center gap-1"
-                  >
-                    15° <RotateCw className="w-2.5 h-2.5" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Zoom Controls */}
-              <div className="space-y-1">
-                <div className="flex justify-between text-[10px] text-slate-400">
-                  <span>Zoom Distance:</span>
-                  <span className="text-sky-300 font-mono font-medium">{cameraDistance.toFixed(1)}x</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      setCameraDistance((d) => Math.max(2.6, Number((d - 0.8).toFixed(1))));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-medium"
-                  >
-                    Zoom +
-                  </button>
-                  <input
-                    type="range"
-                    min="2.6"
-                    max="22.0"
-                    step="0.2"
-                    value={cameraDistance}
-                    onChange={(e) => {
-                      setCameraDistance(Number(e.target.value));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="w-full accent-sky-500 cursor-pointer h-1.5"
-                  />
-                  <button
-                    onClick={() => {
-                      setCameraDistance((d) => Math.min(22.0, Number((d + 0.8).toFixed(1))));
-                      setActiveFocusPreset('CUSTOM');
-                    }}
-                    className="px-2 py-1 rounded bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 text-[10px] cursor-pointer font-medium"
-                  >
-                    Zoom -
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Location Focus Target Selector & Severity */}
-          <div className="pt-2 border-t border-slate-800/80 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400">Event Severity:</span>
-              <span className="font-semibold text-sky-300 font-mono">{intensity}%</span>
-            </div>
-            <input
-              type="range"
-              min="10"
-              max="100"
-              value={intensity}
-              onChange={(e) => setIntensity(Number(e.target.value))}
-              className="w-full accent-sky-500 cursor-pointer"
-            />
-          </div>
-        </div>
-
-        {/* Center: Interactive 3D Earth Globe Canvas */}
-        <div className="lg:col-span-6 bg-slate-950 relative flex items-center justify-center min-h-[460px]">
-          {/* Time & Playback Floating Control Bar */}
-          <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-1.5 bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-800 shadow-2xl font-mono text-xs">
-            <button
-              onClick={() => setIsPaused(!isPaused)}
-              className={`px-2.5 py-1.5 rounded-xl border font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-md ${
-                isPaused
-                  ? 'bg-amber-500/30 border-amber-400 text-amber-300 ring-1 ring-amber-400/50'
-                  : 'bg-emerald-500/20 border-emerald-400 text-emerald-300 ring-1 ring-emerald-400/50'
-              }`}
-              title={isPaused ? 'Resume Simulation' : 'Pause Simulation'}
-            >
-              {isPaused ? <Play className="w-3.5 h-3.5 fill-amber-300" /> : <Pause className="w-3.5 h-3.5 fill-emerald-300" />}
-              <span className="text-[10px] uppercase font-extrabold">{isPaused ? 'PAUSED' : `${timeSpeed.toFixed(1)}x`}</span>
-            </button>
-
-            <span className="text-slate-700">|</span>
-
-            <div className="flex items-center gap-1">
-              {[0.5, 1, 2, 5].map((spd) => {
-                const isActive = !isPaused && Math.abs(timeSpeed - spd) < 0.05;
-                return (
-                  <button
-                    key={spd}
-                    onClick={() => {
-                      setTimeSpeed(spd);
-                      setIsPaused(false);
-                    }}
-                    className={`px-2 py-1 rounded-lg border transition-all text-[10px] font-mono font-semibold cursor-pointer ${
-                      isActive
-                        ? 'bg-indigo-600 border-indigo-400 text-white shadow-sm ring-1 ring-indigo-400/50'
-                        : 'bg-slate-950/80 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                    }`}
-                  >
-                    {spd === 0.5 ? '0.5x' : `${spd}x`}
-                  </button>
-                );
-              })}
-            </div>
-
-            <span className="text-slate-700">|</span>
-
-            {/* Legend Toggle Button */}
-            <button
-              onClick={() => setShowMarkerLegendHUD(!showMarkerLegendHUD)}
-              className={`px-2.5 py-1 rounded-xl border text-[11px] font-sans font-medium transition-all cursor-pointer flex items-center gap-1.5 shadow-sm ${
-                showMarkerLegendHUD
-                  ? 'bg-sky-600/30 border-sky-400 text-sky-200 ring-1 ring-sky-400/50'
-                  : 'bg-slate-950/80 border-slate-800 text-slate-300 hover:bg-slate-800 hover:text-white'
-              }`}
-              title="Toggle Observatory & Storm Telemetry Legend"
-            >
-              <Layers className="w-3.5 h-3.5 text-sky-400" />
-              <span>Legend</span>
-            </button>
-          </div>
-
-          {/* Frozen Simulation Notice Overlay */}
-          {isPaused && (
-            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-20 pointer-events-none bg-amber-500/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-amber-400/60 shadow-2xl text-amber-300 font-mono text-xs font-bold flex items-center gap-2 animate-pulse">
-              <Pause className="w-4 h-4 fill-amber-300 text-amber-300" />
-              <span>ATMOSPHERIC MOVEMENT FROZEN (PAUSED)</span>
-            </div>
-          )}
-
-          {/* Floating Focus Hotbar & Perspective Switcher */}
-          <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-slate-900/90 backdrop-blur-md p-1.5 rounded-xl border border-slate-800 shadow-xl font-mono text-xs">
-            <span className="text-[10px] text-slate-400 font-bold px-1 hidden sm:inline">PERSPECTIVE:</span>
-            <button
-              onClick={() => {
-                const gPreset = GLOBAL_VIEW_PRESETS.find((g) => g.id === perspectiveState.globalPreset) || GLOBAL_VIEW_PRESETS[0];
-                handleTriggerPerspectiveChange('GLOBAL', gPreset.pitch, gPreset.yaw, gPreset.distance);
-              }}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                perspectiveState.mode === 'GLOBAL'
-                  ? 'bg-blue-600/30 border-blue-400 text-blue-200 ring-1 ring-blue-400/50'
-                  : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Switch to Global Perspective"
-            >
-              <span>🌐</span>
-              <span>Global</span>
-            </button>
-            <button
-              onClick={() => {
-                const rPreset = REGIONAL_FOCUS_PRESETS.find((r) => r.id === perspectiveState.regionalPreset) || REGIONAL_FOCUS_PRESETS[0];
-                handleTriggerPerspectiveChange('REGIONAL', rPreset.pitch, rPreset.yaw, rPreset.zoomDistance, { lat: rPreset.lat, lon: rPreset.lon });
-              }}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                perspectiveState.mode === 'REGIONAL'
-                  ? 'bg-sky-600/20 border-sky-500/50 text-sky-200 ring-1 ring-sky-400/40'
-                  : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Switch to Regional Focus"
-            >
-              <span>🗺️</span>
-              <span>Regional</span>
-            </button>
-            <button
-              onClick={() => {
-                const storm = ACTIVE_STORM_SYSTEMS.find((s) => s.id === perspectiveState.activeStormId) || ACTIVE_STORM_SYSTEMS[0];
-                handleTriggerPerspectiveChange('STORM_TRACKING', 26, (storm.currentLon + 180) % 360, 3.2, { lat: storm.currentLat, lon: storm.currentLon });
-              }}
-              className={`px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                perspectiveState.mode === 'STORM_TRACKING'
-                  ? 'bg-rose-600/30 border-rose-400 text-rose-200 ring-1 ring-rose-400/50'
-                  : 'bg-slate-800/80 border-slate-700/80 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Track Active Storm System"
-            >
-              <span>🌀</span>
-              <span>Storm Track</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-rose-400 animate-pulse ml-0.5" />
-            </button>
-
-            {onOpenLocal3dSimulator && (
-              <button
-                onClick={() => onOpenLocal3dSimulator('BOM_SANTACRUZ')}
-                className="px-2 py-1 rounded-lg border text-[11px] font-bold transition-all cursor-pointer flex items-center gap-1 bg-gradient-to-r from-blue-900/70 to-indigo-900/70 border-blue-500/60 text-blue-200 hover:text-white shadow-xs"
-                title="Descend to 3D Ground Station Simulator"
-              >
-                <Mountain className="w-3 h-3 text-blue-300" />
-                <span className="hidden sm:inline">3D Ground Sim</span>
-              </button>
-            )}
-          </div>
-
-          {/* Floating View Mode Selector Directly on 3D Viewport */}
-          <div className="absolute top-16 right-3 sm:top-auto sm:bottom-4 sm:right-4 z-20 flex items-center gap-1.5 bg-slate-900/95 backdrop-blur-md p-1.5 rounded-2xl border border-slate-700/80 shadow-2xl font-mono text-xs">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-300 px-2">
-              <Eye className="w-4 h-4 text-sky-400" />
-              <span className="hidden sm:inline uppercase">Earth View Mode:</span>
-            </div>
-            <button
-              onClick={() => setViewMode('REALISTIC_PHOTOREAL')}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
-                viewMode === 'REALISTIC_PHOTOREAL'
-                  ? 'bg-blue-600 text-white shadow-md ring-2 ring-blue-400/50'
-                  : 'bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Switch to Photorealistic Earth Biomes"
-            >
-              Photoreal
-            </button>
-            <button
-              onClick={() => setViewMode('NIGHT_SATELLITE')}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
-                viewMode === 'NIGHT_SATELLITE'
-                  ? 'bg-amber-600/40 text-amber-200 border border-amber-500/60 shadow-md ring-2 ring-amber-400/50'
-                  : 'bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Switch to Night Satellite Metropolitan Lights"
-            >
-              Night Lights
-            </button>
-            <button
-              onClick={() => setViewMode('SYNOPTIC_METEOROLOGY')}
-              className={`px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all ${
-                viewMode === 'SYNOPTIC_METEOROLOGY'
-                  ? 'bg-indigo-600/30 text-indigo-200 border border-indigo-500/50 shadow-md ring-2 ring-indigo-400/40'
-                  : 'bg-slate-800/80 border border-slate-700 text-slate-300 hover:bg-slate-700'
-              }`}
-              title="Switch to Synoptic Radar & Pressure Isobars"
-            >
-              Radar
-            </button>
-          </div>
-
-          {/* Interactive Hint & Live Earth API Overlay HUD */}
-          <div className="absolute bottom-4 left-4 z-20 flex flex-col gap-2 pointer-events-auto max-w-sm">
-            {useLiveCloudMode && (
-              <div className="bg-slate-900/90 backdrop-blur-md p-3 rounded-2xl border border-emerald-500/40 shadow-2xl text-xs font-mono space-y-2">
-                <div className="flex items-center justify-between text-[11px] font-bold border-b border-slate-800 pb-1.5">
-                  <div className="flex items-center gap-1.5 text-emerald-400">
-                    <Radio className="w-3.5 h-3.5 animate-pulse" />
-                    <span>LIVE EARTH SATELLITE API</span>
-                  </div>
-                  <button
-                    onClick={fetchLiveCloudData}
-                    disabled={isLiveCloudLoading}
-                    className="p-1 hover:bg-slate-800 rounded-md text-slate-300 hover:text-white transition-colors cursor-pointer flex items-center gap-1 text-[10px]"
-                    title="Refresh Live Open-Meteo Cloud Data"
-                  >
-                    <RefreshCw className={`w-3 h-3 ${isLiveCloudLoading ? 'animate-spin' : ''}`} />
-                    <span>{lastLiveApiTime || 'Sync'}</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[10px]">
-                  <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800/80">
-                    <span className="text-slate-400 block">Avg Cloudiness</span>
-                    <span className="text-emerald-300 font-bold text-sm">{avgGlobalCloudCover}%</span>
-                  </div>
-                  <div className="bg-slate-950/80 p-2 rounded-xl border border-slate-800/80">
-                    <span className="text-slate-400 block">Observatories</span>
-                    <span className="text-sky-300 font-bold text-sm">{LIVE_GLOBAL_STATIONS.length} Active</span>
-                  </div>
-                </div>
-
-                {liveCloudData && liveCloudData.length > 0 && (
-                  <div className="flex flex-wrap gap-1 max-h-20 overflow-y-auto custom-scrollbar pt-1">
-                    {liveCloudData.slice(0, 8).map((st) => (
-                      <span
-                        key={st.name}
-                        className="px-1.5 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-[9px] text-slate-300 flex items-center gap-1"
-                      >
-                        <span className="text-sky-400 font-bold">{st.name}:</span>
-                        <span className="text-emerald-300">{st.cloudCover}%</span>
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[10px] font-mono text-slate-400 flex items-center gap-2">
-              <Compass className="w-3.5 h-3.5 text-sky-400" />
-              <span>Drag to rotate Earth • Scroll zoom • Real-time Cloud Cover Stream Active</span>
-            </div>
-          </div>
-
-          {/* 3D Canvas */}
-          <div className="w-full h-full min-h-[520px] relative">
-            <WebGLErrorBoundary>
-              <Canvas camera={{ position: [0, 0, 7.2], fov: 45, far: 2000 }}>
+      {/* 100% Full-Viewport 3D Globe Stage */}
+      <div className="relative w-full flex-1 overflow-hidden bg-slate-950">
+        <WebGLErrorBoundary>
+          <Canvas camera={{ position: [0, 0, 7.2], fov: 45, far: 2000 }} className="w-full h-full">
                 {/* Dynamic Solar Terminator & Lightning */}
                 {enableSolarTerminator ? (
                   <SolarTerminatorAndLightning3D
@@ -3420,6 +2488,40 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                   useLiveCloudMode={useLiveCloudMode}
                   liveCloudData={liveCloudData}
                   elevationMultiplier={elevationMultiplier}
+                  onGlobeClick={handleGlobeProbeClick}
+                />
+
+                {/* Earth Nullschool 3D Physics Layers */}
+                {nullschoolProbe && (
+                  <NullschoolTargetReticle3D
+                    lat={nullschoolProbe.lat}
+                    lon={nullschoolProbe.lon}
+                    radius={2.408}
+                  />
+                )}
+
+                {nullschoolOverlay !== 'None' && (
+                  <NullschoolScalarHeatmap3D
+                    overlay={nullschoolOverlay}
+                    height={nullschoolHeight}
+                    mode={nullschoolMode}
+                    radius={2.404}
+                    opacity={0.52}
+                  />
+                )}
+
+                <NullschoolLatLonGrid3D
+                  radius={2.410}
+                  visible={nullschoolShowGrid}
+                />
+
+                <NullschoolVectorField3D
+                  height={nullschoolHeight}
+                  animate={nullschoolAnimate}
+                  overlay={nullschoolOverlay}
+                  isPlaying={!isPaused && nullschoolIsPlaying}
+                  isHd={nullschoolIsHd}
+                  radius={2.418}
                 />
 
                 {/* 1. Cyclone Hunter Recon Aircraft & Dropsonde Soundings */}
@@ -3740,132 +2842,171 @@ export const GlobeSandbox3DSimulator: React.FC<GlobeSandbox3DSimulatorProps> = (
                 </div>
               </div>
             )}
+
+            {/* Earth Nullschool Master Control Dock & Floating Probe */}
+            <EarthNullschoolHUD
+              probeData={nullschoolProbe}
+              onClearProbe={() => setNullschoolProbe(null)}
+              mode={nullschoolMode}
+              onChangeMode={(m) => setNullschoolMode(m)}
+              animate={nullschoolAnimate}
+              onChangeAnimate={(a) => setNullschoolAnimate(a)}
+              height={nullschoolHeight}
+              onChangeHeight={(h) => setNullschoolHeight(h)}
+              overlay={nullschoolOverlay}
+              onChangeOverlay={(ov) => setNullschoolOverlay(ov)}
+              projection={nullschoolProjection}
+              onChangeProjection={(p) => setNullschoolProjection(p)}
+              isPlaying={nullschoolIsPlaying}
+              onTogglePlay={() => setNullschoolIsPlaying(!nullschoolIsPlaying)}
+              isHd={nullschoolIsHd}
+              onToggleHd={() => setNullschoolIsHd(!nullschoolIsHd)}
+              showGrid={nullschoolShowGrid}
+              onToggleGrid={() => setNullschoolShowGrid(!nullschoolShowGrid)}
+              onRecenter={() => {
+                if (nullschoolProbe) {
+                  setCameraPitch(25);
+                  setCameraYaw((-(nullschoolProbe.lon) + 270 + 360) % 360);
+                  setCameraDistance(4.2);
+                  setActiveFocusPreset('CUSTOM');
+                }
+              }}
+              onStepTime={(deltaHours) => {
+                setNullschoolSimulationTime((prev) => new Date(prev.getTime() + deltaHours * 3600 * 1000));
+              }}
+              onResetTime={() => setNullschoolSimulationTime(new Date())}
+              simulationTime={nullschoolSimulationTime}
+              isUtcTime={nullschoolIsUtcTime}
+              onToggleUtc={() => setNullschoolIsUtcTime(!nullschoolIsUtcTime)}
+            />
+
+        {/* Top-Right Floating Tactical Deck (Glass Capsule) */}
+        <FloatingTacticalDeck
+          selectedDisaster={selectedDisaster}
+          onSelectDisaster={(d) => {
+            setSelectedDisaster(d);
+            handleTriggerDisaster();
+          }}
+          onTriggerBurst={handleTriggerDisaster}
+          climateScenario={climateScenario}
+          onSelectClimateScenario={(sc) => setClimateScenario(sc)}
+          enableCycloneHunter={enableCycloneHunter}
+          onToggleCycloneHunter={() => setEnableCycloneHunter(!enableCycloneHunter)}
+          enableDopplerRadar={enableDopplerRadar}
+          onDropSonde={() => {
+            const newSonde: Dropsonde = {
+              id: `sonde-${Date.now()}`,
+              lat: selectedTarget.lat + (Math.random() - 0.5) * 1.5,
+              lon: selectedTarget.lon + (Math.random() - 0.5) * 1.5,
+              currentAltKm: 12.5,
+              fallSpeedKmH: 48,
+              status: 'FALLING',
+              deployedAt: Date.now(),
+              soundingData: [
+                { altKm: 12.0, pressureHpa: 200, tempC: -55, dewPointC: -62, windSpeedKmH: 155, windDirDeg: 120, rhPct: 35 },
+                { altKm: 5.8, pressureHpa: 500, tempC: -12, dewPointC: -18, windSpeedKmH: 85, windDirDeg: 135, rhPct: 60 },
+                { altKm: 3.1, pressureHpa: 700, tempC: 8, dewPointC: 4, windSpeedKmH: 65, windDirDeg: 150, rhPct: 75 },
+                { altKm: 1.5, pressureHpa: 850, tempC: 18, dewPointC: 16, windSpeedKmH: 74, windDirDeg: 160, rhPct: 88 },
+                { altKm: 0.1, pressureHpa: derivedMetrics.pressureHpa, tempC: derivedMetrics.tempC, dewPointC: derivedMetrics.tempC - 2, windSpeedKmH: derivedMetrics.windKmH, windDirDeg: 170, rhPct: 92 },
+              ],
+              capeJoulesPerKg: 2450,
+              liftedIndex: -4.8,
+              verificationConfidenceBoost: 14.5,
+            };
+            handleDeployDropsonde(newSonde);
+            if (!isSoundMuted) weatherSynth.playRadarScanPing();
+          }}
+          onToggleDopplerRadar={() => setEnableDopplerRadar(!enableDopplerRadar)}
+          enableSatellites={enableSatellites}
+          onToggleSatellites={() => setEnableSatellites(!enableSatellites)}
+          enableLandscapeInteraction={enableLandscapeInteraction}
+          onToggleLandscapeInteraction={() => setEnableLandscapeInteraction(!enableLandscapeInteraction)}
+          showClouds={showClouds}
+          onToggleClouds={() => setShowClouds(!showClouds)}
+          showBorders={showBorders}
+          onToggleBorders={() => setShowBorders(!showBorders)}
+          viewMode={viewMode}
+          onChangeViewMode={(vm) => setViewMode(vm)}
+          perspectiveMode={perspectiveState.mode}
+          onChangePerspective={(mode) => {
+            if (mode === 'GLOBAL') {
+              handleTriggerPerspectiveChange('GLOBAL', 25, 120, 7.2);
+            } else if (mode === 'REGIONAL') {
+              handleTriggerPerspectiveChange('REGIONAL', 22, 100, 4.4, { lat: 18.5, lon: 73.8 });
+            } else {
+              handleTriggerPerspectiveChange('STORM_TRACKING', 24, 92, 3.8, { lat: 16.5, lon: 88.5 });
+            }
+          }}
+          onOpenTelemetryDrawer={() => setShowTelemetryDrawer((prev) => !prev)}
+          isTelemetryDrawerOpen={showTelemetryDrawer}
+        />
+
+        {/* Optional Floating 3D Landscape Interaction HUD */}
+        {enableLandscapeInteraction && (
+          <div className="absolute top-16 left-4 z-30 max-w-sm pointer-events-auto">
+            <LandscapeInteractionHUD
+              activeBarrierId={activeLandscapeBarrierId}
+              activeRegimeId={activeLandscapeRegimeId}
+              onChangeBarrier={(id) => {
+                setActiveLandscapeBarrierId(id);
+                const barrier = MOUNTAIN_BARRIERS.find((b) => b.id === id);
+                if (barrier) {
+                  setCameraPitch(barrier.cameraFocus.pitch);
+                  setCameraYaw(barrier.cameraFocus.yaw);
+                  setCameraDistance(barrier.cameraFocus.distance);
+                  setPerspectiveTrackingCoord({ lat: barrier.cameraFocus.lat, lon: barrier.cameraFocus.lon });
+                  setActiveFocusPreset('CUSTOM');
+                }
+              }}
+              onChangeRegime={(id) => setActiveLandscapeRegimeId(id)}
+              showRidgeElevation={showLandscapeRidges}
+              showLiftStreamlines={showLandscapeStreamlines}
+              showRainCurtains={showLandscapeRainCurtains}
+              showRainShadowSwath={showLandscapeRainShadow}
+              showStationPins={showLandscapeStationPins}
+              onToggleLayer={(layerKey) => {
+                if (layerKey === 'ridges') setShowLandscapeRidges((prev) => !prev);
+                if (layerKey === 'streamlines') setShowLandscapeStreamlines((prev) => !prev);
+                if (layerKey === 'curtains') setShowLandscapeRainCurtains((prev) => !prev);
+                if (layerKey === 'shadow') setShowLandscapeRainShadow((prev) => !prev);
+                if (layerKey === 'pins') setShowLandscapeStationPins((prev) => !prev);
+              }}
+              onFlyToBarrier={(barrier) => {
+                setCameraPitch(barrier.cameraFocus.pitch);
+                setCameraYaw(barrier.cameraFocus.yaw);
+                setCameraDistance(barrier.cameraFocus.distance);
+                setPerspectiveTrackingCoord({ lat: barrier.cameraFocus.lat, lon: barrier.cameraFocus.lon });
+                setActiveFocusPreset('CUSTOM');
+                if (!isSoundMuted) weatherSynth.playRadarScanPing();
+              }}
+            />
           </div>
-        </div>
+        )}
 
-        {/* Right Sidebar: Real-time Telemetry & Impact */}
-        <div className="lg:col-span-3 bg-slate-900/80 border-l border-slate-800 p-4 space-y-4 flex flex-col justify-between z-10 font-sans">
-          <div>
-            <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wider mb-2.5 flex items-center gap-2">
-              <Radio className="w-4 h-4 text-emerald-400" />
-              Atmospheric Telemetry & Impact
-            </h3>
-
-            {/* Climate Anomaly Card */}
-            <div className="bg-slate-950/70 p-3 rounded-xl border border-slate-800 mb-3 space-y-1.5 text-[11px]">
-              <div className="text-amber-300 font-medium flex items-center justify-between">
-                <span>Scenario Anomaly:</span>
-                <span className="font-mono font-semibold">{CLIMATE_SCENARIOS[climateScenario].pressureAnomalyHpa} hPa</span>
-              </div>
-              <div className="text-sky-300 font-medium flex items-center justify-between">
-                <span>Global Sea Level Surge:</span>
-                <span className="font-mono font-semibold">+{CLIMATE_SCENARIOS[climateScenario].seaLevelRiseM} m</span>
-              </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed pt-1 border-t border-slate-800/80 font-sans">
-                {CLIMATE_SCENARIOS[climateScenario].description}
-              </p>
-            </div>
-
-            <div className="space-y-1.5 text-xs">
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Surface Pressure:</span>
-                <span className="font-semibold text-sky-300 font-mono">{derivedMetrics.pressureHpa} hPa</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">24h Precip Rate:</span>
-                <span className="font-semibold text-blue-300 font-mono">{derivedMetrics.rainMm24} mm</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Wind Velocity:</span>
-                <span className="font-semibold text-amber-300 font-mono">{derivedMetrics.windKmH} km/h</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Surface Temp:</span>
-                <span className="font-semibold text-rose-300 font-mono">{derivedMetrics.tempC}°C</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Storm Surge Height:</span>
-                <span className="font-semibold text-sky-300 font-mono">+{derivedMetrics.oceanSurgeM} m</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Population Exposed:</span>
-                <span className="font-semibold text-purple-300 font-mono">{derivedMetrics.popAffectedM} M</span>
-              </div>
-
-              <div className="bg-slate-950/60 p-2 rounded-xl border border-slate-800/80 flex items-center justify-between">
-                <span className="text-slate-400 text-[11px] font-medium">Est. Economic Risk:</span>
-                <span className="font-semibold text-emerald-300 font-mono">${derivedMetrics.economicLossB} B</span>
-              </div>
-            </div>
-
-            {/* 3D Local Ground Simulator Button */}
-            {onOpenLocal3dSimulator && (
-              <button
-                id="btn-globe-to-3d-ground-sim"
-                onClick={() => {
-                  const matched = MET_STATIONS.find(
-                    (s) => s.name.toLowerCase().includes(selectedTarget.name.toLowerCase()) ||
-                           selectedTarget.name.toLowerCase().includes(s.name.toLowerCase())
-                  );
-                  onOpenLocal3dSimulator(matched ? matched.id : 'BOM_SANTACRUZ');
-                }}
-                className="w-full mt-3 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-xs transition-all shadow-md shadow-indigo-950/40 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                title="Descend to 3D ground station simulation for this location"
-              >
-                <Mountain className="w-4 h-4 text-sky-200" />
-                <span>Descend to 3D Ground Simulation</span>
-              </button>
-            )}
-          </div>
-
-          {/* Gamified Missions */}
-          <div className="pt-3 border-t border-slate-800/80 space-y-2">
-            <div className="flex items-center justify-between">
-              <h4 className="text-xs font-semibold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-400" />
-                Planetary Missions
-              </h4>
-              <span className="text-[10px] font-mono text-amber-300 bg-slate-800 px-2 py-0.5 rounded-full border border-slate-700 font-medium">
-                Level {activeMissionIndex + 1}/3
-              </span>
-            </div>
-
-            <div className="bg-slate-950/70 border border-slate-800 p-3 rounded-xl text-xs space-y-2">
-              <div className="font-semibold text-slate-200">{currentMission.title}</div>
-              <p className="text-[11px] text-slate-400 leading-relaxed font-sans">{currentMission.goal}</p>
-
-              <div className="pt-1 flex flex-col gap-1.5">
-                <button
-                  onClick={() => {
-                    setShowCrisisModal(true);
-                    if (!isSoundMuted) weatherSynth.playCrisisAlertTone();
-                  }}
-                  className="w-full py-2 bg-rose-600 hover:bg-rose-500 text-white rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-sm shadow-rose-950/40"
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Launch Crisis Command Operations</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    setActiveMissionIndex((prev) => (prev + 1) % missions.length);
-                    setSelectedTarget(missions[(activeMissionIndex + 1) % missions.length].target);
-                    setSelectedDisaster(missions[(activeMissionIndex + 1) % missions.length].disaster);
-                  }}
-                  className="w-full py-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-medium text-[11px] transition-all cursor-pointer flex items-center justify-center gap-1"
-                >
-                  <span>Next Planetary Challenge</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Slide-Over Telemetry & Missions Drawer */}
+        <SlideOverTelemetryDrawer
+          isOpen={showTelemetryDrawer}
+          onClose={() => setShowTelemetryDrawer(false)}
+          climateScenario={climateScenario}
+          derivedMetrics={derivedMetrics}
+          onOpenGroundSim={(stationId) => {
+            const st = MET_STATIONS.find((s) => s.id === stationId);
+            if (st) {
+              setCameraPitch(25);
+              setCameraYaw(((st.lon + 180) % 360));
+              setCameraDistance(3.2);
+              setPerspectiveTrackingCoord({ lat: st.lat, lon: st.lon });
+              setActiveFocusPreset('CUSTOM');
+            }
+          }}
+          onOpenCrisisModal={() => {
+            setShowCrisisModal(true);
+            if (!isSoundMuted) weatherSynth.playCrisisAlertTone();
+          }}
+          perspectiveState={perspectiveState}
+          onChangePerspectiveState={setPerspectiveState}
+          onTriggerPerspectiveChange={handleTriggerPerspectiveChange}
+        />
       </div>
 
       {/* Floating Satellite Telemetry HUD Badge */}

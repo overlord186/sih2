@@ -27,7 +27,9 @@ import {
   HelpCircle,
   Play,
   Pause,
-  Clock
+  Clock,
+  Video,
+  Download,
 } from 'lucide-react';
 import { StationMetadata } from '../../../types';
 import { MET_STATIONS } from '../../../data/monsoonDataset';
@@ -39,6 +41,7 @@ import {
 } from '../../../data/localBiomeTerrains';
 import { LocalStationScene3D } from './LocalStationScene3D';
 import { weatherSynth } from '../../../utils/audio';
+import { videoRecorder } from '../../../services/videoRecorderService';
 
 interface LocalStationSimulatorModalProps {
   initialStationId?: string;
@@ -96,6 +99,12 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
   const [rainDensityMultiplier, setRainDensityMultiplier] = useState<number>(1.0);
   const [timeOfDayHours, setTimeOfDayHours] = useState<number>(12); // Noon
   const [isAutoOrbit, setIsAutoOrbit] = useState<boolean>(true); // For cinematic mode
+
+  // 1080p 60 FPS Hardware Video Recording State (Supreme Master Plan 2)
+  const [isRecording, setIsRecording] = useState<boolean>(false);
+  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
+  const [recordingStatusMsg, setRecordingStatusMsg] = useState<string>('');
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
 
   // Search filter for station picker in modal
   const [stationSearchText, setStationSearchText] = useState<string>('');
@@ -185,6 +194,49 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
     } else {
       setSurfaceWaterDepthCm(4.5);
     }
+  };
+
+  // 1080p 60 FPS Hardware Video Recording Handlers
+  const handleStartRecording = () => {
+    if (!canvasContainerRef.current) return;
+    const canvas = canvasContainerRef.current.querySelector('canvas');
+    if (!canvas) {
+      setRecordingStatusMsg('3D WebGL Canvas not detected');
+      return;
+    }
+
+    const success = videoRecorder.startRecording(canvas, {
+      fps: 60,
+      videoBitsPerSecond: 10_000_000,
+      onTimeUpdate: (sec) => setRecordingSeconds(sec),
+      onStatusChange: (status, errMsg) => {
+        if (status === 'recording') {
+          setIsRecording(true);
+          setRecordingStatusMsg('Recording 1080p @ 60 FPS...');
+        } else if (status === 'finished') {
+          setIsRecording(false);
+          setRecordingStatusMsg('Export finished');
+        } else if (status === 'error') {
+          setIsRecording(false);
+          setRecordingStatusMsg(`Capture error: ${errMsg || 'unknown'}`);
+        }
+      },
+    });
+
+    if (!success) {
+      setRecordingStatusMsg('Failed to initialize 60fps recording stream');
+    }
+  };
+
+  const handleStopAndSaveRecording = async () => {
+    setRecordingStatusMsg('Processing 60fps video container...');
+    await videoRecorder.stopAndDownload(
+      `SAMVARTAKA_3D_SIM_${selectedStationId}_1080p_60fps.webm`
+    );
+    setIsRecording(false);
+    setRecordingSeconds(0);
+    setRecordingStatusMsg('1080p 60fps video downloaded!');
+    setTimeout(() => setRecordingStatusMsg(''), 4000);
   };
 
   // Optical Horizontal Visibility (Atlas-Ulbrich equation)
@@ -414,6 +466,27 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               {isAudioMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-blue-400" />}
             </button>
 
+            {/* 1080p 60 FPS Video Recording Button (Supreme Master Plan 2) */}
+            {!isRecording ? (
+              <button
+                onClick={handleStartRecording}
+                className="p-2 rounded-lg bg-rose-600/20 hover:bg-rose-600/30 text-rose-300 border border-rose-500/40 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Capture 1080p 60 FPS Simulation Video & Audio (Supreme Master Plan 2)"
+              >
+                <Video className="w-4 h-4 text-rose-400" />
+                <span className="hidden sm:inline">Record 60fps</span>
+              </button>
+            ) : (
+              <button
+                onClick={handleStopAndSaveRecording}
+                className="p-2 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer animate-pulse shadow-md"
+                title="Stop Recording & Download 1080p 60fps Video"
+              >
+                <Download className="w-4 h-4" />
+                <span>Save ({recordingSeconds}s)</span>
+              </button>
+            )}
+
             {/* Lightning Trigger Button */}
             <button
               onClick={triggerLightningStrike}
@@ -448,7 +521,13 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
           {/* 3D WebGL Canvas Viewport */}
           <div className="flex-1 relative bg-slate-950 flex flex-col min-h-[380px] lg:min-h-0">
             {/* 3D Canvas */}
-            <div className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
+            <div ref={canvasContainerRef} className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
+              {recordingStatusMsg && (
+                <div className="absolute top-14 right-3 z-30 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-rose-500/60 text-rose-300 text-xs font-mono shadow-xl flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                  <span>{recordingStatusMsg}</span>
+                </div>
+              )}
               <Canvas
                 shadows
                 camera={{ position: [0, 2, 12], fov: 50 }}

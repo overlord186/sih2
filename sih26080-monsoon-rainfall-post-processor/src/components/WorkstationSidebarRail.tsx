@@ -8,11 +8,9 @@ import {
   Activity,
   Upload,
   BrainCircuit,
-  Sliders,
   Calendar,
-  Flame,
-  Award,
   BookOpen,
+  Briefcase,
   Volume2,
   VolumeX,
   Printer,
@@ -30,9 +28,8 @@ interface WorkstationSidebarRailProps {
   onTabChange: (tab: NavigationTab) => void;
   isAudioMuted: boolean;
   onToggleAudio?: () => void;
-  onOpenAchievements?: () => void;
   onOpenTrainingGuide?: (tab?: 'explore' | 'ml_guide' | 'ml_trainer' | 'ui_spec') => void;
-  unlockedBadgesCount?: number;
+  onOpenModelTraining?: () => void;
   isExpanded: boolean;
   onToggleExpanded: () => void;
 }
@@ -51,13 +48,20 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
   onTabChange,
   isAudioMuted,
   onToggleAudio,
-  onOpenAchievements,
   onOpenTrainingGuide,
-  unlockedBadgesCount = 0,
+  onOpenModelTraining,
   isExpanded,
   onToggleExpanded,
 }) => {
   const navItems: NavRailItem[] = [
+    {
+      id: 'cockpit',
+      label: 'Cockpit 4.0',
+      category: 'core',
+      icon: Gauge,
+      accentColor: 'text-cyan-400 group-hover:text-cyan-300',
+      badge: 'v4.0',
+    },
     {
       id: 'dashboard',
       label: 'Main Dashboard',
@@ -110,13 +114,6 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
       accentColor: 'text-indigo-400 group-hover:text-indigo-300',
     },
     {
-      id: 'sandbox',
-      label: 'Physics Sandbox',
-      category: 'tool',
-      icon: Sliders,
-      accentColor: 'text-fuchsia-400 group-hover:text-fuchsia-300',
-    },
-    {
       id: 'planner',
       label: 'Lead Planner',
       category: 'tool',
@@ -124,12 +121,11 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
       accentColor: 'text-violet-400 group-hover:text-violet-300',
     },
     {
-      id: 'challenge',
-      label: 'Daily Challenge',
-      category: 'guide',
-      icon: Flame,
-      accentColor: 'text-amber-500 group-hover:text-amber-400',
-      badge: 'Daily',
+      id: 'impact',
+      label: 'Impact Risks',
+      category: 'core',
+      icon: Briefcase,
+      accentColor: 'text-amber-400 group-hover:text-amber-300',
     },
     {
       id: 'uploader',
@@ -296,44 +292,35 @@ export const WorkstationSidebarRail: React.FC<WorkstationSidebarRailProps> = ({
       <div className={`p-2 border-t border-slate-800/80 bg-slate-950/90 shrink-0 space-y-1.5 ${
         !isExpanded ? 'flex flex-col items-center' : ''
       }`}>
-        {/* Achievements Quick Action */}
+        {/* ML Model Training & 7 Enterprise Pillars Studio */}
         <div className="relative group w-full flex justify-center">
           <button
             onClick={() => {
-              if (onOpenAchievements) onOpenAchievements();
-              else onTabChange('achievements');
+              if (onOpenModelTraining) onOpenModelTraining();
+              else if (onOpenTrainingGuide) onOpenTrainingGuide('ml_trainer');
+              window.dispatchEvent(new CustomEvent('open-model-training-modal'));
             }}
-            className={`transition-colors cursor-pointer flex items-center ${
+            className={`transition-colors cursor-pointer flex items-center text-slate-400 hover:text-emerald-300 hover:bg-emerald-950/40 ${
               isExpanded
-                ? `w-full gap-3 px-3 py-2 rounded-xl text-xs ${
-                    activeTab === 'achievements'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'text-slate-400 hover:text-amber-300 hover:bg-slate-900'
-                  }`
-                : `w-11 h-11 rounded-xl justify-center ${
-                    activeTab === 'achievements'
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                      : 'text-slate-400 hover:text-amber-300 hover:bg-slate-900'
-                  }`
+                ? 'w-full gap-3 px-3 py-2 rounded-xl text-xs'
+                : 'w-11 h-11 rounded-xl justify-center'
             }`}
-            title={!isExpanded ? 'Meteorological Badges & Achievements' : undefined}
+            title={!isExpanded ? 'Train Model & 7 Enterprise Pillars Studio' : undefined}
           >
-            <div className="shrink-0 flex items-center justify-center">
-              <Award className="w-5 h-5 text-amber-400" />
+            <div className="shrink-0 flex items-center justify-center relative">
+              <BrainCircuit className="w-5 h-5 text-emerald-400 group-hover:text-emerald-300" />
+              <span className="absolute top-0 right-0 w-2 h-2 rounded-full bg-emerald-400 animate-ping ring-2 ring-slate-950" />
             </div>
             {isExpanded && (
-              <div className="flex-1 flex items-center justify-between text-left min-w-0">
-                <span className="text-xs font-medium truncate">Badges</span>
-                <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 font-bold">
-                  {unlockedBadgesCount}
-                </span>
+              <div className="flex-1 text-left min-w-0">
+                <div className="text-xs font-medium text-emerald-200 truncate">Train Model</div>
               </div>
             )}
           </button>
           {!isExpanded && (
             <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2 hidden group-hover:flex items-center z-50 pointer-events-none">
-              <div className="bg-slate-900 text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xl border border-slate-700 whitespace-nowrap">
-                Badges ({unlockedBadgesCount})
+              <div className="bg-slate-900 text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg shadow-2xl border border-slate-700 whitespace-nowrap">
+                Train Model & 7 Pillars Studio
               </div>
             </div>
           )}

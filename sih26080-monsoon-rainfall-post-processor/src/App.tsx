@@ -38,20 +38,17 @@ import { predictWithTrainedWeights, TrainedModelWeights } from './ml/modelTraine
 import trainedSnapshotData from './data/trainedModelSnapshot.json';
 import { MONSOON_DATASET, MET_STATIONS } from './data/monsoonDataset';
 import { calculateMetrics, calculateRegimeBreakdown } from './ml/postProcessor';
-import { ShieldCheck, CloudRain, Award, Activity, Sparkles, Flame, ChevronRight } from 'lucide-react';
-import { CinematicIntro } from './components/CinematicIntro';
+import { ShieldCheck, CloudRain, Activity, Sparkles, ChevronRight } from 'lucide-react';
 import { ChatAssistant } from './components/ChatAssistant';
-import { AtmosphericEdgeSmog } from './components/AtmosphericEdgeSmog';
-import { AtmosphericEntranceTransition } from './components/AtmosphericEntranceTransition';
-import { GlobeSandbox3DSimulator } from './components/GlobeSandbox3DSimulator';
 import { LocalStationSimulatorModal } from './components/observatory/local3d/LocalStationSimulatorModal';
-import { DailyMonsoonChallenge } from './components/DailyMonsoonChallenge';
-import { Achievements } from './components/Achievements';
-import { AchievementToast } from './components/AchievementToast';
-import { StationCommandPalette } from './components/StationCommandPalette';
+import { CommandPalette } from './components/CommandPalette';
+import { DualViewportComparisonSwipe } from './components/DualViewportComparisonSwipe';
+import { getIsLiveRealDataActive, hydrateAllRealStationDataset } from './utils/realWeatherPipeline';
 import { ExtremeEventBenchmarks, ExtremeEventPreset } from './components/ExtremeEventBenchmarks';
-import { trackForecastUsage, trackAtmosphereTested, loadUserEngagement, UserEngagementState } from './utils/achievements';
-import { getDailyMonsoonChallenge } from './data/dailyChallenges';
+import { SpringTemporalScrubber } from './components/SpringTemporalScrubber';
+import { PerformanceMonitorHud } from './components/PerformanceMonitorHud';
+import { MasterPlansModal } from './components/MasterPlansModal';
+import { UnifiedWorkstationCockpit } from './components/UnifiedWorkstationCockpit';
 
 import { AtmosphereWidget, AtmosphereMode } from './components/AtmosphereWidget';
 import { WeatherBackground3D } from './components/WeatherBackground3D';
@@ -59,26 +56,12 @@ import { DashboardEngineControls } from './components/DashboardEngineControls';
 import { weatherSynth } from './utils/audio';
 
 import { motion, AnimatePresence } from 'motion/react';
-import { RainfallRegime } from './types';
+import { RainfallRegime, RainfallDataPoint } from './types';
 import { WorkstationSidebarRail } from './components/WorkstationSidebarRail';
 
 import { ExploreTourProvider, ExploreTooltipPopover, ExploreTourModal } from './components/exploreTour';
 
 export default function App() {
-  const [showIntro, setShowIntro] = useState<boolean>(() => {
-    try {
-      if (typeof window !== 'undefined' && window.location) {
-        const params = new URLSearchParams(window.location.search);
-        if (params.get('intro') === '1' || params.get('playIntro') === 'true') {
-          return true;
-        }
-      }
-    } catch {
-      // Fallback
-    }
-    return false;
-  });
-  const [isFogClearing, setIsFogClearing] = useState<boolean>(false);
   const [isAudioMuted, setIsAudioMuted] = useState<boolean>(true); // Default to muted until user opts in
   // 1. Initialize state safely from localStorage
   const [selectedStationId, setSelectedStationId] = useState<string>(() => {
@@ -121,7 +104,25 @@ export default function App() {
   const [isUnifiedGuideOpen, setIsUnifiedGuideOpen] = useState<boolean>(false);
   const [unifiedGuideTab, setUnifiedGuideTab] = useState<GuideHubTab>('explore');
   const [selectedSeasonPhase, setSelectedSeasonPhase] = useState<number>(2); // 1 to 4: Peak Monsoon default
-  const [activeTab, setActiveTab] = useState<NavigationTab>('dashboard');
+  const [activeTab, setActiveTab] = useState<NavigationTab>(() => {
+    try {
+      const saved = localStorage.getItem('monsoonDashboard_activeTab');
+      if (saved && ['cockpit', 'dashboard', 'regimes', 'probabilities', 'districts', 'verification', 'diagnostics', 'uploader', 'predictor', 'planner', 'methodology', 'help', 'impact'].includes(saved)) {
+        return saved as NavigationTab;
+      }
+    } catch {
+      // ignore
+    }
+    return 'cockpit';
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('monsoonDashboard_activeTab', activeTab);
+    } catch {
+      // ignore
+    }
+  }, [activeTab]);
   const [isBulletinModalOpen, setIsBulletinModalOpen] = useState<boolean>(false);
   const [isLocal3dSimulatorOpen, setIsLocal3dSimulatorOpen] = useState<boolean>(false);
   const [local3dSimulatorStationId, setLocal3dSimulatorStationId] = useState<string>('BOM_SANTACRUZ');
@@ -185,90 +186,46 @@ export default function App() {
     weatherSynth.setMuted(nextMuted);
   };
 
-  const handleIntroComplete = () => {
-    // Automatically stop audio by itself when landing on the interactive screen
-    setIsAudioMuted(true);
-    weatherSynth.setMuted(true);
-    
-    // Defer heavy DOM mounting to prevent synchronous thread lock
-    requestAnimationFrame(() => {
-      setIsFogClearing(true);
-      setTimeout(() => {
-        setShowIntro(false);
-      }, 50);
-    });
-  };
-
-  // Fail-safe to ensure transition layer clears cleanly
-  useEffect(() => {
-    if (isFogClearing) {
-      const timer = setTimeout(() => {
-        setIsFogClearing(false);
-      }, 1100);
-      return () => clearTimeout(timer);
-    }
-  }, [isFogClearing]);
-
-  // Fail-safe to ensure cinematic intro never traps the application on a black screen
-  useEffect(() => {
-    if (showIntro) {
-      const timer = setTimeout(() => {
-        handleIntroComplete();
-      }, 8000);
-      return () => clearTimeout(timer);
-    }
-  }, [showIntro]);
-
-  const handleReplayIntro = () => {
-    setIsFogClearing(false);
-    setShowIntro(true);
-  };
-  
   const [isComparing, setIsComparing] = useState<boolean>(false);
   const [compareYear, setCompareYear] = useState<number>(2024);
   const [isGlassGuideOpen, setIsGlassGuideOpen] = useState<boolean>(false);
-  const [isAchievementsDrawerOpen, setIsAchievementsDrawerOpen] = useState<boolean>(false);
+  const [isDualSwipeOpen, setIsDualSwipeOpen] = useState<boolean>(false);
+  const [isMasterPlansOpen, setIsMasterPlansOpen] = useState<boolean>(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(false);
-  const [engagement, setEngagement] = useState<UserEngagementState>(loadUserEngagement);
-
-  const unlockedBadgesCount = useMemo(() => {
-    if (!engagement?.badges) return 0;
-    return Object.values(engagement.badges).filter((b) => b?.unlocked).length;
-  }, [engagement]);
 
   useEffect(() => {
-    const handleAchUpdate = (e: Event) => {
-      const customEvent = e as CustomEvent<UserEngagementState>;
-      if (customEvent.detail) {
-        setEngagement(customEvent.detail);
-      } else {
-        setEngagement(loadUserEngagement());
-      }
+    const handleOpenMasterPlans = () => setIsMasterPlansOpen(true);
+    const handleOpen3dSimulator = () => handleOpenLocal3dSimulator();
+    window.addEventListener('open-master-plans-modal', handleOpenMasterPlans);
+    window.addEventListener('open-3d-simulator', handleOpen3dSimulator);
+    return () => {
+      window.removeEventListener('open-master-plans-modal', handleOpenMasterPlans);
+      window.removeEventListener('open-3d-simulator', handleOpen3dSimulator);
     };
-    window.addEventListener('achievements-updated', handleAchUpdate);
-    return () => window.removeEventListener('achievements-updated', handleAchUpdate);
   }, []);
 
   useEffect(() => {
-    const handleOpenAch = () => setIsAchievementsDrawerOpen(true);
-    window.addEventListener('open-achievements-drawer', handleOpenAch);
-    return () => window.removeEventListener('open-achievements-drawer', handleOpenAch);
+    const handleOpenDualSwipe = () => setIsDualSwipeOpen(true);
+    window.addEventListener('open-dual-swipe-modal', handleOpenDualSwipe);
+    return () => window.removeEventListener('open-dual-swipe-modal', handleOpenDualSwipe);
   }, []);
-
-  useEffect(() => {
-    trackForecastUsage();
-  }, [selectedStationId, selectedLeadTime, selectedYear]);
-
-  useEffect(() => {
-    if (atmosphereMode !== 'auto') {
-      trackAtmosphereTested(atmosphereMode);
-    }
-  }, [atmosphereMode]);
 
   useEffect(() => {
     const handleOpenGlassGuide = () => setIsGlassGuideOpen(true);
     window.addEventListener('open-glassmorphic-guide', handleOpenGlassGuide);
     return () => window.removeEventListener('open-glassmorphic-guide', handleOpenGlassGuide);
+  }, []);
+
+  useEffect(() => {
+    const handleOpenModelTraining = () => setIsTrainingGuideOpen(true);
+    window.addEventListener('open-model-training-modal', handleOpenModelTraining);
+    window.addEventListener('open-ml-training-modal', handleOpenModelTraining);
+    window.addEventListener('open-7-pillars-studio', handleOpenModelTraining);
+    return () => {
+      window.removeEventListener('open-model-training-modal', handleOpenModelTraining);
+      window.removeEventListener('open-ml-training-modal', handleOpenModelTraining);
+      window.removeEventListener('open-7-pillars-studio', handleOpenModelTraining);
+    };
   }, []);
 
   useEffect(() => {
@@ -283,9 +240,60 @@ export default function App() {
     return () => window.removeEventListener('app-ambient-update', handleAmbientUpdate);
   }, []);
 
+  // Custom Promoted Dataset state (e.g. from real CSV / API batch upload)
+  const [customActiveDataset, setCustomActiveDataset] = useState<RainfallDataPoint[] | null>(() => {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = window.localStorage.getItem('SAMVARTAKA_CUSTOM_ACTIVE_DATASET');
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    const handlePromote = (e: Event) => {
+      const detail = (e as CustomEvent).detail as RainfallDataPoint[];
+      if (detail && Array.isArray(detail) && detail.length > 0) {
+        setCustomActiveDataset(detail);
+        setActiveTab('dashboard');
+      }
+    };
+    const handleRevert = () => {
+      setCustomActiveDataset(null);
+      window.localStorage.removeItem('SAMVARTAKA_CUSTOM_ACTIVE_DATASET');
+      setActiveTab('dashboard');
+    };
+    window.addEventListener('promote-custom-dataset', handlePromote);
+    window.addEventListener('revert-to-benchmark-dataset', handleRevert);
+    return () => {
+      window.removeEventListener('promote-custom-dataset', handlePromote);
+      window.removeEventListener('revert-to-benchmark-dataset', handleRevert);
+    };
+  }, []);
+
+  // Automatically hydrate live real telemetry on application startup
+  useEffect(() => {
+    if (getIsLiveRealDataActive() && (!customActiveDataset || customActiveDataset.length === 0)) {
+      hydrateAllRealStationDataset()
+        .then((realData) => {
+          if (realData && realData.length > 0) {
+            setCustomActiveDataset(realData);
+          }
+        })
+        .catch(() => {
+          // Gracefully fallback to baseline dataset if offline or restricted
+        });
+    }
+  }, []);
+
+  const baseDataset = useMemo(() => {
+    return (customActiveDataset && customActiveDataset.length > 0) ? customActiveDataset : MONSOON_DATASET;
+  }, [customActiveDataset]);
+
   // Filter dataset based on selected station, lead time, and season year (for charts)
   const filteredData = useMemo(() => {
-    let filtered = MONSOON_DATASET.filter((d) => {
+    let filtered = baseDataset.filter((d) => {
       const matchYear = selectedYear === 0 || d.year === selectedYear;
       const matchStation = selectedStationId === 'ALL' || d.stationId === selectedStationId;
       const matchLead = selectedLeadTime === 0 || d.leadTimeDays === selectedLeadTime;
@@ -312,11 +320,11 @@ export default function App() {
     }
 
     return filtered;
-  }, [selectedYear, selectedStationId, selectedLeadTime, selectedModelVersion]);
+  }, [baseDataset, selectedYear, selectedStationId, selectedLeadTime, selectedModelVersion]);
 
   // Filter dataset for the Map (needs all stations to maintain colors)
   const mapData = useMemo(() => {
-    let filtered = MONSOON_DATASET.filter((d) => {
+    let filtered = baseDataset.filter((d) => {
       const matchYear = selectedYear === 0 || d.year === selectedYear;
       const matchLead = selectedLeadTime === 0 || d.leadTimeDays === selectedLeadTime;
       return matchYear && matchLead;
@@ -339,18 +347,18 @@ export default function App() {
     }
     
     return filtered;
-  }, [selectedYear, selectedLeadTime, selectedModelVersion]);
+  }, [baseDataset, selectedYear, selectedLeadTime, selectedModelVersion]);
 
   // Compute compare data for overlay
   const compareData = useMemo(() => {
     if (!isComparing) return [];
-    return MONSOON_DATASET.filter((d) => {
+    return baseDataset.filter((d) => {
       const matchYear = d.year === compareYear;
       const matchStation = selectedStationId === 'ALL' || d.stationId === selectedStationId;
       const matchLead = selectedLeadTime === 0 || d.leadTimeDays === selectedLeadTime;
       return matchYear && matchStation && matchLead;
     });
-  }, [isComparing, compareYear, selectedStationId, selectedLeadTime]);
+  }, [baseDataset, isComparing, compareYear, selectedStationId, selectedLeadTime]);
 
   // Compute live metrics dynamically
   const metrics = useMemo(() => {
@@ -446,48 +454,15 @@ export default function App() {
       <RainOverlay intensity={effectiveIntensity} />
       <LightningFlashOverlay intensity={effectiveIntensity} isDarkModeActive={atmosphereMode === 'dark_mode'} />
       {/* 3D Real-time Ambient Weather Simulation Background */}
-      {(!showIntro || isFogClearing) && (
-        <div className={`transition-opacity duration-1000 ${showIntro ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      {activeTab !== 'cockpit' && (
+        <div className="transition-opacity duration-1000 opacity-100">
           <WeatherBackground3D mode={atmosphereMode} selectedSeasonPhase={selectedSeasonPhase} />
         </div>
       )}
-      {!showIntro && (
-        <div className="md:hidden fixed top-20 right-4 z-30 pointer-events-auto">
-          <DashboardEngineControls compact />
-        </div>
-      )}
+      <div className="md:hidden fixed top-20 right-4 z-30 pointer-events-auto">
+        <DashboardEngineControls compact />
+      </div>
       <AtmosphereWidget mode={atmosphereMode} onChange={setAtmosphereMode} />
-      <AnimatePresence>
-        {showIntro && (
-          <motion.div
-            key="intro-wrapper"
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-            className="fixed inset-0 z-[100]"
-          >
-            <ErrorBoundary 
-              fallbackTitle="Cinematic Sequence Recovery"
-              onBypass={handleIntroComplete}
-              bypassLabel="Skip Directly to Dashboard"
-            >
-              <CinematicIntro 
-                onComplete={handleIntroComplete}
-                isAudioMuted={isAudioMuted}
-                onToggleAudio={toggleAudio}
-              />
-            </ErrorBoundary>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Ultra-High-Fidelity Atmospheric Cloud Piercing & Interface Entry Transition */}
-      <AnimatePresence>
-        {isFogClearing && (
-          <ErrorBoundary onBypass={() => setIsFogClearing(false)} fallbackTitle="Transition Layer Recovery">
-            <AtmosphericEntranceTransition onComplete={() => setIsFogClearing(false)} />
-          </ErrorBoundary>
-        )}
-      </AnimatePresence>
 
       {/* Ambient Overlay Layer */}
       <AnimatePresence>
@@ -507,28 +482,29 @@ export default function App() {
         initial={false}
         animate={{ 
           opacity: 1, 
-          y: showIntro ? 14 : 0, 
-          scale: showIntro ? 0.99 : 1
+          y: 0, 
+          scale: 1
         }}
-        style={{ pointerEvents: showIntro ? 'none' : 'auto' }}
         transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         id="monsoon-ai-app-root"
         className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${
           isSidebarExpanded ? 'md:pl-60 pl-16' : 'pl-16'
-        } ${showIntro ? 'fixed inset-0 overflow-hidden h-screen' : ''} bg-slate-50 transition-all duration-300 ease-in-out`}
+        } bg-slate-50 transition-all duration-300 ease-in-out`}
       >
-          {/* Workstation Sidebar Icon Rail (Idea #4) */}
+          {/* Workstation Sidebar Icon Rail */}
           <WorkstationSidebarRail
             activeTab={activeTab}
             onTabChange={(tab: NavigationTab) => setActiveTab(tab)}
             isAudioMuted={isAudioMuted}
             onToggleAudio={toggleAudio}
-            onOpenAchievements={() => setIsAchievementsDrawerOpen(true)}
             onOpenTrainingGuide={(tab) => {
-              setUnifiedGuideTab(tab || 'explore');
-              setIsUnifiedGuideOpen(true);
+              if (tab === 'ml_trainer') {
+                setIsTrainingGuideOpen(true);
+              } else {
+                setUnifiedGuideTab(tab || 'explore');
+                setIsUnifiedGuideOpen(true);
+              }
             }}
-            unlockedBadgesCount={unlockedBadgesCount}
             isExpanded={isSidebarExpanded}
             onToggleExpanded={() => setIsSidebarExpanded((prev) => !prev)}
           />
@@ -537,7 +513,6 @@ export default function App() {
           <Header
             onDownloadReport={handleDownloadReport}
             onOpenBulletin={() => setIsBulletinModalOpen(true)}
-            onReplayIntro={handleReplayIntro}
             selectedStationId={selectedStationId}
             onStationChange={setSelectedStationId}
             selectedLeadTime={selectedLeadTime}
@@ -551,20 +526,115 @@ export default function App() {
             totalSamples={filteredData.length}
             isAudioMuted={isAudioMuted}
             onToggleAudio={toggleAudio}
-            onOpenAchievements={() => setIsAchievementsDrawerOpen(true)}
             onOpenLocal3dSimulator={handleOpenLocal3dSimulator}
             onOpenTrainingGuide={(tab) => {
-              setUnifiedGuideTab(tab || 'explore');
-              setIsUnifiedGuideOpen(true);
+              if (tab === 'ml_trainer') {
+                setIsTrainingGuideOpen(true);
+              } else {
+                setUnifiedGuideTab(tab || 'explore');
+                setIsUnifiedGuideOpen(true);
+              }
             }}
+            onOpenModelTraining={() => setIsTrainingGuideOpen(true)}
           />
 
           {/* Live Breaking Synoptic Radar Marquee Ticker */}
           <LiveSynopticMarquee onSelectStation={setSelectedStationId} />
 
+          {/* Real-Data Active Injection Banner */}
+          {customActiveDataset && customActiveDataset.length > 0 && (
+            <div className="bg-gradient-to-r from-purple-950 via-indigo-950 to-blue-950 border-b border-purple-500/40 px-4 py-2.5 shadow-md">
+              <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex items-center gap-2.5 text-purple-200">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-purple-500"></span>
+                  </span>
+                  <span className="font-bold text-white tracking-wide">
+                    Active Ground / NWP Dataset Loaded:
+                  </span>
+                  <span className="text-purple-300 font-mono">
+                    {customActiveDataset.length} real observatory points driving GIS Map, Charts & Verification Metrics
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCustomActiveDataset(null);
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.removeItem('SAMVARTAKA_CUSTOM_ACTIVE_DATASET');
+                    }
+                  }}
+                  className="px-3 py-1 rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-400/40 text-purple-100 hover:text-white font-semibold transition-all cursor-pointer shadow-xs"
+                >
+                  Reset to IMD Benchmark Climatology
+                </button>
+              </div>
+            </div>
+          )}
+
+      {/* Supreme Operational Status Ribbon */}
+      <div className="bg-gradient-to-r from-slate-950 via-cyan-950/80 to-slate-950 border-b border-cyan-500/30 px-3 sm:px-6 py-2 text-xs shadow-md">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2 text-cyan-200">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+            </span>
+            <span className="font-bold text-white tracking-wide">
+              SAMVARTAKA 4.0 Active:
+            </span>
+            <span className="text-cyan-300 font-mono text-[11px]">
+              {activeTab === 'cockpit'
+                ? 'Unified Cockpit View (GIS Map + Telemetry + 3D Ground Twin + Temporal Scrubber)'
+                : `Active Mode: ${activeTab.toUpperCase()}`}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setActiveTab('cockpit')}
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                activeTab === 'cockpit'
+                  ? 'bg-cyan-600 text-white shadow-xs'
+                  : 'bg-slate-900 text-cyan-300 hover:bg-slate-800 border border-cyan-800/60'
+              }`}
+            >
+              Cockpit 4.0
+            </button>
+            <button
+              onClick={() => handleOpenLocal3dSimulator()}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-600/30 hover:bg-purple-600 border border-purple-500/50 text-purple-200 hover:text-white transition-all cursor-pointer"
+            >
+              3D Ground Simulator (60fps)
+            </button>
+            <button
+              onClick={() => setActiveTab(activeTab === 'cockpit' ? 'dashboard' : 'cockpit')}
+              className="px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-900/80 hover:bg-slate-800 text-slate-300 border border-slate-700 transition-all cursor-pointer"
+            >
+              {activeTab === 'cockpit' ? 'Switch to Classic Dashboard' : 'Return to Cockpit 4.0'}
+            </button>
+          </div>
+        </div>
+      </div>
+
       {/* Main Content Area */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <ErrorBoundary fallbackTitle="Active View Module Recovery">
+        {activeTab === 'cockpit' && (
+          <UnifiedWorkstationCockpit
+            data={filteredData}
+            selectedStationId={selectedStationId}
+            onSelectStation={setSelectedStationId}
+            selectedYear={selectedYear}
+            onSelectYear={setSelectedYear}
+            selectedLeadTime={selectedLeadTime}
+            onSelectLeadTime={setSelectedLeadTime}
+            onOpenLocal3dSimulatorModal={handleOpenLocal3dSimulator}
+          />
+        )}
+
         {activeTab === 'dashboard' && (
           <div className="space-y-4 sm:space-y-6">
             {/* Historical Extreme Deluge Benchmark Switcher */}
@@ -595,51 +665,6 @@ export default function App() {
               </div>
             </div>
 
-            {/* Daily Monsoon Challenge Quick Callout Banner */}
-            <AnimatedSection delay={0.03} className="lg:col-span-12">
-              <div className="bg-gradient-to-r from-slate-900 via-amber-950/40 to-slate-900 border border-amber-500/30 rounded-2xl p-3.5 sm:p-4 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 shadow-lg shadow-amber-950/20">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-md shadow-amber-500/30 shrink-0">
-                    <Flame className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="px-2 py-0.5 rounded bg-amber-500/20 border border-amber-500/40 text-amber-300 font-bold text-[10px] uppercase font-mono tracking-wider">
-                        Today's Monsoon Challenge
-                      </span>
-                      <span className="text-[11px] sm:text-xs text-slate-400 font-mono">
-                        {getDailyMonsoonChallenge().scenario.dateLabel}
-                      </span>
-                    </div>
-                    <h3 className="font-black text-xs sm:text-base text-slate-100 mt-0.5 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span>{getDailyMonsoonChallenge().scenario.title}</span>
-                      <span className="text-xs font-normal text-amber-300/80">({getDailyMonsoonChallenge().scenario.stationName})</span>
-                    </h3>
-                    <p className="text-xs text-slate-400 line-clamp-1">
-                      {getDailyMonsoonChallenge().scenario.subtitle}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                  <button
-                    onClick={() => setIsAchievementsDrawerOpen(true)}
-                    className="px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-bold text-slate-300 transition-colors cursor-pointer flex items-center gap-1.5"
-                    title="View Unlocked Meteorologist Badges & Level Progress"
-                  >
-                    <Award className="w-4 h-4 text-amber-400" />
-                    <span>Achievements</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('challenge')}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-slate-950 font-black text-xs transition-all shadow-md shadow-amber-500/30 flex items-center gap-1.5 cursor-pointer active:scale-95"
-                  >
-                    <span>Predict Regime</span>
-                    <ChevronRight className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </AnimatedSection>
 
             {/* Interactive Scenario Launchers & Seasonal Progression Scrubber */}
             <AnimatedSection delay={0.05} className="lg:col-span-12">
@@ -675,6 +700,19 @@ export default function App() {
                 selectedStationId={selectedStationId} 
                 data={mapData} 
                 onSelectStation={setSelectedStationId}
+              />
+            </AnimatedSection>
+
+            {/* 120 FPS Spring Temporal Multi-Horizon Scrubber (UI-MP 2) */}
+            <AnimatedSection delay={0.25} className="lg:col-span-12">
+              <SpringTemporalScrubber
+                currentLeadHours={selectedLeadTime === 0 ? 24 : selectedLeadTime * 24}
+                onHorizonChange={(horizon) => {
+                  if (horizon.leadHours <= 24) setSelectedLeadTime(1);
+                  else if (horizon.leadHours <= 48) setSelectedLeadTime(2);
+                  else setSelectedLeadTime(3);
+                  setDossierToast(`Temporal Horizon Scrubbed: ${horizon.label} (${horizon.cycle})`);
+                }}
               />
             </AnimatedSection>
 
@@ -807,32 +845,6 @@ export default function App() {
           </ErrorBoundary>
         )}
 
-        {activeTab === 'sandbox' && (
-          <ErrorBoundary compact>
-            <GlobeSandbox3DSimulator onOpenLocal3dSimulator={handleOpenLocal3dSimulator} />
-          </ErrorBoundary>
-        )}
-
-        {activeTab === 'challenge' && (
-          <ErrorBoundary compact>
-            <DailyMonsoonChallenge
-              onNavigateToGlobe={(scenario) => {
-                setActiveTab('sandbox');
-              }}
-              onOpenAchievements={() => setIsAchievementsDrawerOpen(true)}
-            />
-          </ErrorBoundary>
-        )}
-
-        {activeTab === 'achievements' && (
-          <ErrorBoundary compact>
-            <Achievements
-              mode="page"
-              onNavigateToChallenge={() => setActiveTab('challenge')}
-              onNavigateToTab={(t) => setActiveTab(t as NavigationTab)}
-            />
-          </ErrorBoundary>
-        )}
 
         {activeTab === 'methodology' && (
           <ErrorBoundary compact>
@@ -918,24 +930,6 @@ export default function App() {
         onSelectModelVersion={setSelectedModelVersion}
       />
 
-      {/* Global Achievements Drawer */}
-      <Achievements
-        mode="drawer"
-        isOpen={isAchievementsDrawerOpen}
-        onClose={() => setIsAchievementsDrawerOpen(false)}
-        onNavigateToChallenge={() => {
-          setIsAchievementsDrawerOpen(false);
-          setActiveTab('challenge');
-        }}
-        onNavigateToTab={(t) => {
-          setIsAchievementsDrawerOpen(false);
-          setActiveTab(t as NavigationTab);
-        }}
-      />
-
-      {/* Global Achievement Unlock Notification Toast */}
-      <AchievementToast />
-
       {/* Interactive 3D Local Station Simulator Modal */}
       <LocalStationSimulatorModal
         isOpen={isLocal3dSimulatorOpen}
@@ -943,23 +937,67 @@ export default function App() {
         onClose={() => setIsLocal3dSimulatorOpen(false)}
       />
 
-      {/* Global AI Meteorological Assistant (Available in both Intro and Dashboard) */}
-      <ChatAssistant isIntroActive={showIntro} />
+      {/* Global AI Meteorological Assistant */}
+      <ChatAssistant />
 
       {/* Explore UI Overlays */}
       <ExploreTooltipPopover onTabChange={(tab: any) => setActiveTab(tab as NavigationTab)} />
       <ExploreTourModal onTabChange={(tab: any) => setActiveTab(tab as NavigationTab)} />
 
-      {/* Omnipresent Station Command Palette (/ and Ctrl+K) */}
-      <StationCommandPalette
+      {/* Omnipresent Ergonomic Forecaster Command Palette (/ and Ctrl+K) */}
+      <CommandPalette
         isOpen={isStationPaletteOpen}
         onClose={() => setIsStationPaletteOpen(false)}
-        selectedStationId={selectedStationId}
         onSelectStation={(id) => {
           setSelectedStationId(id);
           setIsStationPaletteOpen(false);
+          setDossierToast(`Switched active station to ${id}`);
+        }}
+        onTriggerAction={(actionId) => {
+          if (actionId === 'toggle-wind-streamlines') {
+            setDossierToast('Toggled RK2 Lagrangian Wind Vector Streamlines');
+          } else if (actionId === 'layer-kriging' || actionId === 'layer-radar' || actionId === 'layer-satellite') {
+            setActiveTab('dashboard');
+            setDossierToast(`Activated Layer: ${actionId.replace('layer-', '').toUpperCase()}`);
+          } else if (actionId === 'open-sensor-qc' || actionId === 'open-model-stacking' || actionId === 'open-hydrology-routing') {
+            setActiveTab('predictor');
+            setDossierToast(`Opened ${actionId.replace('open-', '').replace(/-/g, ' ').toUpperCase()}`);
+          } else if (actionId === 'open-dual-swipe') {
+            setIsDualSwipeOpen(true);
+          } else if (actionId === 'scenario-heavy-convective') {
+            setSelectedStationId('BOM_SANTACRUZ');
+            setActiveTab('predictor');
+            setDossierToast('Loaded Scenario: Severe Monsoon Deluge (>64.5mm)');
+          } else if (actionId === 'scenario-dry-break') {
+            setSelectedStationId('PNQ_SHIVAJINAGAR');
+            setActiveTab('predictor');
+            setDossierToast('Loaded Scenario: Monsoon Break Spell (<2.5mm)');
+          } else if (actionId === 'export-imd-bulletin') {
+            setIsBulletinModalOpen(true);
+          }
         }}
       />
+
+      {/* Dual-Viewport Split-Screen & Difference Swipe Modal (UI-MP 3) */}
+      <DualViewportComparisonSwipe
+        isOpen={isDualSwipeOpen}
+        onClose={() => setIsDualSwipeOpen(false)}
+        selectedStationId={selectedStationId}
+        onSelectStation={setSelectedStationId}
+      />
+
+      {/* Architectural Master Plans & Evolution Studio Modal */}
+      <MasterPlansModal
+        isOpen={isMasterPlansOpen}
+        onClose={() => setIsMasterPlansOpen(false)}
+        onNavigateTab={(tab) => {
+          setIsMasterPlansOpen(false);
+          setActiveTab(tab as NavigationTab);
+        }}
+      />
+
+      {/* Real-Time 120 FPS Frame Rate & Mathematical Worker Diagnostic HUD */}
+      <PerformanceMonitorHud />
 
       {/* Operational Feedback Toast Notification */}
       {dossierToast && (

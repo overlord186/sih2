@@ -1,13 +1,18 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { MET_STATIONS } from '../data/monsoonDataset';
 import { predictScenario } from '../ml/postProcessor';
-import { PredictionScenarioInput, PredictionResult, RainfallRegime } from '../types';
+import { PredictionScenarioInput, PredictionResult, RainfallRegime, RainfallDataPoint, SynopticWeatherRegime } from '../types';
+import { predictWithTrainedWeights, FullInferencePrediction, TrainedModelWeights } from '../ml/modelTrainer';
+import trainedSnapshotData from '../data/trainedModelSnapshot.json';
 import { SynopticSimulator } from './SynopticSimulator';
 import { IndiaRegionMapSimulator } from './IndiaRegionMapSimulator';
 import { CloudVisualizerD3 } from './CloudVisualizerD3';
 import { AdvancedPredictorAnalytics } from './AdvancedPredictorAnalytics';
 import { ModelWeightVarianceVisualizer } from './ModelWeightVarianceVisualizer';
 import { ModelTimeTrajectoryChart } from './ModelTimeTrajectoryChart';
+import { MultiModelStackingVisualizer } from './MultiModelStackingVisualizer';
+import { HydrologicalCatchmentRoutingView } from './HydrologicalCatchmentRoutingView';
+import { SensorQualityControlPanel } from './SensorQualityControlPanel';
 
 import {
   RadarChart,
@@ -47,7 +52,8 @@ import {
   Compass,
   BarChart2,
   Globe,
-  Scale
+  Scale,
+  Waves
 } from 'lucide-react';
 
 export const InteractivePredictor: React.FC = () => {
@@ -69,7 +75,7 @@ export const InteractivePredictor: React.FC = () => {
   const liveTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // 2. Multi-Model Ensemble & Uncertainty State
-  const [selectedModel, setSelectedModel] = useState<'Linear Regression' | 'Neural Network' | 'Random Forest' | 'Ensemble'>('Linear Regression');
+  const [selectedModel, setSelectedModel] = useState<'Linear Regression' | 'Neural Network' | 'Random Forest' | 'Ensemble' | 'SAMVARTAKA 7-Pillars'>('SAMVARTAKA 7-Pillars');
   const [ensembleWeights, setEnsembleWeights] = useState<{ qrf: number; pinn: number; rfBc: number }>({
     qrf: 0.5,
     pinn: 0.3,
@@ -91,7 +97,7 @@ export const InteractivePredictor: React.FC = () => {
   });
   const [showBulletinModal, setShowBulletinModal] = useState<boolean>(false);
   const [copiedBulletin, setCopiedBulletin] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'weights' | 'ensemble' | 'thermodynamic' | 'sounding'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'weights' | 'ensemble' | 'thermodynamic' | 'sounding' | 'stacking' | 'hydrology' | 'qc_telemetry'>('overview');
   const [showDryAdiabats, setShowDryAdiabats] = useState<boolean>(true);
   const [showIsotherms, setShowIsotherms] = useState<boolean>(true);
 
@@ -167,6 +173,39 @@ export const InteractivePredictor: React.FC = () => {
       modelName = `Multi-Model Ensemble (${Math.round((ensembleWeights.qrf/totalWeight)*100)}% LR / ${Math.round((ensembleWeights.pinn/totalWeight)*100)}% NN / ${Math.round((ensembleWeights.rfBc/totalWeight)*100)}% RF)`;
     }
 
+    // SAMVARTAKA AI 7 Enterprise Pillars Prediction
+    const samplePoint: RainfallDataPoint = {
+      id: `live_${effectiveInput.stationId}`,
+      year: 2025,
+      date: '2025-07-25',
+      dayOfYear: 206,
+      stationId: effectiveInput.stationId,
+      stationName: currentStation.name,
+      subdivision: currentStation.subdivision,
+      leadTimeDays: effectiveInput.leadTimeDays,
+      rawForecastMm: effectiveInput.rawForecastMm,
+      observedMm: effectiveInput.rawForecastMm * 1.15,
+      relativeHumidity850hPa: effectiveInput.relativeHumidity,
+      temp2mC: effectiveInput.temp2m,
+      surfacePressureHpa: effectiveInput.surfacePressure,
+      windSpeed10mKmh: effectiveInput.windSpeed,
+      prevDayObsMm: effectiveInput.prevDayRain,
+      detectedRegime: baseResult.detectedRegime,
+      synopticRegime: SynopticWeatherRegime.ACTIVE_MONSOON,
+      baselineLinearMm: baseResult.baselineLinearMm,
+      correctedForecastMm: baseResult.correctedForecastMm,
+    };
+
+    const sevenPillarsPred = predictWithTrainedWeights(
+      samplePoint,
+      (trainedSnapshotData as unknown) as TrainedModelWeights
+    );
+
+    if (selectedModel === 'SAMVARTAKA 7-Pillars') {
+      activeModelVal = sevenPillarsPred.correctedForecastMm;
+      modelName = 'SAMVARTAKA AI (7 Enterprise Pillars)';
+    }
+
     // Real-Time Model Uncertainty Spread
     const realtimeStdDev = Math.max(2.5, activeModelVal * 0.18 + (1008 - effectiveInput.surfacePressure) * 0.25);
     const unblendedActiveVal = activeModelVal;
@@ -208,6 +247,7 @@ export const InteractivePredictor: React.FC = () => {
       historicalStdDev,
       historicalClimatologyMm,
       modelRelianceWeight: wReal,
+      sevenPillarsPred,
     };
   }, [baseResult, effectiveInput, selectedModel, ensembleWeights, modelRelianceWeight, historicalClimatologyMm, historicalStdDev]);
 
@@ -513,6 +553,17 @@ export const InteractivePredictor: React.FC = () => {
               Fetch Station Telemetry
             </button>
 
+            {/* Open 7 Enterprise Pillars Studio & Trainer */}
+            <button
+              id="open-7pillars-studio-btn"
+              onClick={() => window.dispatchEvent(new CustomEvent('open-model-training-modal'))}
+              className="px-3 py-1.5 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white border border-emerald-500 text-xs font-semibold hover:from-emerald-500 hover:to-teal-500 transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
+              title="Open SAMVARTAKA ML Model Training & 7 Enterprise Pillars Studio"
+            >
+              <Cpu className="w-3.5 h-3.5 text-emerald-200" />
+              <span>Train Model & 7 Pillars</span>
+            </button>
+
             {/* Weather Advisory Bulletin Export */}
             <button
               id="export-bulletin-modal-btn"
@@ -680,8 +731,75 @@ export const InteractivePredictor: React.FC = () => {
           <CloudLightning className="w-4 h-4 text-emerald-600" />
           Atmospheric Sounding & Sk-T
         </button>
+
+        <button
+          onClick={() => setActiveTab('stacking')}
+          className={`px-4 py-2 rounded-t-lg transition-colors flex items-center gap-1.5 border-b-2 ${
+            activeTab === 'stacking'
+              ? 'border-purple-600 text-purple-700 bg-purple-50/50 font-bold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Cpu className="w-4 h-4 text-purple-600" />
+          NWP Stacking & BMA
+        </button>
+
+        <button
+          onClick={() => setActiveTab('hydrology')}
+          className={`px-4 py-2 rounded-t-lg transition-colors flex items-center gap-1.5 border-b-2 ${
+            activeTab === 'hydrology'
+              ? 'border-blue-600 text-blue-700 bg-blue-50/50 font-bold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <Waves className="w-4 h-4 text-blue-600" />
+          Catchment Runoff & Inundation
+        </button>
+
+        <button
+          onClick={() => setActiveTab('qc_telemetry')}
+          className={`px-4 py-2 rounded-t-lg transition-colors flex items-center gap-1.5 border-b-2 ${
+            activeTab === 'qc_telemetry'
+              ? 'border-cyan-600 text-cyan-700 bg-cyan-50/50 font-bold'
+              : 'border-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+          }`}
+        >
+          <ShieldCheck className="w-4 h-4 text-cyan-600" />
+          Sensor QC & Buddy Check
+        </button>
       </div>
 
+      {/* Tab View: NWP Multi-Model Stacking & BMA */}
+      {activeTab === 'stacking' && (
+        <div className="w-full">
+          <MultiModelStackingVisualizer
+            stationId={input.stationId}
+            leadHours={input.leadTimeDays * 24}
+            baseForecastRainMm={modelOutputs.activeVal}
+          />
+        </div>
+      )}
+
+      {/* Tab View: Catchment Hydrological Routing & Urban Inundation */}
+      {activeTab === 'hydrology' && (
+        <div className="w-full">
+          <HydrologicalCatchmentRoutingView
+            currentRainfall24hMm={modelOutputs.activeVal}
+          />
+        </div>
+      )}
+
+      {/* Tab View: Multi-Sensor Quality Control & Buddy Check */}
+      {activeTab === 'qc_telemetry' && (
+        <div className="w-full">
+          <SensorQualityControlPanel
+            selectedStationId={input.stationId}
+            onSelectStation={(stnId) => handleRunPrediction({ stationId: stnId })}
+          />
+        </div>
+      )}
+
+      {activeTab !== 'stacking' && activeTab !== 'hydrology' && activeTab !== 'qc_telemetry' && (
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Parameter Sliders & Dynamic Sandbox Modules */}
         <div className="lg:col-span-6 space-y-6">
@@ -1006,7 +1124,84 @@ export const InteractivePredictor: React.FC = () => {
                 >
                   Blend Ensemble
                 </button>
+
+                <button
+                  onClick={() => setSelectedModel('SAMVARTAKA 7-Pillars')}
+                  className={`p-2.5 rounded-xl border font-bold transition-all text-center col-span-2 sm:col-span-4 ${
+                    selectedModel === 'SAMVARTAKA 7-Pillars'
+                      ? 'bg-gradient-to-r from-amber-600 via-indigo-600 to-emerald-600 text-white border-amber-500 shadow-md'
+                      : 'bg-amber-50/70 border-amber-300 text-amber-900 hover:bg-amber-100'
+                  }`}
+                >
+                  <span className="flex items-center justify-center gap-1.5">
+                    <ShieldCheck className="w-4 h-4 text-amber-300" />
+                    <span>SAMVARTAKA AI (7 Enterprise Pillars)</span>
+                  </span>
+                </button>
               </div>
+
+              {/* 7 Enterprise Pillars Live Diagnostics Card */}
+              {selectedModel === 'SAMVARTAKA 7-Pillars' && modelOutputs.sevenPillarsPred && (
+                <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-white space-y-3 font-mono text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
+                    <div className="flex items-center gap-1.5 text-amber-400 font-bold">
+                      <ShieldCheck className="w-4 h-4" />
+                      <span>7 Enterprise Pillars Telemetry</span>
+                    </div>
+                    <span className="text-[10px] text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/30">
+                      {modelOutputs.sevenPillarsPred.appliedModel}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px]">
+                    <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                      <span className="text-slate-400 block">P1 Hurdle</span>
+                      <span className="font-bold text-sky-300">
+                        {(modelOutputs.sevenPillarsPred.hurdle.rainProbability * 100).toFixed(0)}% P(Rain)
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                      <span className="text-slate-400 block">P2 NWP Blend</span>
+                      <span className="font-bold text-purple-300">
+                        {modelOutputs.sevenPillarsPred.multiModelBlend.blendedNwpMm} mm
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                      <span className="text-slate-400 block">P3 Froude</span>
+                      <span className="font-bold text-emerald-300">
+                        Fr={modelOutputs.sevenPillarsPred.topographicDownscaling.froudeNumber}
+                      </span>
+                    </div>
+
+                    <div className="bg-slate-900 p-2 rounded border border-slate-800">
+                      <span className="text-slate-400 block">P4 QC Gate</span>
+                      <span className="font-bold text-teal-300">
+                        {modelOutputs.sevenPillarsPred.qualityControl.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* SHAP & Catchment Hydrology summary */}
+                  <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800 text-[11px] flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <span className="text-slate-400">P5 Dominant Driver: </span>
+                      <strong className="text-amber-300">{modelOutputs.sevenPillarsPred.physicalShap.primaryDriver}</strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-400">P7 API Flood Risk: </span>
+                      <strong className={`${
+                        modelOutputs.sevenPillarsPred.hydrologicalCatchment.flashFloodRiskLevel === 'CRITICAL' ? 'text-rose-400' :
+                        modelOutputs.sevenPillarsPred.hydrologicalCatchment.flashFloodRiskLevel === 'HIGH' ? 'text-amber-400' :
+                        'text-emerald-400'
+                      }`}>
+                        {modelOutputs.sevenPillarsPred.hydrologicalCatchment.flashFloodRiskLevel} ({modelOutputs.sevenPillarsPred.hydrologicalCatchment.apiIndexMm}mm API)
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Ensemble Weight Sliders (Shown when Ensemble is active) */}
               {selectedModel === 'Ensemble' && (
@@ -1625,6 +1820,7 @@ export const InteractivePredictor: React.FC = () => {
           />
         </div>
       </div>
+      )}
 
       {/* OFFICIAL IMD WEATHER ADVISORY BULLETIN MODAL */}
       {showBulletinModal && (

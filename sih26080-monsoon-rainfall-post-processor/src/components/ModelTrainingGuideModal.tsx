@@ -7,8 +7,21 @@ import {
   Play, RotateCcw, Sparkles, TrendingDown, Target, ShieldCheck,
   Cpu, Layers, BarChart3, CheckCircle
 } from 'lucide-react';
-import { MONSOON_DATASET } from '../data/monsoonDataset';
-import { trainQuantileEnsemble, TrainingMetrics, TrainedModelWeights, TrainingResult } from '../ml/modelTrainer';
+import { MONSOON_DATASET, MET_STATIONS } from '../data/monsoonDataset';
+import { 
+  trainQuantileEnsemble, 
+  TrainingMetrics, 
+  TrainedModelWeights, 
+  TrainingResult,
+  evaluateHurdleRainProbability,
+  blendMultiModelForecast,
+  calculateTopographicDownscaling,
+  runMeteorologicalQualityControl,
+  calculatePhysicalShapAttribution,
+  onlineAdaptiveUpdate,
+  calculateHydrologicalCatchmentAPI
+} from '../ml/modelTrainer';
+import { RainfallDataPoint, RainfallRegime, SynopticWeatherRegime } from '../types';
 import trainedSnapshotData from '../data/trainedModelSnapshot.json';
 
 interface ModelTrainingGuideModalProps {
@@ -24,8 +37,19 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
   activeModelVersion = 'v3.1',
   onSelectModelVersion,
 }) => {
-  const [activeMode, setActiveMode] = useState<'walkthrough' | 'live_trainer'>('walkthrough');
+  const [activeMode, setActiveMode] = useState<'walkthrough' | 'live_trainer' | 'enterprise_pillars'>('walkthrough');
   const [currentStep, setCurrentStep] = useState(1);
+
+  // Interactive 7 Enterprise Pillars State
+  const [selectedStationId, setSelectedStationId] = useState<string>('BOM_SANTACRUZ');
+  const [testRawNwp, setTestRawNwp] = useState<number>(54.0);
+  const [testRh, setTestRh] = useState<number>(92);
+  const [testPres, setTestPres] = useState<number>(998);
+  const [testWind, setTestWind] = useState<number>(38);
+  const [testPrevObs, setTestPrevObs] = useState<number>(45);
+  const [driftHistory, setDriftHistory] = useState<string[]>([
+    'Base weights loaded from v3.2 snapshot. Concept drift monitor active.'
+  ]);
 
   // Live Trainer State
   const [isTraining, setIsTraining] = useState(false);
@@ -313,6 +337,17 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
                   <Cpu className="w-3.5 h-3.5" />
                   Live Trainer Loop
                 </button>
+                <button
+                  onClick={() => setActiveMode('enterprise_pillars')}
+                  className={`px-3 py-1 rounded-md font-medium transition-all flex items-center gap-1.5 ${
+                    activeMode === 'enterprise_pillars'
+                      ? 'bg-amber-600 text-white shadow-sm'
+                      : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  7 Enterprise Pillars
+                </button>
               </div>
 
               <button
@@ -576,6 +611,409 @@ export const ModelTrainingGuideModal: React.FC<ModelTrainingGuideModalProps> = (
               </div>
             </div>
           )}
+
+          {/* MODE 3: 7 ENTERPRISE PILLARS INTERACTIVE STUDIO */}
+          {activeMode === 'enterprise_pillars' && (() => {
+            const selectedStation = MET_STATIONS.find(s => s.id === selectedStationId) || MET_STATIONS[0];
+            const liveSandboxTelemetryPoint: RainfallDataPoint = {
+              id: `test_${selectedStationId}`,
+              year: 2025,
+              date: '2025-07-25',
+              dayOfYear: 206,
+              stationId: selectedStationId,
+              stationName: selectedStation.name,
+              subdivision: selectedStation.subdivision,
+              leadTimeDays: 1,
+              rawForecastMm: testRawNwp,
+              observedMm: testRawNwp * 1.15,
+              relativeHumidity850hPa: testRh,
+              temp2mC: 27.5,
+              surfacePressureHpa: testPres,
+              windSpeed10mKmh: testWind,
+              prevDayObsMm: testPrevObs,
+              detectedRegime: testRawNwp >= 64.5 ? RainfallRegime.HEAVY_EXTREME : testRawNwp >= 15.5 ? RainfallRegime.MODERATE : testRawNwp >= 2.5 ? RainfallRegime.LIGHT : RainfallRegime.DRY,
+              synopticRegime: SynopticWeatherRegime.ACTIVE_MONSOON,
+              baselineLinearMm: testRawNwp * 0.9,
+              correctedForecastMm: testRawNwp * 1.1,
+            };
+
+            const hurdleResult = evaluateHurdleRainProbability(
+              liveSandboxTelemetryPoint,
+              trainedWeights?.hurdleWeights,
+              trainedWeights?.hurdleBias,
+              trainedWeights?.featureMeans,
+              trainedWeights?.featureStds,
+              trainedWeights?.hurdleThreshold || 0.42
+            );
+
+            const blendResult = blendMultiModelForecast(
+              testRawNwp,
+              SynopticWeatherRegime.ACTIVE_MONSOON,
+              selectedStation.elevationM,
+              selectedStation.subdivision
+            );
+
+            const downscaleResult = calculateTopographicDownscaling(
+              liveSandboxTelemetryPoint,
+              hurdleResult.hurdlePassed ? blendResult.blendedNwpMm : 0.0
+            );
+
+            const qcResult = runMeteorologicalQualityControl(
+              liveSandboxTelemetryPoint,
+              downscaleResult.downscaledElevationMm
+            );
+
+            const shapResult = calculatePhysicalShapAttribution(
+              liveSandboxTelemetryPoint,
+              testRawNwp,
+              qcResult.validatedMm
+            );
+
+            const catchmentResult = calculateHydrologicalCatchmentAPI(
+              selectedStationId,
+              qcResult.validatedMm,
+              testPrevObs
+            );
+
+            const handleSimulateOnlineUpdate = () => {
+              if (!trainedWeights) return;
+              const streamPoint = {
+                ...liveSandboxTelemetryPoint,
+                observedMm: qcResult.validatedMm + (Math.random() * 20 - 10),
+              };
+              const res = onlineAdaptiveUpdate(trainedWeights, streamPoint, 0.003);
+              setTrainedWeights(res.updatedWeights);
+              setDriftHistory(prev => [
+                `[${new Date().toLocaleTimeString()}] ${res.driftDiagnosis} (Drift Norm: ${res.parameterDriftMagnitude})`,
+                ...prev.slice(0, 4)
+              ]);
+            };
+
+            return (
+              <div className="p-6 space-y-6 overflow-y-auto max-h-[calc(90vh-80px)]">
+                {/* Intro Title & Station Controls */}
+                <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-amber-400" />
+                        7 Enterprise Pillars Execution Bench
+                      </h3>
+                      <p className="text-xs text-slate-400">
+                        Physics-constrained post-processing architecture resolving NWP drizzle and convective cloudbursts.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-slate-400">Target Station:</label>
+                      <select
+                        value={selectedStationId}
+                        onChange={(e) => setSelectedStationId(e.target.value)}
+                        className="bg-slate-900 border border-slate-700 text-xs text-white rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-amber-500 font-mono"
+                      >
+                        {MET_STATIONS.slice(0, 15).map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({s.subdivision})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Synoptic Slider Controls */}
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 pt-2 border-t border-slate-800/80 text-[11px] font-mono">
+                    <div>
+                      <span className="text-slate-400 block mb-1">Raw NWP Rain: <strong className="text-sky-300">{testRawNwp} mm</strong></span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="180"
+                        step="1"
+                        value={testRawNwp}
+                        onChange={(e) => setTestRawNwp(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-sky-400"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block mb-1">850hPa RH: <strong className="text-emerald-300">{testRh}%</strong></span>
+                      <input
+                        type="range"
+                        min="50"
+                        max="100"
+                        step="1"
+                        value={testRh}
+                        onChange={(e) => setTestRh(parseInt(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-emerald-400"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block mb-1">Pressure: <strong className="text-amber-300">{testPres} hPa</strong></span>
+                      <input
+                        type="range"
+                        min="980"
+                        max="1018"
+                        step="1"
+                        value={testPres}
+                        onChange={(e) => setTestPres(parseInt(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-amber-400"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block mb-1">10m Wind: <strong className="text-indigo-300">{testWind} km/h</strong></span>
+                      <input
+                        type="range"
+                        min="5"
+                        max="75"
+                        step="1"
+                        value={testWind}
+                        onChange={(e) => setTestWind(parseInt(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-indigo-400"
+                      />
+                    </div>
+
+                    <div>
+                      <span className="text-slate-400 block mb-1">Prev Day Rain: <strong className="text-teal-300">{testPrevObs} mm</strong></span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="160"
+                        step="2"
+                        value={testPrevObs}
+                        onChange={(e) => setTestPrevObs(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-slate-800 rounded appearance-none cursor-pointer accent-teal-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* THE 7 PILLARS GRID */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Pillar 1: Hurdle Model */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-blue-950/60 border border-blue-500/40 text-blue-400 flex items-center justify-center text-xs font-bold font-mono">1</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Two-Stage Hurdle Architecture</h4>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                        hurdleResult.hurdlePassed ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-rose-950 text-rose-400 border border-rose-500/30'
+                      }`}>
+                        {hurdleResult.classification}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Stage 1 Occurrence Classifier determines whether atmospheric column supports precipitation, blocking raw NWP false drizzle.
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Rain Probability</span>
+                        <span className="text-sm font-bold text-sky-400">{(hurdleResult.rainProbability * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Threshold</span>
+                        <span className="text-sm font-bold text-slate-300">{(hurdleResult.hurdleThreshold * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Stage 2 Trigger</span>
+                        <span className={`text-sm font-bold ${hurdleResult.hurdlePassed ? 'text-emerald-400' : 'text-rose-400'}`}>
+                          {hurdleResult.hurdlePassed ? 'ACTIVE' : 'BLOCKED (0mm)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pillar 2: Multi-Model Super-Ensemble */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-purple-950/60 border border-purple-500/40 text-purple-400 flex items-center justify-center text-xs font-bold font-mono">2</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Multi-Model Ensemble Blending</h4>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-purple-950 text-purple-300 border border-purple-500/30">
+                        {blendResult.dominantModel} Dominant
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Regime-adaptive Bayesian blending across European ECMWF-IFS, NCMRWF India Unified Model (NCUM), and NOAA GFS.
+                    </p>
+                    <div className="grid grid-cols-4 gap-1.5 text-center text-xs font-mono pt-1">
+                      <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                        <span className="text-[9px] text-slate-400 block">ECMWF (48%)</span>
+                        <span className="font-bold text-purple-300">{blendResult.ecmwfMm}mm</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                        <span className="text-[9px] text-slate-400 block">NCUM (24%)</span>
+                        <span className="font-bold text-sky-300">{blendResult.ncumMm}mm</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-1.5 rounded border border-slate-800">
+                        <span className="text-[9px] text-slate-400 block">GFS (28%)</span>
+                        <span className="font-bold text-indigo-300">{blendResult.gfsMm}mm</span>
+                      </div>
+                      <div className="bg-emerald-950/40 p-1.5 rounded border border-emerald-500/30">
+                        <span className="text-[9px] text-emerald-400 block font-bold">Consensus</span>
+                        <span className="font-bold text-emerald-300">{blendResult.blendedNwpMm}mm</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pillar 3: Topographic Downscaling */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 flex items-center justify-center text-xs font-bold font-mono">3</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Topographic DEM Downscaling</h4>
+                      </div>
+                      <span className="text-[10px] px-2 py-0.5 rounded font-mono font-bold bg-slate-900 text-emerald-400 border border-emerald-500/30">
+                        Fr = {downscaleResult.froudeNumber}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Calculates Froude Number (Fr = U / N*Hm) to determine blocked windward coastal lift vs leeward rain shadow subsidence.
+                    </p>
+                    <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono pt-1">
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Flow Regime</span>
+                        <span className="text-xs font-bold text-emerald-300">{downscaleResult.flowRegime}</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Orographic Uplift</span>
+                        <span className="text-xs font-bold text-sky-300">{(downscaleResult.orographicCorrectionFactor * 100).toFixed(0)}%</span>
+                      </div>
+                      <div className="bg-slate-900/80 p-2 rounded border border-slate-800">
+                        <span className="text-[10px] text-slate-400 block">Downscaled Output</span>
+                        <span className="text-xs font-bold text-emerald-400">{downscaleResult.downscaledElevationMm}mm</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Pillar 4: Meteorological Quality Control */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-teal-950/60 border border-teal-500/40 text-teal-400 flex items-center justify-center text-xs font-bold font-mono">4</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Meteorological Quality Control</h4>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold ${
+                        qcResult.status === 'PASSED' ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/30' : 'bg-amber-950 text-amber-300 border border-amber-500/30'
+                      }`}>
+                        {qcResult.status} ({Math.round(qcResult.qcConfidence * 100)}% Conf)
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Physical boundary filter: enforces [0, 1500mm] sanity, precipitable water mass limits, and sensor jump verification.
+                    </p>
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 text-xs font-mono flex items-center justify-between">
+                      <span className="text-slate-400">Plausibility Flags:</span>
+                      <span className="text-teal-300 font-semibold">{qcResult.flags.join(', ')}</span>
+                    </div>
+                  </div>
+
+                  {/* Pillar 5: Explainable AI SHAP Attribution */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-amber-950/60 border border-amber-500/40 text-amber-400 flex items-center justify-center text-xs font-bold font-mono">5</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Physical SHAP Attribution</h4>
+                      </div>
+                      <span className="text-[10px] font-mono text-amber-400">
+                        Net: {shapResult.totalAdjustmentDeltaMm > 0 ? `+${shapResult.totalAdjustmentDeltaMm}` : shapResult.totalAdjustmentDeltaMm} mm
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Decomposes model correction into atmospheric physical drivers that sum exactly to net adjustment.
+                    </p>
+                    <div className="space-y-1.5 text-xs font-mono pt-1">
+                      {shapResult.attributions.slice(0, 3).map((attr, idx) => (
+                        <div key={idx} className="flex justify-between items-center bg-slate-900/80 px-2.5 py-1 rounded border border-slate-800">
+                          <span className="text-slate-300">{attr.factorName}:</span>
+                          <span className={`font-bold ${attr.deltaMm >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                            {attr.deltaMm > 0 ? `+${attr.deltaMm}` : attr.deltaMm} mm ({attr.contributionPct}%)
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Pillar 6: Continuous Online Learning */}
+                  <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-md bg-indigo-950/60 border border-indigo-500/40 text-indigo-400 flex items-center justify-center text-xs font-bold font-mono">6</div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wider">Continuous Online Adaptation</h4>
+                      </div>
+                      <button
+                        onClick={handleSimulateOnlineUpdate}
+                        className="px-2.5 py-1 bg-indigo-600 hover:bg-indigo-500 text-white rounded text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Simulate Telemetry Update
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      Monitors parameter drift across active/break intra-seasonal shifts, dynamically updating quantile weights.
+                    </p>
+                    <div className="bg-slate-900/80 p-2 rounded border border-slate-800 text-[10px] font-mono text-slate-300 max-h-20 overflow-y-auto space-y-1">
+                      {driftHistory.map((d, idx) => (
+                        <div key={idx} className="text-indigo-300">{d}</div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pillar 7: Catchment Hydrology (Full Width Banner) */}
+                <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 rounded-md bg-rose-950/60 border border-rose-500/40 text-rose-400 flex items-center justify-center text-xs font-bold font-mono">7</div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wider">Hydrological Catchment & Antecedent Precipitation Index (API)</h4>
+                    </div>
+                    <span className={`text-xs px-3 py-1 rounded-md font-mono font-black ${
+                      catchmentResult.flashFloodRiskLevel === 'CRITICAL' ? 'bg-rose-950 text-rose-300 border border-rose-500' :
+                      catchmentResult.flashFloodRiskLevel === 'HIGH' ? 'bg-amber-950 text-amber-300 border border-amber-500' :
+                      catchmentResult.flashFloodRiskLevel === 'MODERATE' ? 'bg-sky-950 text-sky-300 border border-sky-500' :
+                      'bg-emerald-950 text-emerald-300 border border-emerald-500'
+                    }`}>
+                      {catchmentResult.flashFloodRiskLevel} INUNDATION RISK
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 text-center text-xs font-mono">
+                    <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Antecedent Index (API_t)</span>
+                      <span className="text-base font-bold text-sky-300">{catchmentResult.apiIndexMm} mm</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">k = 0.88 Soil Decay</span>
+                    </div>
+
+                    <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Soil Saturation</span>
+                      <span className="text-base font-bold text-emerald-300">{catchmentResult.soilSaturationPct}%</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">Storage Depth Limit</span>
+                    </div>
+
+                    <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Estimated SCS-CN Runoff</span>
+                      <span className="text-base font-bold text-rose-300">{catchmentResult.estimatedRunoffMm} mm</span>
+                      <span className="text-[9px] text-slate-500 block mt-0.5">Direct Hydrograph Flux</span>
+                    </div>
+
+                    <div className="bg-slate-900/80 p-2.5 rounded-lg border border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">Final Validated Rain</span>
+                      <span className="text-base font-bold text-teal-300">{qcResult.validatedMm} mm</span>
+                      <span className="text-[9px] text-teal-500/80 block mt-0.5">Post-Processed Operational</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-900/60 p-2.5 rounded-lg border border-slate-800 text-xs font-mono text-amber-200/90 flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                    <span><strong>Civil Defense Advisory:</strong> {catchmentResult.civilDefenseAdvisory}</span>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </motion.div>
       </div>
     </AnimatePresence>

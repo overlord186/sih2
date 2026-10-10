@@ -183,8 +183,19 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
     return positions;
   }, []);
 
+  const [isEyeVisible, setIsEyeVisible] = useState(true);
+
   // Animate eye rotation, pulse beacon, and rainbands
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
+    // Horizon visibility check: hide when on the far hemisphere of the Earth
+    const camDir = camera.position.clone().normalize();
+    const eyeVec = new THREE.Vector3(eyePosition.x, eyePosition.y, eyePosition.z).normalize();
+    const dot = eyeVec.dot(camDir);
+    const visible = dot > 0.12;
+    if (visible !== isEyeVisible) {
+      setIsEyeVisible(visible);
+    }
+
     if (isPaused) return;
 
     const rotSpeed = 0.7 * timeSpeed * delta;
@@ -304,26 +315,26 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
             )}
 
             {/* 3D Waypoint Callout Chip & Hover Telemetry (Only on hover or active selection to prevent screen clutter) */}
-            {(isHovered || isSelected) && (
-              <Html distanceFactor={10} position={[0, 0.065, 0]} zIndexRange={[120, 0]}>
+            {(isHovered || isSelected) && isEyeVisible && (
+              <Html center position={[0, 0.08, 0]} zIndexRange={[120, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
                 <div 
                   onClick={(e) => {
                     e.stopPropagation();
                     onSelectTrackStep(pt.step);
                   }}
-                  className="font-sans transition-all transform -translate-x-1/2 cursor-pointer select-none scale-105 z-50"
+                  className="font-sans transition-all cursor-pointer select-none whitespace-nowrap z-50"
                 >
                   {/* Compact Badge */}
-                  <div className={`px-2 py-0.5 rounded-full flex items-center gap-1.5 text-[9px] border backdrop-blur-md shadow-lg ${
+                  <div className={`px-2 py-0.5 rounded-full flex items-center gap-1.5 text-[9px] border backdrop-blur-md shadow-lg whitespace-nowrap ${
                     isYellowForecast
                       ? 'bg-slate-900/95 text-amber-300 border-amber-500/50 shadow-black/60'
                       : 'bg-slate-900/95 text-sky-300 border-sky-500/50 shadow-black/60'
                   }`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${isYellowForecast ? 'bg-amber-400' : 'bg-sky-400'}`} />
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isYellowForecast ? 'bg-amber-400' : 'bg-sky-400'}`} />
                     <span className="font-semibold whitespace-nowrap">
                       {pt.timeLabel}
                     </span>
-                    <span className="text-[8px] text-slate-400 font-mono">
+                    <span className="text-[8px] text-slate-400 font-mono shrink-0">
                       {pt.windKmh} km/h
                     </span>
                   </div>
@@ -331,17 +342,17 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
                   {/* Expanded Tooltip Card on Hover */}
                   {isHovered && !isSelected && (
                     <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2.5 rounded-xl bg-slate-950/95 border border-slate-700/80 text-white text-[10px] whitespace-nowrap shadow-2xl min-w-[190px]">
-                      <div className="font-semibold flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5">
+                      <div className="font-semibold flex items-center justify-between border-b border-slate-800 pb-1 mb-1.5 whitespace-nowrap gap-2">
                         <span className={isYellowForecast ? 'text-amber-400' : 'text-sky-400'}>
                           {isYellowForecast ? 'Forecast Trajectory' : 'Doppler Observation Fix'}
                         </span>
                         <span className="text-slate-400 font-mono text-[9px]">{pt.timeLabel}</span>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-slate-300 font-mono text-[9px]">
+                      <div className="grid grid-cols-2 gap-2 text-slate-300 font-mono text-[9px] whitespace-nowrap">
                         <div>Wind: <strong className="text-white">{pt.windKmh} km/h</strong></div>
                         <div>Baro: <strong className="text-rose-400">{pt.pressureHpa} hPa</strong></div>
                       </div>
-                      <div className="mt-1 text-[8px] text-slate-400 italic">
+                      <div className="mt-1 text-[8px] text-slate-400 italic whitespace-nowrap">
                         {isYellowForecast 
                           ? 'Projected numerical ensemble trajectory' 
                           : 'Verified satellite & radar observation fix'}
@@ -432,84 +443,87 @@ export const StormTrackingLayer3D: React.FC<StormTrackingLayer3DProps> = ({
         </mesh>
 
         {/* 6. Sleek Storm Telemetry Badge (Compact by default, expandable on hover) */}
-        <Html distanceFactor={10} position={[0, 0.20, 0]} zIndexRange={[120, 0]}>
-          <div
-            onPointerOver={(e) => {
-              e.stopPropagation();
-              setIsVortexHovered(true);
-            }}
-            onPointerOut={() => setIsVortexHovered(false)}
-            onClick={(e) => {
-              e.stopPropagation();
-              setIsVortexHovered((prev) => !prev);
-            }}
-            className="transform -translate-x-1/2 cursor-pointer select-none transition-all duration-200 pointer-events-auto"
-          >
-            {!isVortexHovered ? (
-              <div className="bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-full border border-slate-700/80 shadow-xl text-slate-200 text-[10px] font-sans flex items-center gap-2 hover:border-slate-500 hover:bg-slate-800 transition-all">
-                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                <span className="font-semibold text-white tracking-wide">{storm.name.split(' (')[0]}</span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-medium bg-rose-950/90 text-rose-300 border border-rose-800/60">
-                  {storm.type}
-                </span>
-                <span className="text-slate-400 font-mono text-[9px]">{activePoint.pressureHpa} hPa</span>
-              </div>
-            ) : (
-              <div className="bg-slate-950/95 backdrop-blur-xl border border-slate-700/80 p-3 rounded-2xl shadow-2xl text-slate-200 font-sans min-w-[220px]">
-                {/* Header Line */}
-                <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-                    <span className="text-[11px] font-bold text-white truncate max-w-[140px]">
-                      {storm.name}
-                    </span>
-                  </div>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-rose-950/90 text-rose-300 border border-rose-700/60">
+        {isEyeVisible && (
+          <Html center position={[0, 0.22, 0]} zIndexRange={[120, 0]} style={{ pointerEvents: 'auto', whiteSpace: 'nowrap' }}>
+            <div
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                setIsVortexHovered(true);
+              }}
+              onPointerOut={() => setIsVortexHovered(false)}
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsVortexHovered((prev) => !prev);
+              }}
+              className="cursor-pointer select-none transition-all duration-200 pointer-events-auto whitespace-nowrap"
+            >
+              {!isVortexHovered ? (
+                <div className="bg-slate-950/90 backdrop-blur-md px-3 py-1 rounded-full border border-rose-500/50 shadow-xl text-slate-200 text-[11px] font-sans flex items-center gap-2 hover:border-rose-400 hover:bg-slate-900 transition-all whitespace-nowrap">
+                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                  <span className="font-bold text-white tracking-wide whitespace-nowrap">{storm.name.split(' (')[0]}</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-rose-950/90 text-rose-300 border border-rose-800/60 uppercase shrink-0">
                     {storm.type}
                   </span>
+                  <span className="text-amber-300 font-mono text-[10px] font-medium shrink-0">{activePoint.pressureHpa} hPa</span>
+                  <span className="text-slate-400 font-mono text-[9px] shrink-0">({activePoint.windKmh} km/h)</span>
                 </div>
-
-                {/* Core Metrics Grid */}
-                <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-2 font-mono">
-                  <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Gauge className="w-3 h-3 text-sky-400" /> Baro:
-                    </span>
-                    <span className="font-bold text-rose-400">
-                      {activePoint.pressureHpa} hPa
-                    </span>
-                  </div>
-                  <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between">
-                    <span className="text-slate-400 flex items-center gap-1">
-                      <Wind className="w-3 h-3 text-sky-400" /> Sust:
-                    </span>
-                    <span className="font-bold text-amber-300">
-                      {activePoint.windKmh} km/h
+              ) : (
+                <div className="bg-slate-950/95 backdrop-blur-xl border border-rose-500/70 p-3 rounded-2xl shadow-2xl text-slate-200 font-sans min-w-[230px] whitespace-nowrap">
+                  {/* Header Line */}
+                  <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-2 whitespace-nowrap">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+                      <span className="text-[12px] font-bold text-white truncate max-w-[150px]">
+                        {storm.name}
+                      </span>
+                    </div>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded-full font-semibold bg-rose-950/90 text-rose-300 border border-rose-700/60 shrink-0">
+                      {storm.type}
                     </span>
                   </div>
-                </div>
 
-                {/* Coordinates and Heading */}
-                <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800/80 pt-1.5">
-                  <span className="flex items-center gap-1 font-mono">
-                    <Navigation className="w-2.5 h-2.5 text-sky-400" />
-                    {Math.abs(activePoint.lat).toFixed(1)}°{activePoint.lat >= 0 ? 'N' : 'S'}, {Math.abs(activePoint.lon).toFixed(1)}°{activePoint.lon >= 0 ? 'E' : 'W'}
-                  </span>
-                  <span className="text-sky-300 font-medium">
-                    {storm.movementHeading} @ {storm.forwardSpeedKmh} km/h
-                  </span>
-                </div>
+                  {/* Core Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-1.5 text-[10px] mb-2 font-mono whitespace-nowrap">
+                    <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between gap-1.5">
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <Gauge className="w-3 h-3 text-sky-400" /> Baro:
+                      </span>
+                      <span className="font-bold text-rose-400">
+                        {activePoint.pressureHpa} hPa
+                      </span>
+                    </div>
+                    <div className="bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800 flex items-center justify-between gap-1.5">
+                      <span className="text-slate-400 flex items-center gap-1">
+                        <Wind className="w-3 h-3 text-sky-400" /> Sust:
+                      </span>
+                      <span className="font-bold text-amber-300">
+                        {activePoint.windKmh} km/h
+                      </span>
+                    </div>
+                  </div>
 
-                {/* Time label badge */}
-                <div className="mt-1.5 text-center">
-                  <span className="text-[9px] text-slate-400 font-medium">
-                    Track Point: <span className="text-amber-300 font-mono">{activePoint.timeLabel}</span>
-                  </span>
+                  {/* Coordinates and Heading */}
+                  <div className="flex items-center justify-between text-[9px] text-slate-400 border-t border-slate-800/80 pt-1.5 whitespace-nowrap gap-2">
+                    <span className="flex items-center gap-1 font-mono">
+                      <Navigation className="w-2.5 h-2.5 text-sky-400" />
+                      {Math.abs(activePoint.lat).toFixed(1)}°{activePoint.lat >= 0 ? 'N' : 'S'}, {Math.abs(activePoint.lon).toFixed(1)}°{activePoint.lon >= 0 ? 'E' : 'W'}
+                    </span>
+                    <span className="text-sky-300 font-medium">
+                      {storm.movementHeading} @ {storm.forwardSpeedKmh} km/h
+                    </span>
+                  </div>
+
+                  {/* Time label badge */}
+                  <div className="mt-1.5 text-center whitespace-nowrap">
+                    <span className="text-[9px] text-slate-400 font-medium">
+                      Track Fix: <span className="text-amber-300 font-mono">{activePoint.timeLabel}</span>
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </Html>
+              )}
+            </div>
+          </Html>
+        )}
       </group>
     </group>
   );

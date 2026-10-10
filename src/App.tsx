@@ -43,6 +43,7 @@ import { ChatAssistant } from './components/ChatAssistant';
 import { LocalStationSimulatorModal } from './components/observatory/local3d/LocalStationSimulatorModal';
 import { CommandPalette } from './components/CommandPalette';
 import { DualViewportComparisonSwipe } from './components/DualViewportComparisonSwipe';
+import { getIsLiveRealDataActive, hydrateAllRealStationDataset } from './utils/realWeatherPipeline';
 import { ExtremeEventBenchmarks, ExtremeEventPreset } from './components/ExtremeEventBenchmarks';
 import { SpringTemporalScrubber } from './components/SpringTemporalScrubber';
 import { PerformanceMonitorHud } from './components/PerformanceMonitorHud';
@@ -269,6 +270,21 @@ export default function App() {
       window.removeEventListener('promote-custom-dataset', handlePromote);
       window.removeEventListener('revert-to-benchmark-dataset', handleRevert);
     };
+  }, []);
+
+  // Automatically hydrate live real telemetry on application startup
+  useEffect(() => {
+    if (getIsLiveRealDataActive() && (!customActiveDataset || customActiveDataset.length === 0)) {
+      hydrateAllRealStationDataset()
+        .then((realData) => {
+          if (realData && realData.length > 0) {
+            setCustomActiveDataset(realData);
+          }
+        })
+        .catch(() => {
+          // Gracefully fallback to baseline dataset if offline or restricted
+        });
+    }
   }, []);
 
   const baseDataset = useMemo(() => {
