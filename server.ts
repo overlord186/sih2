@@ -399,14 +399,14 @@ async function startServer() {
 
   bindDualStack(server, PORT, 'Primary');
 
-  // Also bind alternate port (8080 or 3000) so user can access either port seamlessly
-  const SECONDARY_PORT = PORT === 3000 ? 8080 : (PORT === 8080 ? 3000 : null);
-  if (SECONDARY_PORT) {
+  // Also bind alternate ports (5173, 8080, 3000) so user can access either port seamlessly
+  const alternatePorts = [3000, 5173, 8080].filter((p) => p !== PORT);
+  for (const altPort of alternatePorts) {
     const secondaryServer = http.createServer(app);
     secondaryServer.on('upgrade', (req, socket, head) => {
       server.emit('upgrade', req, socket, head);
     });
-    bindDualStack(secondaryServer, SECONDARY_PORT, 'Secondary');
+    bindDualStack(secondaryServer, altPort, `Alternate-${altPort}`);
   }
 }
 
