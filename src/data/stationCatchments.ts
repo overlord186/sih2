@@ -3,7 +3,8 @@
  * SAMVARTAKA AI — Operational Hydrological Catchment & Critical Infrastructure Data Model
  * 
  * Provides physics-grounded municipal drainage limits, Horton soil infiltration coefficients,
- * and real-world critical urban infrastructure flooding choke-points for each IMD observatory.
+ * exact real-world GPS coordinates for critical urban infrastructure flooding choke-points,
+ * and emergency action protocols for each IMD observatory.
  */
 
 export type InfrastructureType = 
@@ -26,6 +27,8 @@ export interface CriticalInfrastructureHotspot {
   baseElevationRelativeM: number; // For 3D DEM placement
   sensitivityFactor: number;      // Multiplier for surface runoff pooling into this depression
   coordinates3D: [number, number, number]; // [x, y, z] for 3D DEM pinpointing
+  lat: number;
+  lng: number;
   actionProtocol: string;
 }
 
@@ -33,6 +36,8 @@ export interface StationCatchmentProfile {
   stationId: string;
   stationName: string;
   subdivision: string;
+  centerCoordinates: [number, number]; // [lat, lng]
+  defaultZoom: number;
   catchmentAreaKm2: number;
   gravityDrainageCapacityMmH: number; // Municipal stormwater pipe capacity (mm/h)
   rationalRunoffCoeffC: number;        // Catchment runoff coefficient (0 to 1)
@@ -46,7 +51,7 @@ export interface StationCatchmentProfile {
   isCoastalCatchment: boolean;
   springTideLevelM?: number;
   
-  // Critical Infrastructure Hotspots
+  // Critical Infrastructure Hotspots with exact GPS coordinates
   hotspots: CriticalInfrastructureHotspot[];
   
   // Tactical mitigation procedures
@@ -58,6 +63,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'BOM_SANTACRUZ',
     stationName: 'Mumbai (Santacruz)',
     subdivision: 'Konkan & Goa',
+    centerCoordinates: [19.0760, 72.8777],
+    defaultZoom: 13,
     catchmentAreaKm2: 437.7,
     gravityDrainageCapacityMmH: 25.0, // Mumbai municipal stormwater design limit
     rationalRunoffCoeffC: 0.85,       // Dense urban paved impervious surface
@@ -77,6 +84,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -2.8,
         sensitivityFactor: 2.4,
         coordinates3D: [-12, -2.2, 14],
+        lat: 19.0833,
+        lng: 72.8425,
         actionProtocol: 'Barricade underpass immediately. Divert traffic to Gokhale & Thackeray Flyovers.',
       },
       {
@@ -89,6 +98,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 0.8,
         sensitivityFactor: 0.45,
         coordinates3D: [8, 0.4, -6],
+        lat: 19.0888,
+        lng: 72.8681,
         actionProtocol: 'Issue standing water NOTAM to ATC. Deploy runway sweeper blowers; inspect friction index.',
       },
       {
@@ -101,6 +112,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -0.6,
         sensitivityFactor: 1.2,
         coordinates3D: [18, -0.4, 22],
+        lat: 19.0594,
+        lng: 72.8497,
         actionProtocol: 'Open contra-flow lanes; restrict heavy commercial trucks from low-lying curb lanes.',
       },
       {
@@ -113,6 +126,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -3.5,
         sensitivityFactor: 2.8,
         coordinates3D: [-28, -3.1, -18],
+        lat: 19.0558,
+        lng: 72.8392,
         actionProtocol: 'Trigger reverse-flow flap gates if Arabian Sea tide exceeds 3.8m. Engage 6x 1000m³/h dewatering pumps.',
       },
       {
@@ -125,6 +140,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.6,
         sensitivityFactor: 1.9,
         coordinates3D: [26, -1.2, 6],
+        lat: 19.0728,
+        lng: 72.8821,
         actionProtocol: 'Halt suburban slow trains between Sion and Kurla. Sound evacuation siren for Kranti Nagar riverbanks.',
       },
       {
@@ -137,6 +154,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.0,
         sensitivityFactor: 0.8,
         coordinates3D: [-32, -0.8, 8],
+        lat: 19.0811,
+        lng: 72.8291,
         actionProtocol: 'Operate all 8 diesel-electric centrifugal generators at 100% duty cycle.',
       },
     ],
@@ -152,6 +171,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'LKN_AMAUSI',
     stationName: 'Lucknow (Amausi)',
     subdivision: 'East Uttar Pradesh',
+    centerCoordinates: [26.7606, 80.8893],
+    defaultZoom: 13,
     catchmentAreaKm2: 512.0,
     gravityDrainageCapacityMmH: 22.0,
     rationalRunoffCoeffC: 0.72,
@@ -170,6 +191,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -2.2,
         sensitivityFactor: 2.1,
         coordinates3D: [14, -1.8, 12],
+        lat: 26.8322,
+        lng: 80.9192,
         actionProtocol: 'Switch signaling to manual interlocking; restrict locomotive movements across yard basin.',
       },
       {
@@ -182,6 +205,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -3.0,
         sensitivityFactor: 2.6,
         coordinates3D: [-20, -2.4, -16],
+        lat: 26.8519,
+        lng: 80.9691,
         actionProtocol: 'Inspect Gomti Barrage gates; clear trapped silt and water hyacinth debris.',
       },
       {
@@ -194,6 +219,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 0.5,
         sensitivityFactor: 0.5,
         coordinates3D: [-10, 0.3, -4],
+        lat: 26.7628,
+        lng: 80.8821,
         actionProtocol: 'Inspect high-speed taxiway turnoffs; clear storm grates along runway margins.',
       },
       {
@@ -206,6 +233,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.4,
         sensitivityFactor: 1.6,
         coordinates3D: [6, -1.0, 20],
+        lat: 26.8529,
+        lng: 80.9462,
         actionProtocol: 'Deploy suction jetting machines to remove urban plastic blockages.',
       },
     ],
@@ -220,6 +249,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'SHL_CHERRAPUNJI',
     stationName: 'Cherrapunji (Sohra)',
     subdivision: 'Assam & Meghalaya',
+    centerCoordinates: [25.2702, 91.7323],
+    defaultZoom: 13,
     catchmentAreaKm2: 185.0,
     gravityDrainageCapacityMmH: 65.0, // High natural gorge slope gradient
     rationalRunoffCoeffC: 0.94,       // Bare sandstone and karst plateaus
@@ -238,6 +269,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -5.0,
         sensitivityFactor: 3.2,
         coordinates3D: [-24, -4.2, -10],
+        lat: 25.2755,
+        lng: 91.6844,
         actionProtocol: 'Cordon tourist viewing platforms; flash flood warning for downstream Sylhet plains.',
       },
       {
@@ -250,6 +283,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 2.2,
         sensitivityFactor: 1.8,
         coordinates3D: [16, 1.8, 18],
+        lat: 25.2982,
+        lng: 91.7324,
         actionProtocol: 'Halt all heavy commercial traffic. Position PWD JCB bulldozers for debris clearance.',
       },
       {
@@ -262,6 +297,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -3.8,
         sensitivityFactor: 2.4,
         coordinates3D: [-14, -3.2, 22],
+        lat: 25.2441,
+        lng: 91.7231,
         actionProtocol: 'Seal tourist cave entrances; monitor hydrostatic cave pressure.',
       },
     ],
@@ -276,6 +313,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'LEH_LADAKH',
     stationName: 'Leh Ladakh',
     subdivision: 'Jammu & Kashmir and Ladakh',
+    centerCoordinates: [34.1526, 77.5771],
+    defaultZoom: 13,
     catchmentAreaKm2: 320.0,
     gravityDrainageCapacityMmH: 15.0, // High vulnerability to cloudburst debris flows
     rationalRunoffCoeffC: 0.78,       // Unvegetated glacial scree and moraine
@@ -294,6 +333,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -2.0,
         sensitivityFactor: 2.8,
         coordinates3D: [-18, -1.6, 14],
+        lat: 34.1256,
+        lng: 77.5892,
         actionProtocol: 'Sound civil defense sirens; initiate immediate uphill evacuation to designated safety zones.',
       },
       {
@@ -306,6 +347,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 0.6,
         sensitivityFactor: 0.4,
         coordinates3D: [12, 0.4, -8],
+        lat: 34.1359,
+        lng: 77.5465,
         actionProtocol: 'Halt all aircraft operations; divert inbound flights to Srinagar/Chandigarh.',
       },
       {
@@ -318,6 +361,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 3.4,
         sensitivityFactor: 2.0,
         coordinates3D: [22, 2.8, 16],
+        lat: 34.2082,
+        lng: 77.6012,
         actionProtocol: 'Deploy Border Roads Organisation (BRO) Project Himank road opening units.',
       },
     ],
@@ -332,6 +377,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'PUN_SHIVAJINAGAR',
     stationName: 'Pune (Shivajinagar)',
     subdivision: 'Madhya Maharashtra',
+    centerCoordinates: [18.5314, 73.8446],
+    defaultZoom: 13,
     catchmentAreaKm2: 330.0,
     gravityDrainageCapacityMmH: 28.0,
     rationalRunoffCoeffC: 0.80,
@@ -350,6 +397,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -2.8,
         sensitivityFactor: 2.5,
         coordinates3D: [-16, -2.2, 10],
+        lat: 18.5142,
+        lng: 73.8471,
         actionProtocol: 'Evacuate riverside vehicles and temporary settlements; alert Khadakwasla Dam control.',
       },
       {
@@ -362,6 +411,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.8,
         sensitivityFactor: 2.1,
         coordinates3D: [8, -1.4, -14],
+        lat: 18.5322,
+        lng: 73.8512,
         actionProtocol: 'Close vehicular boom barriers; activate 2x 25HP municipal dewatering pumps.',
       },
       {
@@ -374,6 +425,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.2,
         sensitivityFactor: 1.8,
         coordinates3D: [-10, -0.9, 24],
+        lat: 18.4891,
+        lng: 73.8210,
         actionProtocol: 'Erect temporary flood deflection sandbag dikes along Ambil Odha.',
       },
     ],
@@ -387,6 +440,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'JOD_DESERT',
     stationName: 'Jodhpur',
     subdivision: 'West Rajasthan',
+    centerCoordinates: [26.2514, 73.0489],
+    defaultZoom: 13,
     catchmentAreaKm2: 285.0,
     gravityDrainageCapacityMmH: 18.0, // Low drainage density typical of arid terrain
     rationalRunoffCoeffC: 0.65,
@@ -405,6 +460,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: 2.4,
         sensitivityFactor: 2.2,
         coordinates3D: [12, 1.8, 8],
+        lat: 26.2978,
+        lng: 73.0189,
         actionProtocol: 'Divert torrent from narrow stepwell gutters into historic water conservation tanks.',
       },
       {
@@ -417,6 +474,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -2.6,
         sensitivityFactor: 1.7,
         coordinates3D: [-22, -2.0, -18],
+        lat: 26.3512,
+        lng: 73.0821,
         actionProtocol: 'Open bypass spillway sluices; protect water treatment pump intakes.',
       },
       {
@@ -429,6 +488,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
         baseElevationRelativeM: -1.0,
         sensitivityFactor: 1.5,
         coordinates3D: [4, -0.8, 18],
+        lat: 26.2731,
+        lng: 73.0319,
         actionProtocol: 'Clear sand dunes and windblown scrub obstructing storm grates.',
       },
     ],
@@ -448,29 +509,28 @@ export function getStationCatchmentProfile(stationId: string): StationCatchmentP
 
 /**
  * Real-time Hydrological Calculation Engine:
- * Computes Horton infiltration capacity, drainage surcharge, and ponding depth at each hotspot.
+ * Computes live Horton infiltration capacity, surface runoff generation,
+ * drainage surcharge ratio, and individual critical infrastructure submersion.
  */
 export function computeLiveHydrologicalState(
   profile: StationCatchmentProfile,
   rainRateMmH: number,
-  surfaceWaterDepthCm: number,
-  elapsedSimMinutes: number
+  elapsedHours: number = 1.0,
+  surfaceWaterDepthCm: number = 0.0
 ) {
-  const tHr = elapsedSimMinutes / 60;
-  
-  // Horton Infiltration Equation: f(t) = fc + (f0 - fc) * exp(-k * t)
-  const currentInfiltrationMmH = profile.hortonSteadyFc + 
-    (profile.hortonInitialF0 - profile.hortonSteadyFc) * 
-    Math.exp(-profile.hortonDecayK * tHr);
+  // 1. Horton infiltration equation: f(t) = fc + (f0 - fc) * exp(-k * t)
+  const currentInfiltrationMmH = 
+    profile.hortonSteadyFc + 
+    (profile.hortonInitialF0 - profile.hortonSteadyFc) * Math.exp(-profile.hortonDecayK * Math.max(0.05, elapsedHours));
 
-  // Precipitation excess rate: rate at which water cannot infiltrate soil
-  const excessRainMmH = Math.max(0, rainRateMmH - currentInfiltrationMmH);
+  // 2. Excess rainfall (Runoff Generation)
+  const excessRainMmH = Math.max(0, rainRateMmH - currentInfiltrationMmH) * profile.rationalRunoffCoeffC;
 
-  // Municipal Drainage Capacity Surcharge: Q_excess above gravity pipe limits
+  // 3. Drainage surplus over municipal storm main capacity
   const drainageSurplusMmH = rainRateMmH - profile.gravityDrainageCapacityMmH;
   const isDrainageOverwhelmed = drainageSurplusMmH > 0;
 
-  // Compute live ponding depth and operational hazard severity for each hotspot
+  // 4. Compute live ponding depth and operational hazard severity for each hotspot
   const evaluatedHotspots = profile.hotspots.map((h) => {
     // Local depth calculated from catchment ponding + local depression sensitivity
     const localDepthCm = Number(

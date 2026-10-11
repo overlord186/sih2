@@ -37,6 +37,8 @@ interface StationCatchmentDashboardProps {
   elapsedSimMinutes: number;
   windSpeedKmH: number;
   windDirDeg: number;
+  selectedHotspotId?: string | null;
+  onSelectHotspot?: (hotspotId: string) => void;
 }
 
 export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps> = ({
@@ -46,13 +48,15 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
   elapsedSimMinutes,
   windSpeedKmH,
   windDirDeg,
+  selectedHotspotId,
+  onSelectHotspot,
 }) => {
   const hydroState = useMemo(() => {
     return computeLiveHydrologicalState(
       catchment,
       rainRateMmH,
-      surfaceWaterDepthCm,
-      elapsedSimMinutes
+      Math.max(0.1, elapsedSimMinutes / 60),
+      surfaceWaterDepthCm
     );
   }, [catchment, rainRateMmH, surfaceWaterDepthCm, elapsedSimMinutes]);
 
@@ -183,12 +187,15 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
             return (
               <div
                 key={hotspot.id}
-                className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between ${
-                  isCritical
-                    ? 'bg-rose-950/25 border-rose-500/60 shadow-lg shadow-rose-950/30'
+                onClick={() => onSelectHotspot && onSelectHotspot(hotspot.id)}
+                className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between cursor-pointer select-none ${
+                  selectedHotspotId === hotspot.id
+                    ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-950/50'
+                    : isCritical
+                    ? 'bg-rose-950/25 border-rose-500/60 shadow-lg shadow-rose-950/30 hover:border-rose-400'
                     : isCaution
-                    ? 'bg-amber-950/20 border-amber-500/50'
-                    : 'bg-slate-900/75 border-slate-800'
+                    ? 'bg-amber-950/20 border-amber-500/50 hover:border-amber-400'
+                    : 'bg-slate-900/75 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div>
