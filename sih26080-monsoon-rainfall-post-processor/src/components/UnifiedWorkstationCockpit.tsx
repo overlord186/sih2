@@ -575,6 +575,7 @@ export const UnifiedWorkstationCockpit: React.FC<UnifiedWorkstationCockpitProps>
                 gl={{ antialias: true, powerPreference: 'high-performance' }}
               >
                 <LocalStationScene3D
+                  stationId={activeStation.id}
                   biome={activeBiome}
                   rainRateMmH={stationTelemetry.observedRain}
                   windSpeedKmH={stationTelemetry.windSpeed}

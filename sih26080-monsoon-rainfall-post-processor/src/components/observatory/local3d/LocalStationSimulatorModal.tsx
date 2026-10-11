@@ -40,6 +40,8 @@ import {
   WeatherScenarioPreset 
 } from '../../../data/localBiomeTerrains';
 import { LocalStationScene3D } from './LocalStationScene3D';
+import { StationCatchmentDashboard } from './StationCatchmentDashboard';
+import { getStationCatchmentProfile } from '../../../data/stationCatchments';
 import { weatherSynth } from '../../../utils/audio';
 import { videoRecorder } from '../../../services/videoRecorderService';
 
@@ -72,6 +74,14 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
   const activeBiome: LocalBiomeProfile = useMemo(
     () => getStationBiome(activeStation),
     [activeStation]
+  );
+
+  // Operational Dual-Engine Mode: High-Density 2D Catchment Dashboard vs 3D Topographic DEM
+  const [viewMode, setViewMode] = useState<'CATCHMENT_DASHBOARD' | 'TOPOGRAPHIC_3D'>('CATCHMENT_DASHBOARD');
+
+  const activeCatchment = useMemo(
+    () => getStationCatchmentProfile(selectedStationId),
+    [selectedStationId]
   );
 
   // Simulation interactive parameters
@@ -518,104 +528,152 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
 
         {/* Main Workspace Body */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
-          {/* 3D WebGL Canvas Viewport */}
+          {/* Main Display Pane: Mode A (Catchment Dashboard) vs Mode B (3D DEM) */}
           <div className="flex-1 relative bg-slate-950 flex flex-col min-h-[380px] lg:min-h-0">
-            {/* 3D Canvas */}
-            <div ref={canvasContainerRef} className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
-              {recordingStatusMsg && (
-                <div className="absolute top-14 right-3 z-30 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-rose-500/60 text-rose-300 text-xs font-mono shadow-xl flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
-                  <span>{recordingStatusMsg}</span>
-                </div>
-              )}
-              <Canvas
-                shadows
-                dpr={[1, 1.5]}
-                camera={{ position: [0, 2, 12], fov: 50 }}
-                gl={{ antialias: true, powerPreference: 'high-performance' }}
-              >
-                <LocalStationScene3D
-                  biome={activeBiome}
-                  rainRateMmH={rainRateMmH}
-                  windSpeedKmH={windSpeedKmH}
-                  windDirDeg={windDirDeg}
-                  cloudBaseM={cloudBaseM}
-                  tempC={tempC}
-                  rhPct={rhPct}
-                  surfaceWaterDepthCm={surfaceWaterDepthCm}
-                  cameraPreset={cameraPreset}
-                  isLightningActive={isLightningActive}
-                  showTopoHeatmap={showTopoHeatmap}
-                  rainDensityMultiplier={rainDensityMultiplier}
-                  timeOfDayHours={timeOfDayHours}
-                  isAutoOrbit={isAutoOrbit}
-                />
-              </Canvas>
-
-              {/* Camera Angle Presets Floating HUD */}
-              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 p-1 bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700/70 shadow-lg">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1">
-                  <Camera className="w-3 h-3 text-blue-400" />
-                  View:
-                </span>
-                {(
-                  [
-                    { id: 'TOP_DOWN', label: 'Top-Down Sim' },
-                    { id: 'OBSERVER', label: 'Observer (Eye-Level)' },
-                    { id: 'AERIAL', label: 'Drone Aerial' },
-                    { id: 'TOWER', label: 'AWS Tower' },
-                    { id: 'RUNOFF', label: 'Runoff Channel' },
-                  ] as const
-                ).map((cam) => (
-                  <button
-                    key={cam.id}
-                    onClick={() => setCameraPreset(cam.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      cameraPreset === cam.id
-                        ? 'bg-blue-600 text-white shadow-xs'
-                        : 'text-slate-400 hover:text-white hover:bg-slate-800'
-                    }`}
-                  >
-                    {cam.label}
-                  </button>
-                ))}
+            {/* View Mode Bar */}
+            <div className="p-2 sm:px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-3 shrink-0 z-20 font-sans">
+              <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('CATCHMENT_DASHBOARD')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    viewMode === 'CATCHMENT_DASHBOARD'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Activity className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Catchment Telemetry & Hotspots (120 FPS)</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('TOPOGRAPHIC_3D')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    viewMode === 'TOPOGRAPHIC_3D'
+                      ? 'bg-blue-600 text-white shadow-xs'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Mountain className="w-3.5 h-3.5 text-blue-400" />
+                  <span>3D Topographic DEM Mesh</span>
+                </button>
               </div>
 
-              {/* Real-time Status Overlay Banner (Bottom of Viewport) */}
-              <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-3 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-800 shadow-xl text-xs">
-                {/* Hazard Level Badge */}
-                <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${hazardAssessment.bgColor}`}>
-                  <hazardAssessment.icon className={`w-4 h-4 ${hazardAssessment.textColor} shrink-0 animate-pulse`} />
-                  <div>
-                    <span className="font-extrabold uppercase tracking-wide block text-[10px]">
-                      {hazardAssessment.title}
-                    </span>
-                    <span className={`font-semibold text-[11px] ${hazardAssessment.textColor}`}>
-                      {hazardAssessment.status}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Core Live Hydro Metrics */}
-                <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto text-[11px]">
-                  <div className="flex items-center gap-1.5">
-                    <Droplet className="w-3.5 h-3.5 text-blue-400 shrink-0" />
-                    <span className="text-slate-400">Ponding Depth:</span>
-                    <strong className="text-blue-300 font-mono text-sm">{surfaceWaterDepthCm.toFixed(1)} cm</strong>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Eye className="w-3.5 h-3.5 text-sky-400 shrink-0" />
-                    <span className="text-slate-400">Visibility:</span>
-                    <strong className="text-sky-300 font-mono text-sm">{opticalVisibilityKm.toFixed(1)} km</strong>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Wind className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                    <span className="text-slate-400">Gale Force:</span>
-                    <strong className="text-emerald-300 font-mono text-sm">{windSpeedKmH} km/h</strong>
-                  </div>
-                </div>
-              </div>
+              <span className="text-[10px] font-mono text-slate-400 hidden sm:inline-block">
+                {viewMode === 'CATCHMENT_DASHBOARD'
+                  ? '⚡ 120 FPS Decision-Grade Catchment Analytics'
+                  : '🗺️ Scientific Elevation & Runoff Vectors'}
+              </span>
             </div>
+
+            {viewMode === 'CATCHMENT_DASHBOARD' ? (
+              <StationCatchmentDashboard
+                catchment={activeCatchment}
+                rainRateMmH={rainRateMmH}
+                surfaceWaterDepthCm={surfaceWaterDepthCm}
+                elapsedSimMinutes={elapsedSimMinutes}
+                windSpeedKmH={windSpeedKmH}
+                windDirDeg={windDirDeg}
+              />
+            ) : (
+              /* 3D Canvas Viewport */
+              <div ref={canvasContainerRef} className="flex-1 w-full h-full relative cursor-grab active:cursor-grabbing">
+                {recordingStatusMsg && (
+                  <div className="absolute top-14 right-3 z-30 px-3 py-1.5 rounded-xl bg-slate-900/90 border border-rose-500/60 text-rose-300 text-xs font-mono shadow-xl flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                    <span>{recordingStatusMsg}</span>
+                  </div>
+                )}
+                <Canvas
+                  shadows
+                  dpr={[1, 1.5]}
+                  camera={{ position: [0, 2, 12], fov: 50 }}
+                  gl={{ antialias: true, powerPreference: 'high-performance' }}
+                >
+                  <LocalStationScene3D
+                    biome={activeBiome}
+                    rainRateMmH={rainRateMmH}
+                    windSpeedKmH={windSpeedKmH}
+                    windDirDeg={windDirDeg}
+                    cloudBaseM={cloudBaseM}
+                    tempC={tempC}
+                    rhPct={rhPct}
+                    surfaceWaterDepthCm={surfaceWaterDepthCm}
+                    cameraPreset={cameraPreset}
+                    isLightningActive={isLightningActive}
+                    showTopoHeatmap={showTopoHeatmap}
+                    rainDensityMultiplier={rainDensityMultiplier}
+                    timeOfDayHours={timeOfDayHours}
+                    isAutoOrbit={isAutoOrbit}
+                    stationId={selectedStationId}
+                  />
+                </Canvas>
+
+                {/* Camera Angle Presets Floating HUD */}
+                <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5 p-1 bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700/70 shadow-lg">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 flex items-center gap-1">
+                    <Camera className="w-3 h-3 text-blue-400" />
+                    View:
+                  </span>
+                  {(
+                    [
+                      { id: 'TOP_DOWN', label: 'Top-Down Sim' },
+                      { id: 'OBSERVER', label: 'Observer (Eye-Level)' },
+                      { id: 'AERIAL', label: 'Drone Aerial' },
+                      { id: 'TOWER', label: 'AWS Tower' },
+                      { id: 'RUNOFF', label: 'Runoff Channel' },
+                    ] as const
+                  ).map((cam) => (
+                    <button
+                      key={cam.id}
+                      onClick={() => setCameraPreset(cam.id)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        cameraPreset === cam.id
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {cam.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Real-time Status Overlay Banner (Bottom of Viewport) */}
+                <div className="absolute bottom-3 left-3 right-3 z-10 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-3 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-800 shadow-xl text-xs">
+                  {/* Hazard Level Badge */}
+                  <div className={`px-3 py-1.5 rounded-lg border flex items-center gap-2 ${hazardAssessment.bgColor}`}>
+                    <hazardAssessment.icon className={`w-4 h-4 ${hazardAssessment.textColor} shrink-0 animate-pulse`} />
+                    <div>
+                      <span className="font-extrabold uppercase tracking-wide block text-[10px]">
+                        {hazardAssessment.title}
+                      </span>
+                      <span className={`font-semibold text-[11px] ${hazardAssessment.textColor}`}>
+                        {hazardAssessment.status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Core Live Hydro Metrics */}
+                  <div className="flex items-center gap-3 sm:gap-4 overflow-x-auto text-[11px]">
+                    <div className="flex items-center gap-1.5">
+                      <Droplet className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+                      <span className="text-slate-400">Ponding Depth:</span>
+                      <strong className="text-blue-300 font-mono text-sm">{surfaceWaterDepthCm.toFixed(1)} cm</strong>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Eye className="w-3.5 h-3.5 text-sky-400 shrink-0" />
+                      <span className="text-slate-400">Visibility:</span>
+                      <strong className="text-sky-300 font-mono text-sm">{opticalVisibilityKm.toFixed(1)} km</strong>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Wind className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-slate-400">Gale Force:</span>
+                      <strong className="text-emerald-300 font-mono text-sm">{windSpeedKmH} km/h</strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Right Sidebar: Physics Sliders & Environmental Reaction Dashboard */}

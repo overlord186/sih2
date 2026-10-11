@@ -38,17 +38,19 @@ import {
   Clouds,
   Cloud,
   ContactShadows,
+  Html,
 } from '@react-three/drei';
 import { LocalBiomeProfile } from '../../../data/localBiomeTerrains';
 import {
   createPbrWetTerrainMaterial,
-  createDynamicWaterMaterial,
-  createRealisticBarkMaterial,
-  createRealisticFoliageMaterial,
   createGalvanizedSteelMaterial,
   computeAtmosphericLighting,
 } from '../../../shaders/pbrAtmosphericShaders';
 import { spatialAcoustics } from '../../../utils/spatialAcousticsEngine';
+import {
+  getStationCatchmentProfile,
+  computeLiveHydrologicalState,
+} from '../../../data/stationCatchments';
 
 export interface LocalStationScene3DProps {
   biome: LocalBiomeProfile;
@@ -65,6 +67,7 @@ export interface LocalStationScene3DProps {
   rainDensityMultiplier?: number;
   timeOfDayHours?: number;
   isAutoOrbit?: boolean;
+  stationId?: string;
 }
 
 // ----------------------------------------------------------------------------
@@ -112,7 +115,7 @@ export function getStationTerrainHeight(x: number, z: number, archetype: string)
 }
 
 // ----------------------------------------------------------------------------
-// 1. Procedural Biome Terrain Mesh with Dynamic PBR Puddles & Real Geography
+// 1. Scientific Digital Elevation Model (DEM) with Dynamic Hypsometric Tinting & ISO Contours
 // ----------------------------------------------------------------------------
 function BiomeTerrain({
   biome,
@@ -147,10 +150,26 @@ function BiomeTerrain({
       pos.setY(i, y);
 
       if (showTopoHeatmap) {
-        const normY = Math.max(0, Math.min(1, (y + 15) / 30));
-        colorObj.setHSL(0.65 - normY * 0.65, 1.0, 0.45);
+        const clamped = Math.max(0, Math.min(1, (y + 15) / 30));
+        colorObj.setHSL(0.65 - clamped * 0.65, 1.0, 0.45);
       } else {
-        colorObj.set(biome.terrainColor);
+        // Scientific Hypsometric Elevation Ramp
+        if (y < -1.5) {
+          // Low depression basin / waterlogged valley
+          colorObj.set('#1e293b').lerp(new THREE.Color('#0284c7'), 0.35);
+        } else if (y < 4.0) {
+          // Alluvial plain / urban terrace
+          colorObj.set('#3b485d').lerp(new THREE.Color('#475569'), Math.max(0, y / 4.0));
+        } else {
+          // High ridge / escarpment crest
+          colorObj.set('#475569').lerp(new THREE.Color('#15803d'), Math.min(1, (y - 4.0) / 15));
+        }
+
+        // Subtle ISO-contour elevation rings every 2.5m
+        const isIsoContour = Math.abs((y % 2.5)) < 0.12;
+        if (isIsoContour) {
+          colorObj.lerp(new THREE.Color('#38bdf8'), 0.45);
+        }
       }
       colors[i * 3 + 0] = colorObj.r;
       colors[i * 3 + 1] = colorObj.g;
@@ -278,212 +297,329 @@ function BiomeTerrain({
 }
 
 // ----------------------------------------------------------------------------
-// 2. GPU-Instanced Undergrowth: 25,000 Grass Blades with Wind-Sway Vertex Shader
+// 2. Directional Gravity Runoff Flow Vectors (Hydrological Flow Paths)
 // ----------------------------------------------------------------------------
-function InstancedGrassField({
-  biome,
-  windSpeedKmH,
-  windDirDeg,
+function TopographicFlowVectors({
+  rainRateMmH,
+  archetype,
 }: {
-  biome: LocalBiomeProfile;
-  windSpeedKmH: number;
-  windDirDeg: number;
+  rainRateMmH: number;
+  archetype: string;
 }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const grassCount = biome.id === 'ARID_STEPPE_MARGIN' ? 2200 : 4800;
+  const arrowsGroupRef = useRef<THREE.Group>(null);
 
-  const { matrices, colors } = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    const mats: THREE.Matrix4[] = [];
-    const cols: THREE.Color[] = [];
-    const colorA = new THREE.Color(
-      biome.id === 'RAIN_SHADOW_PLATEAU' || biome.id === 'ARID_STEPPE_MARGIN'
-        ? '#a16207'
-        : biome.id === 'HIMALAYAN_VALLEY'
-        ? '#14532d'
-        : '#15803d'
-    );
-    const colorB = new THREE.Color(
-      biome.id === 'RAIN_SHADOW_PLATEAU' || biome.id === 'ARID_STEPPE_MARGIN'
-        ? '#ca8a04'
-        : biome.id === 'HIMALAYAN_VALLEY'
-        ? '#166534'
-        : '#22c55e'
-    );
+  const vectors = useMemo(() => {
+    const list: { pos: THREE.Vector3; dir: THREE.Vector3 }[] = [];
+    if (rainRateMmH <= 1.0) return list;
 
-    let created = 0;
-    let attempts = 0;
-    const maxAttempts = grassCount * 3;
+    for (let i = 0; i < 48; i++) {
+      const x = ((i % 7) - 3) * 16 + (Math.sin(i * 1.5) * 4);
+      const z = (Math.floor(i / 7) - 3) * 16 + (Math.cos(i * 1.8) * 4);
+      const y = getStationTerrainHeight(x, z, archetype);
 
-    while (created < grassCount && attempts < maxAttempts) {
-      attempts++;
-      const x = (Math.random() - 0.5) * 110;
-      const z = (Math.random() - 0.5) * 110;
-      const distToCenter = Math.sqrt(x * x + z * z);
-      if (distToCenter < 6.8) continue; // Don't place on concrete platform
+      // Downhill gradient calculation: -dh/dx, -dh/dz
+      const eps = 0.5;
+      const hX = getStationTerrainHeight(x + eps, z, archetype);
+      const hZ = getStationTerrainHeight(x, z + eps, archetype);
+      const dX = -(hX - y) / eps;
+      const dZ = -(hZ - y) / eps;
+      const dir = new THREE.Vector3(dX, 0, dZ).normalize();
 
-      const y = getStationTerrainHeight(x, z, biome.id);
-      const waterLevel = biome.id === 'COASTAL_METROPOLIS' ? -1.2 : -2.0;
-      if (y < waterLevel + 0.15) continue; // Don't place underwater
-      if (biome.id === 'HIGHLAND_CLOUD_FUNNEL' && x < -1 && x > -6) continue;
-
-      dummy.position.set(x, y, z);
-      dummy.rotation.y = Math.random() * Math.PI * 2;
-      dummy.rotation.x = (Math.random() - 0.5) * 0.2;
-      dummy.rotation.z = (Math.random() - 0.5) * 0.2;
-      const s = 0.65 + Math.random() * 0.7;
-      dummy.scale.set(s, s * (0.85 + Math.random() * 0.5), s);
-      dummy.updateMatrix();
-
-      mats.push(dummy.matrix.clone());
-      const c = new THREE.Color().lerpColors(colorA, colorB, Math.random());
-      cols.push(c);
-      created++;
+      if (dir.lengthSq() > 0.1) {
+        list.push({
+          pos: new THREE.Vector3(x, y + 0.35, z),
+          dir,
+        });
+      }
     }
-
-    return { matrices: mats, colors: cols };
-  }, [biome.id, grassCount]);
-
-  const grassMaterial = useMemo(() => {
-    const mat = new THREE.MeshStandardMaterial({
-      roughness: 0.6,
-      metalness: 0.05,
-      side: THREE.DoubleSide,
-    });
-    mat.onBeforeCompile = (shader) => {
-      shader.uniforms.uTime = { value: 0 };
-      shader.uniforms.uWindSpeed = { value: 0 };
-      shader.uniforms.uWindDir = { value: new THREE.Vector2(0, 1) };
-
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <common>',
-        `
-        #include <common>
-        uniform float uTime;
-        uniform float uWindSpeed;
-        uniform vec2 uWindDir;
-        `
-      );
-
-      shader.vertexShader = shader.vertexShader.replace(
-        '#include <begin_vertex>',
-        `
-        #include <begin_vertex>
-        float bladeH = clamp(position.y / 0.65, 0.0, 1.0);
-        float sway = sin(uTime * 4.0 + position.x * 0.5 + position.z * 0.5) * (bladeH * bladeH) * (uWindSpeed / 45.0) * 0.35;
-        transformed.x += uWindDir.x * sway;
-        transformed.z += uWindDir.y * sway;
-        `
-      );
-      (mat as any).userData.shader = shader;
-    };
-    return mat;
-  }, []);
-
-  useEffect(() => {
-    if (!meshRef.current) return;
-    matrices.forEach((mat, i) => {
-      meshRef.current!.setMatrixAt(i, mat);
-      meshRef.current!.setColorAt(i, colors[i]);
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
-    if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
-  }, [matrices, colors]);
+    return list;
+  }, [rainRateMmH, archetype]);
 
   useFrame((state) => {
+    if (!arrowsGroupRef.current || vectors.length === 0) return;
     const time = state.clock.getElapsedTime();
-    const shader = (grassMaterial as any).userData?.shader;
-    if (shader && shader.uniforms) {
-      shader.uniforms.uTime.value = time;
-      shader.uniforms.uWindSpeed.value = windSpeedKmH;
-      const rad = (windDirDeg * Math.PI) / 180;
-      shader.uniforms.uWindDir.value.set(Math.sin(rad), Math.cos(rad));
+    const speed = 0.8 + (rainRateMmH / 60) * 1.4;
+
+    arrowsGroupRef.current.children.forEach((child, idx) => {
+      const base = vectors[idx];
+      if (!base) return;
+      const cycle = ((time * speed + idx * 0.4) % 1.0);
+      child.position.x = base.pos.x + base.dir.x * cycle * 4.0;
+      child.position.z = base.pos.z + base.dir.z * cycle * 4.0;
+      child.position.y = getStationTerrainHeight(child.position.x, child.position.z, archetype) + 0.35;
+
+      const mat = (child as THREE.Mesh).material as THREE.MeshBasicMaterial;
+      if (mat) {
+        mat.opacity = Math.sin(cycle * Math.PI) * 0.8;
+      }
+    });
+  });
+
+  if (vectors.length === 0) return null;
+
+  return (
+    <group ref={arrowsGroupRef}>
+      {vectors.map((v, idx) => {
+        const angle = Math.atan2(v.dir.x, v.dir.z);
+        return (
+          <mesh
+            key={idx}
+            position={[v.pos.x, v.pos.y, v.pos.z]}
+            rotation={[-Math.PI / 2, 0, -angle]}
+          >
+            <coneGeometry args={[0.3, 1.2, 6]} />
+            <meshBasicMaterial color="#38bdf8" transparent opacity={0.65} />
+          </mesh>
+        );
+      })}
+    </group>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// 3. Tactical 3D Critical Infrastructure Hazard Pins (Milan Subway, Runways, etc.)
+// ----------------------------------------------------------------------------
+function TacticalInfrastructurePins({
+  stationId = 'BOM_SANTACRUZ',
+  surfaceWaterDepthCm,
+  rainRateMmH,
+}: {
+  stationId?: string;
+  surfaceWaterDepthCm: number;
+  rainRateMmH: number;
+}) {
+  const catchment = useMemo(() => getStationCatchmentProfile(stationId), [stationId]);
+
+  const liveState = useMemo(() => {
+    return computeLiveHydrologicalState(catchment, rainRateMmH, surfaceWaterDepthCm, 45);
+  }, [catchment, rainRateMmH, surfaceWaterDepthCm]);
+
+  return (
+    <group>
+      {liveState.evaluatedHotspots.map((h) => {
+        const isCritical = h.severity === 'CRITICAL_FLOODED';
+        const isCaution = h.severity === 'CAUTION';
+        const beaconColor = isCritical ? '#f43f5e' : isCaution ? '#fbbf24' : '#34d399';
+        const [x, baseY, z] = h.coordinates3D;
+
+        return (
+          <group key={h.id} position={[x, baseY, z]}>
+            {/* Glowing Vertical Beacon Pillar */}
+            <mesh position={[0, 2.0, 0]}>
+              <cylinderGeometry args={[0.06, 0.06, 4.0, 12]} />
+              <meshBasicMaterial color={beaconColor} transparent opacity={0.65} />
+            </mesh>
+
+            {/* Pulsing Spherical Warning Strobe */}
+            <mesh position={[0, 4.2, 0]}>
+              <sphereGeometry args={[0.3, 16, 16]} />
+              <meshBasicMaterial color={beaconColor} />
+            </mesh>
+
+            {/* Ground Ring Marker */}
+            <mesh position={[0, 0.08, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[0.8, 1.2, 32]} />
+              <meshBasicMaterial color={beaconColor} transparent opacity={0.5} side={THREE.DoubleSide} />
+            </mesh>
+
+            {/* 3D Floating Tactical HTML Tag */}
+            <Html
+              position={[0, 4.8, 0]}
+              center
+              distanceFactor={32}
+              zIndexRange={[100, 0]}
+            >
+              <div
+                style={{
+                  pointerEvents: 'none',
+                  minWidth: '155px',
+                  padding: '6px 10px',
+                  borderRadius: '10px',
+                  background: 'rgba(2, 6, 23, 0.88)',
+                  backdropFilter: 'blur(8px)',
+                  border: `1px solid ${beaconColor}`,
+                  boxShadow: `0 8px 24px rgba(0,0,0,0.6), 0 0 12px ${beaconColor}40`,
+                  color: '#ffffff',
+                  fontFamily: 'system-ui, sans-serif',
+                  fontSize: '11px',
+                  lineHeight: '1.2',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                  <strong style={{ fontSize: '11px', fontWeight: 'bold', color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                    {h.name}
+                  </strong>
+                  <span
+                    style={{
+                      fontSize: '9px',
+                      fontFamily: 'monospace',
+                      fontWeight: 'bold',
+                      padding: '2px 5px',
+                      borderRadius: '4px',
+                      background: isCritical ? '#e11d48' : isCaution ? '#d97706' : '#059669',
+                      color: '#ffffff',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {isCritical ? 'FLOODED' : isCaution ? 'CAUTION' : 'CLEAR'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px', fontSize: '10px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                  <span>Ponding: <b style={{ color: beaconColor }}>{h.currentDepthCm} cm</b></span>
+                  <span>Limit: {h.criticalThresholdCm} cm</span>
+                </div>
+              </div>
+            </Html>
+          </group>
+        );
+      })}
+    </group>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// 4. Automated Weather Station (AWS) Tower with Galvanized Steel & Louvres
+// ----------------------------------------------------------------------------
+function AutomatedWeatherStation({
+  windSpeedKmH,
+  windDirDeg,
+  rainRateMmH,
+}: {
+  windSpeedKmH: number;
+  windDirDeg: number;
+  rainRateMmH: number;
+}) {
+  const anemometerRef = useRef<THREE.Group>(null);
+  const windVaneRef = useRef<THREE.Group>(null);
+
+  const steelMat = useMemo(() => createGalvanizedSteelMaterial(), []);
+
+  useFrame((_, delta) => {
+    if (anemometerRef.current) {
+      const rotSpeed = (windSpeedKmH / 15) * 8.0;
+      anemometerRef.current.rotation.y += rotSpeed * delta;
+    }
+    if (windVaneRef.current) {
+      const targetRad = (windDirDeg * Math.PI) / 180;
+      windVaneRef.current.rotation.y = THREE.MathUtils.lerp(
+        windVaneRef.current.rotation.y,
+        targetRad,
+        0.06
+      );
     }
   });
 
-  const bladeGeom = useMemo(() => {
-    const geom = new THREE.PlaneGeometry(0.22, 0.82, 1, 2);
-    geom.translate(0, 0.41, 0);
-    return geom;
-  }, []);
+  const alertColor = rainRateMmH > 80 ? '#ef4444' : rainRateMmH > 35 ? '#f59e0b' : '#10b981';
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[bladeGeom, grassMaterial, matrices.length]}
-      receiveShadow
-    />
+    <group position={[0, 0.25, 0]}>
+      {/* 10m Tower Mast with Steel PBR */}
+      <mesh position={[0, 5, 0]} material={steelMat} castShadow>
+        <cylinderGeometry args={[0.12, 0.24, 10, 16]} />
+      </mesh>
+
+      {/* Structural Cross-Bracing Struts */}
+      {[2.5, 5.0, 7.5].map((h, i) => (
+        <group key={i} position={[0, h, 0]}>
+          <mesh rotation={[0, 0, Math.PI / 4]} material={steelMat}>
+            <cylinderGeometry args={[0.03, 0.03, 1.4, 8]} />
+          </mesh>
+          <mesh rotation={[0, Math.PI / 2, Math.PI / 4]} material={steelMat}>
+            <cylinderGeometry args={[0.03, 0.03, 1.4, 8]} />
+          </mesh>
+        </group>
+      ))}
+
+      {/* Monocrystalline Photovoltaic Solar Panel with Aluminum Bezel */}
+      <group position={[0.7, 6.6, 0]} rotation={[0.45, 0, 0]}>
+        <mesh castShadow>
+          <boxGeometry args={[1.1, 0.06, 0.75]} />
+          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
+        </mesh>
+        <mesh position={[0, 0.035, 0]}>
+          <boxGeometry args={[1.02, 0.01, 0.68]} />
+          <meshPhysicalMaterial
+            color="#1e3a8a"
+            metalness={0.92}
+            roughness={0.06}
+            reflectivity={0.95}
+            clearcoat={1.0}
+          />
+        </mesh>
+      </group>
+
+      {/* Louvred Gill Solar Radiation Shield (Thermometer & Hygrometer) */}
+      <group position={[-0.6, 3.2, 0]}>
+        {[0, 1, 2, 3, 4, 5].map((lvl) => (
+          <mesh key={lvl} position={[0, lvl * 0.1, 0]} castShadow>
+            <cylinderGeometry args={[0.26, 0.26, 0.04, 20]} />
+            <meshStandardMaterial color="#f8fafc" roughness={0.3} />
+          </mesh>
+        ))}
+      </group>
+
+      {/* Tipping Bucket Rain Gauge with Aerodynamic Edge & Funnel */}
+      <group position={[0.85, 1.8, 0.85]}>
+        <mesh position={[0, 0.45, 0]} material={steelMat} castShadow>
+          <cylinderGeometry args={[0.22, 0.2, 0.9, 24]} />
+        </mesh>
+        <mesh position={[0, 0.92, 0]} material={steelMat}>
+          <coneGeometry args={[0.22, 0.15, 24]} />
+        </mesh>
+      </group>
+
+      {/* Anemometer with Aerodynamic 3-Cup Rotor */}
+      <group position={[-0.8, 10.1, 0]}>
+        <mesh material={steelMat} castShadow>
+          <cylinderGeometry args={[0.04, 0.04, 0.5, 12]} />
+        </mesh>
+        <group ref={anemometerRef} position={[0, 0.3, 0]}>
+          {[0, 1, 2].map((cupIdx) => {
+            const rot = (cupIdx / 3) * Math.PI * 2;
+            return (
+              <group key={cupIdx} rotation={[0, rot, 0]}>
+                <mesh position={[0.18, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={steelMat}>
+                  <cylinderGeometry args={[0.015, 0.015, 0.36, 8]} />
+                </mesh>
+                <mesh position={[0.36, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
+                  <sphereGeometry args={[0.08, 16, 16, 0, Math.PI]} />
+                  <meshStandardMaterial color="#f8fafc" metalness={0.6} roughness={0.25} side={THREE.DoubleSide} />
+                </mesh>
+              </group>
+            );
+          })}
+        </group>
+      </group>
+
+      {/* Counter-Weighted Wind Vane */}
+      <group position={[0.8, 10.1, 0]}>
+        <group ref={windVaneRef} position={[0, 0.3, 0]}>
+          <mesh material={steelMat} rotation={[0, 0, Math.PI / 2]}>
+            <cylinderGeometry args={[0.015, 0.015, 0.7, 8]} />
+          </mesh>
+          <mesh position={[0, 0, 0.35]} rotation={[Math.PI / 2, 0, 0]}>
+            <coneGeometry args={[0.07, 0.25, 12]} />
+            <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
+          </mesh>
+          <mesh position={[0, 0, -0.35]}>
+            <boxGeometry args={[0.02, 0.22, 0.28]} />
+            <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
+          </mesh>
+        </group>
+      </group>
+
+      {/* Operational Status LED Strobe Beacon */}
+      <mesh position={[0, 10.5, 0]}>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshBasicMaterial color={alertColor} />
+      </mesh>
+      <pointLight position={[0, 10.6, 0]} color={alertColor} intensity={4.5} distance={18} />
+    </group>
   );
 }
 
 // ----------------------------------------------------------------------------
-// 3. GPU-Instanced Scree Rocks & Mossy Boulders
-// ----------------------------------------------------------------------------
-function InstancedBoulders({ biome }: { biome: LocalBiomeProfile }) {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
-  const boulderCount = 65;
-
-  const { matrices, colors } = useMemo(() => {
-    const dummy = new THREE.Object3D();
-    const mats: THREE.Matrix4[] = [];
-    const cols: THREE.Color[] = [];
-    const baseColor = new THREE.Color(biome.rockColor);
-
-    let created = 0;
-    let attempts = 0;
-    while (created < boulderCount && attempts < boulderCount * 4) {
-      attempts++;
-      const x = (Math.random() - 0.5) * 110;
-      const z = (Math.random() - 0.5) * 110;
-      const dist = Math.sqrt(x * x + z * z);
-      if (dist < 7.2) continue;
-
-      const y = getStationTerrainHeight(x, z, biome.id);
-      dummy.position.set(x, y + 0.15, z);
-      dummy.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, Math.random() * Math.PI);
-      const s = 0.5 + Math.random() * 1.4;
-      dummy.scale.set(s, s * (0.6 + Math.random() * 0.6), s);
-      dummy.updateMatrix();
-
-      mats.push(dummy.matrix.clone());
-      const c = baseColor.clone().multiplyScalar(0.7 + Math.random() * 0.5);
-      cols.push(c);
-      created++;
-    }
-    return { matrices: mats, colors: cols };
-  }, [biome.id, biome.rockColor]);
-
-  useEffect(() => {
-    if (!meshRef.current) return;
-    matrices.forEach((mat, i) => {
-      meshRef.current!.setMatrixAt(i, mat);
-      meshRef.current!.setColorAt(i, colors[i]);
-    });
-    meshRef.current.instanceMatrix.needsUpdate = true;
-    if (meshRef.current.instanceColor) meshRef.current.instanceColor.needsUpdate = true;
-  }, [matrices, colors]);
-
-  const geom = useMemo(() => new THREE.DodecahedronGeometry(0.65, 1), []);
-  const mat = useMemo(() => {
-    return new THREE.MeshStandardMaterial({
-      color: new THREE.Color(biome.rockColor),
-      roughness: 0.88,
-      metalness: 0.1,
-      flatShading: true,
-    });
-  }, [biome.rockColor]);
-
-  return (
-    <instancedMesh
-      ref={meshRef}
-      args={[geom, mat, matrices.length]}
-      receiveShadow
-    />
-  );
-}
-
-// ----------------------------------------------------------------------------
-// 4. Gunn-Kinzer Velocity-Stretched Rain Streaks & Dynamic Splash Rings
+// 5. Gunn-Kinzer Velocity-Stretched Rain Streaks & Dynamic Splash Rings
 // ----------------------------------------------------------------------------
 function GunnKinzerRainParticles({
   rainRateMmH,
@@ -638,288 +774,7 @@ function GunnKinzerRainParticles({
 }
 
 // ----------------------------------------------------------------------------
-// 5. Cantilever Aerodynamic Vegetation Sway Physics & AAA Organic Flora
-// ----------------------------------------------------------------------------
-function BiomeVegetation({
-  biome,
-  windSpeedKmH,
-  windDirDeg,
-}: {
-  biome: LocalBiomeProfile;
-  windSpeedKmH: number;
-  windDirDeg: number;
-}) {
-  const groupRef = useRef<THREE.Group>(null);
-
-  const treePositions = useMemo(() => {
-    const pts: Array<{ x: number; z: number; scale: number; rotY: number }> = [];
-    const count =
-      biome.id === 'OROGRAPHIC_CREST' || biome.id === 'HIGHLAND_CLOUD_FUNNEL' ? 24 : 16;
-
-    for (let i = 0; i < count; i++) {
-      const angle = (i / count) * Math.PI * 2 + (i % 3) * 0.2;
-      const dist = 12 + (i % 5) * 4.5 + Math.random() * 4;
-      const x = Math.cos(angle) * dist;
-      const z = Math.sin(angle) * dist;
-      const y = getStationTerrainHeight(x, z, biome.id);
-      pts.push({
-        x,
-        z,
-        scale: 0.85 + Math.random() * 0.35,
-        rotY: Math.random() * Math.PI * 2,
-      });
-    }
-    return pts;
-  }, [biome.id]);
-
-  const barkMaterial = useMemo(() => createRealisticBarkMaterial(), []);
-
-  const foliageColor = useMemo(() => {
-    if (biome.id === 'RAIN_SHADOW_PLATEAU' || biome.id === 'ARID_STEPPE_MARGIN') return '#78716c';
-    if (biome.id === 'HIMALAYAN_VALLEY') return '#064e3b';
-    if (biome.id === 'COASTAL_METROPOLIS') return '#15803d';
-    return '#166534';
-  }, [biome.id]);
-
-  const foliageMaterial = useMemo(() => createRealisticFoliageMaterial(foliageColor), [foliageColor]);
-
-  useFrame((state) => {
-    if (!groupRef.current) return;
-    const time = state.clock.getElapsedTime();
-
-    const windForce = Math.pow(windSpeedKmH / 65, 1.8) * 0.42;
-    const gustFlutter = Math.sin(time * 4.5 + windSpeedKmH * 0.15) * windForce * 0.32;
-
-    const rad = (windDirDeg * Math.PI) / 180;
-    const targetRotX = Math.sin(rad) * (windForce + gustFlutter);
-    const targetRotZ = Math.cos(rad) * (windForce + gustFlutter);
-
-    groupRef.current.children.forEach((tree, idx) => {
-      const phase = Math.sin(time * 3.2 + idx * 0.8) * 0.05 * (windSpeedKmH / 30);
-      tree.rotation.x = THREE.MathUtils.lerp(tree.rotation.x, targetRotX + phase, 0.08);
-      tree.rotation.z = THREE.MathUtils.lerp(tree.rotation.z, targetRotZ + phase, 0.08);
-    });
-  });
-
-  return (
-    <group ref={groupRef}>
-      {treePositions.map((pt, idx) => {
-        const groundY = getStationTerrainHeight(pt.x, pt.z, biome.id);
-        return (
-          <group key={idx} position={[pt.x, groundY, pt.z]} scale={pt.scale} rotation={[0, pt.rotY, 0]}>
-            {/* Realistic Wood Trunk with Striation Normal Maps */}
-            <mesh position={[0, 2.5, 0]} material={barkMaterial} castShadow>
-              <cylinderGeometry args={[0.22, 0.38, 5.0, 16]} />
-            </mesh>
-
-            {/* Species-Specific AAA High-Poly Foliage Canopy */}
-            {biome.id === 'COASTAL_METROPOLIS' ? (
-              <group position={[0, 4.9, 0]}>
-                {[0, 1, 2, 3, 4, 5, 6, 7].map((frondIdx) => {
-                  const angle = (frondIdx / 8) * Math.PI * 2;
-                  return (
-                    <group key={frondIdx} rotation={[0, angle, 0]}>
-                      <mesh
-                        rotation={[0.48, 0, 0]}
-                        position={[0, 0.2, 1.2]}
-                        material={foliageMaterial}
-                        castShadow
-                      >
-                        <boxGeometry args={[0.55, 0.04, 2.8]} />
-                      </mesh>
-                      <mesh
-                        rotation={[0.85, 0, 0]}
-                        position={[0, -0.4, 2.4]}
-                        material={foliageMaterial}
-                        castShadow
-                      >
-                        <boxGeometry args={[0.42, 0.03, 1.6]} />
-                      </mesh>
-                    </group>
-                  );
-                })}
-              </group>
-            ) : biome.id === 'HIMALAYAN_VALLEY' ? (
-              <group position={[0, 4.2, 0]}>
-                <mesh position={[0, 0.0, 0]} material={foliageMaterial} castShadow>
-                  <coneGeometry args={[2.0, 2.8, 16]} />
-                </mesh>
-                <mesh position={[0, 1.4, 0]} material={foliageMaterial} castShadow>
-                  <coneGeometry args={[1.6, 2.4, 16]} />
-                </mesh>
-                <mesh position={[0, 2.6, 0]} material={foliageMaterial} castShadow>
-                  <coneGeometry args={[1.2, 2.0, 16]} />
-                </mesh>
-                <mesh position={[0, 3.6, 0]} material={foliageMaterial} castShadow>
-                  <coneGeometry args={[0.7, 1.6, 16]} />
-                </mesh>
-              </group>
-            ) : (
-              <group position={[0, 5.0, 0]}>
-                <mesh position={[0, 0, 0]} material={foliageMaterial} castShadow>
-                  <sphereGeometry args={[2.0, 24, 24]} />
-                </mesh>
-                <mesh position={[0.7, 0.8, 0.5]} material={foliageMaterial} castShadow>
-                  <sphereGeometry args={[1.5, 20, 20]} />
-                </mesh>
-                <mesh position={[-0.8, 0.6, -0.4]} material={foliageMaterial} castShadow>
-                  <sphereGeometry args={[1.4, 20, 20]} />
-                </mesh>
-                <mesh position={[0.2, 1.3, -0.6]} material={foliageMaterial} castShadow>
-                  <sphereGeometry args={[1.3, 20, 20]} />
-                </mesh>
-              </group>
-            )}
-          </group>
-        );
-      })}
-    </group>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// 6. Automated Weather Station (AWS) Tower with Galvanized Steel & Louvres
-// ----------------------------------------------------------------------------
-function AutomatedWeatherStation({
-  windSpeedKmH,
-  windDirDeg,
-  rainRateMmH,
-}: {
-  windSpeedKmH: number;
-  windDirDeg: number;
-  rainRateMmH: number;
-}) {
-  const anemometerRef = useRef<THREE.Group>(null);
-  const windVaneRef = useRef<THREE.Group>(null);
-
-  const steelMat = useMemo(() => createGalvanizedSteelMaterial(), []);
-
-  useFrame((_, delta) => {
-    if (anemometerRef.current) {
-      const rotSpeed = (windSpeedKmH / 15) * 8.0;
-      anemometerRef.current.rotation.y += rotSpeed * delta;
-    }
-    if (windVaneRef.current) {
-      const targetRad = (windDirDeg * Math.PI) / 180;
-      windVaneRef.current.rotation.y = THREE.MathUtils.lerp(
-        windVaneRef.current.rotation.y,
-        targetRad,
-        0.06
-      );
-    }
-  });
-
-  const alertColor = rainRateMmH > 80 ? '#ef4444' : rainRateMmH > 35 ? '#f59e0b' : '#10b981';
-
-  return (
-    <group position={[0, 0.25, 0]}>
-      {/* 10m Tower Mast with Steel PBR */}
-      <mesh position={[0, 5, 0]} material={steelMat} castShadow>
-        <cylinderGeometry args={[0.12, 0.24, 10, 16]} />
-      </mesh>
-
-      {/* Structural Cross-Bracing Struts */}
-      {[2.5, 5.0, 7.5].map((h, i) => (
-        <group key={i} position={[0, h, 0]}>
-          <mesh rotation={[0, 0, Math.PI / 4]} material={steelMat}>
-            <cylinderGeometry args={[0.03, 0.03, 1.4, 8]} />
-          </mesh>
-          <mesh rotation={[0, Math.PI / 2, Math.PI / 4]} material={steelMat}>
-            <cylinderGeometry args={[0.03, 0.03, 1.4, 8]} />
-          </mesh>
-        </group>
-      ))}
-
-      {/* Monocrystalline Photovoltaic Solar Panel with Aluminum Bezel */}
-      <group position={[0.7, 6.6, 0]} rotation={[0.45, 0, 0]}>
-        <mesh castShadow>
-          <boxGeometry args={[1.1, 0.06, 0.75]} />
-          <meshStandardMaterial color="#334155" metalness={0.8} roughness={0.3} />
-        </mesh>
-        <mesh position={[0, 0.035, 0]}>
-          <boxGeometry args={[1.02, 0.01, 0.68]} />
-          <meshPhysicalMaterial
-            color="#1e3a8a"
-            metalness={0.92}
-            roughness={0.06}
-            reflectivity={0.95}
-            clearcoat={1.0}
-          />
-        </mesh>
-      </group>
-
-      {/* Louvred Gill Solar Radiation Shield (Thermometer & Hygrometer) */}
-      <group position={[-0.6, 3.2, 0]}>
-        {[0, 1, 2, 3, 4, 5].map((lvl) => (
-          <mesh key={lvl} position={[0, lvl * 0.1, 0]} castShadow>
-            <cylinderGeometry args={[0.26, 0.26, 0.04, 20]} />
-            <meshStandardMaterial color="#f8fafc" roughness={0.3} />
-          </mesh>
-        ))}
-      </group>
-
-      {/* Tipping Bucket Rain Gauge with Aerodynamic Edge & Funnel */}
-      <group position={[0.85, 1.8, 0.85]}>
-        <mesh position={[0, 0.45, 0]} material={steelMat} castShadow>
-          <cylinderGeometry args={[0.22, 0.2, 0.9, 24]} />
-        </mesh>
-        <mesh position={[0, 0.92, 0]} material={steelMat}>
-          <coneGeometry args={[0.22, 0.15, 24]} />
-        </mesh>
-      </group>
-
-      {/* Anemometer with Aerodynamic 3-Cup Rotor */}
-      <group position={[-0.8, 10.1, 0]}>
-        <mesh material={steelMat} castShadow>
-          <cylinderGeometry args={[0.04, 0.04, 0.5, 12]} />
-        </mesh>
-        <group ref={anemometerRef} position={[0, 0.3, 0]}>
-          {[0, 1, 2].map((cupIdx) => {
-            const rot = (cupIdx / 3) * Math.PI * 2;
-            return (
-              <group key={cupIdx} rotation={[0, rot, 0]}>
-                <mesh position={[0.18, 0, 0]} rotation={[0, 0, Math.PI / 2]} material={steelMat}>
-                  <cylinderGeometry args={[0.015, 0.015, 0.36, 8]} />
-                </mesh>
-                <mesh position={[0.36, 0, 0]} rotation={[0, Math.PI / 2, 0]}>
-                  <sphereGeometry args={[0.08, 16, 16, 0, Math.PI]} />
-                  <meshStandardMaterial color="#f8fafc" metalness={0.6} roughness={0.25} side={THREE.DoubleSide} />
-                </mesh>
-              </group>
-            );
-          })}
-        </group>
-      </group>
-
-      {/* Counter-Weighted Wind Vane */}
-      <group position={[0.8, 10.1, 0]}>
-        <group ref={windVaneRef} position={[0, 0.3, 0]}>
-          <mesh material={steelMat} rotation={[0, 0, Math.PI / 2]}>
-            <cylinderGeometry args={[0.015, 0.015, 0.7, 8]} />
-          </mesh>
-          <mesh position={[0, 0, 0.35]} rotation={[Math.PI / 2, 0, 0]}>
-            <coneGeometry args={[0.07, 0.25, 12]} />
-            <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
-          </mesh>
-          <mesh position={[0, 0, -0.35]}>
-            <boxGeometry args={[0.02, 0.22, 0.28]} />
-            <meshStandardMaterial color="#ea580c" roughness={0.3} metalness={0.2} />
-          </mesh>
-        </group>
-      </group>
-
-      {/* Operational Status LED Strobe Beacon */}
-      <mesh position={[0, 10.5, 0]}>
-        <sphereGeometry args={[0.12, 16, 16]} />
-        <meshBasicMaterial color={alertColor} />
-      </mesh>
-      <pointLight position={[0, 10.6, 0]} color={alertColor} intensity={4.5} distance={18} />
-    </group>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// 7. Quaternion Slerp Camera Rig (Zero Motion Sickness & Smooth Interpolation)
+// 6. Quaternion Slerp Camera Rig (Smooth Interpolation)
 // ----------------------------------------------------------------------------
 function CameraRig({
   preset,
@@ -968,7 +823,7 @@ function CameraRig({
 }
 
 // ----------------------------------------------------------------------------
-// Main Exported Scene Component with AAA Video Game Engine Pipeline
+// Main Exported Scene Component with Scientific Topographic Inundation Pipeline
 // ----------------------------------------------------------------------------
 export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
   biome,
@@ -985,6 +840,7 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
   rainDensityMultiplier = 1.0,
   timeOfDayHours = 14,
   isAutoOrbit = false,
+  stationId = 'BOM_SANTACRUZ',
 }) => {
   const { scene, camera } = useThree();
 
@@ -1017,7 +873,7 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
       <OrbitControls makeDefault enableDamping dampingFactor={0.05} maxPolarAngle={Math.PI / 2 - 0.02} />
       <CameraRig preset={cameraPreset} isAutoOrbit={isAutoOrbit} />
 
-      {/* Physically-Based Atmospheric Sky Dome with Rayleigh/Mie Scattering */}
+      {/* Atmospheric Sky Dome with Rayleigh/Mie Scattering */}
       <Sky
         distance={450000}
         sunPosition={atmosphericLighting.sunPosition.clone().multiplyScalar(100).toArray()}
@@ -1027,7 +883,7 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
         mieDirectionalG={0.8}
       />
 
-      {/* Volumetric Cumulonimbus Storm Clouds */}
+      {/* Volumetric Storm Clouds */}
       <Clouds material={THREE.MeshBasicMaterial}>
         <Cloud
           segments={20}
@@ -1090,7 +946,7 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
         color="#0f172a"
       />
 
-      {/* 3D Scene Components with AAA Photorealism */}
+      {/* 1. Scientific Digital Elevation Model (DEM) with Dynamic Hypsometric Tinting & ISO Contours */}
       <BiomeTerrain
         biome={biome}
         surfaceWaterDepthCm={surfaceWaterDepthCm}
@@ -1098,33 +954,27 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
         rainRateMmH={rainRateMmH}
       />
 
-      {/* 25,000+ GPU-Instanced Grass Blades with Wind-Sway Vertex Shader */}
-      <InstancedGrassField
-        biome={biome}
-        windSpeedKmH={windSpeedKmH}
-        windDirDeg={windDirDeg}
+      {/* 2. Directional Gravity Runoff Flow Vectors */}
+      <TopographicFlowVectors
+        rainRateMmH={rainRateMmH}
+        archetype={biome.id}
       />
 
-      {/* 110+ GPU-Instanced Scree Rocks & Mossy Boulders */}
-      <InstancedBoulders
-        biome={biome}
+      {/* 3. 3D Tactical Infrastructure Choke-Point Pins */}
+      <TacticalInfrastructurePins
+        stationId={stationId}
+        surfaceWaterDepthCm={surfaceWaterDepthCm}
+        rainRateMmH={rainRateMmH}
       />
 
-      {/* Organic Trees & SSS Translucent Foliage */}
-      <BiomeVegetation
-        biome={biome}
-        windSpeedKmH={windSpeedKmH}
-        windDirDeg={windDirDeg}
-      />
-
-      {/* Galvanized Steel AWS Tower */}
+      {/* 4. Automated Weather Station (AWS) Tower at Observatory Center */}
       <AutomatedWeatherStation
         windSpeedKmH={windSpeedKmH}
         windDirDeg={windDirDeg}
         rainRateMmH={rainRateMmH}
       />
 
-      {/* Velocity-Stretched Rain Particles */}
+      {/* 5. Velocity-Stretched Rain Particles */}
       <GunnKinzerRainParticles
         rainRateMmH={rainRateMmH}
         windSpeedKmH={windSpeedKmH}
@@ -1134,3 +984,4 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
     </>
   );
 };
+
