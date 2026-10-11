@@ -47,7 +47,8 @@ export type PlanTabId =
   | 'station_3d_plan'
   | 'synoptic_video_plan'
   | 'qrf_plan'
-  | 'smoothness_plan';
+  | 'smoothness_plan'
+  | 'floating_explanation_plan';
 
 interface MasterPlansModalProps {
   isOpen: boolean;
@@ -207,6 +208,18 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
           >
             <Zap className="w-3.5 h-3.5 text-amber-300" />
             <span>120 FPS Smoothness Plan</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('floating_explanation_plan')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all cursor-pointer shrink-0 ${
+              activeTab === 'floating_explanation_plan'
+                ? 'bg-gradient-to-r from-sky-600 to-cyan-600 text-white font-semibold shadow-xs'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Eye className="w-3.5 h-3.5 text-cyan-300" />
+            <span>Side Explanations Plan</span>
           </button>
         </div>
 
@@ -1007,6 +1020,84 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
                 >
                   Explore Dual Swipe View
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* TAB: UNIVERSAL SIDE-DOCKED FLOATING EXPLANATION MASTER PLAN */}
+          {activeTab === 'floating_explanation_plan' && (
+            <div className="space-y-6">
+              <div className="p-5 rounded-2xl bg-gradient-to-r from-sky-950/70 via-cyan-950/50 to-slate-900 border border-sky-500/30 flex items-start gap-4 shadow-xl">
+                <div className="p-3 rounded-xl bg-sky-500/20 border border-sky-400/40 text-cyan-300">
+                  <Eye className="w-6 h-6" />
+                </div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-white">
+                      Master Plan: Universal Side-Docked Floating Explanations & Adaptive Inspector
+                    </h3>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
+                      Fully Operational (Alt+E)
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Provides continuous, non-intrusive floating explanations that appear <strong>strictly to the side</strong> of any hovered selectable parameter, toggleable switch, or graphical visualization—never covering the element itself.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3 Pillars Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-sky-500/20 space-y-2">
+                  <div className="flex items-center gap-2 text-sky-400 font-bold text-xs">
+                    <SplitSquareHorizontal className="w-4 h-4" />
+                    <span>1. Strict Side-Docking Physics</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Cards calculate element bounding boxes and mount strictly to the <strong>Right</strong> (or <strong>Left</strong> if within 340px of viewport edge). Vertically centered to target centroid and clamped to viewport bounds.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-cyan-500/20 space-y-2">
+                  <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
+                    <Layers className="w-4 h-4" />
+                    <span>2. Universal Element Hooks</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Hooks into buttons, toggles, switches, tabs, range sliders, select dropdowns, D3 time-series curves, Taylor polar diagrams, GIS pins, and Doppler radar scopes using centralized pointer delegation.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-xl bg-slate-900/80 border border-purple-500/20 space-y-2">
+                  <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
+                    <Sparkles className="w-4 h-4" />
+                    <span>3. Atmospheric Physics Depth</span>
+                  </div>
+                  <p className="text-xs text-slate-400 leading-relaxed">
+                    Delivers functional plain-English summaries alongside deep meteorological relevance: IMD statutory criteria (64.5mm), RK2 advection, 1901 climatology priors, and Z-score anomaly mathematics.
+                  </p>
+                </div>
+              </div>
+
+              {/* Technical Architecture Specs */}
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3 font-mono text-xs">
+                <div className="text-slate-300 font-bold flex items-center gap-2">
+                  <Code2 className="w-4 h-4 text-cyan-400" />
+                  <span>Architecture Specification & Interaction Protocols</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-400">
+                  <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
+                    <span className="text-cyan-300 font-semibold block">Positioning Formulation</span>
+                    <div>X_dock = dockSide === 'right' ? rect.right + 14 : rect.left - 340 - 14</div>
+                    <div>Y_clamp = clamp(16, rect.top + rect.height/2 - H/2, innerHeight - H - 16)</div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
+                    <span className="text-amber-300 font-semibold block">Performance & Debouncing</span>
+                    <div>Debounce interval: 120ms pointer rest threshold</div>
+                    <div>Pointer Events: none on card body (zero click interception)</div>
+                    <div>Shortcut: Alt + E to toggle inspection mode globally</div>
+                  </div>
+                </div>
               </div>
             </div>
           )}

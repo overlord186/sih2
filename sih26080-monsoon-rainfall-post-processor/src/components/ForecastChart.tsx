@@ -240,16 +240,21 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   
   // Isolate primary station for baseline metrics to not break legacy functionality
   const primaryData = useMemo(() => {
-    const filtered = data.filter(d => d.stationId === primaryStationId);
+    if (!data || data.length === 0) return [];
+    let filtered = data.filter(d => d.stationId === primaryStationId);
+    if (filtered.length === 0) {
+      const fallbackId = data[0].stationId;
+      filtered = data.filter(d => d.stationId === fallbackId);
+    }
     return filtered.slice(0, 60);
   }, [data, primaryStationId]);
 
   const slicedData = primaryData;
 
-  // Keep zoomRange bounded whenever data changes
+  // Keep zoomRange bounded whenever data or primary station changes
   useEffect(() => {
     setZoomRange([0, Math.min(60, slicedData.length)]);
-  }, [slicedData.length]);
+  }, [primaryStationId, data.length, slicedData.length]);
 
   const aiCorrectedValues = useMemo(() => slicedData.map((d) => d.correctedForecastMm), [slicedData]);
   const observedValues = useMemo(() => slicedData.map((d) => d.observedMm), [slicedData]);
@@ -609,8 +614,10 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
   // Apply Zoom Slice
   const chartData = useMemo(() => {
+    if (!fullChartData || fullChartData.length === 0) return [];
     const [start, end] = zoomRange;
-    return fullChartData.slice(Math.max(0, start), Math.min(fullChartData.length, end));
+    const sliced = fullChartData.slice(Math.max(0, start), Math.min(fullChartData.length, end));
+    return sliced.length > 0 ? sliced : fullChartData.slice(0, 60);
   }, [fullChartData, zoomRange]);
 
   // Global Y-Axis Max Value for precise D3 crosshair vertical positioning
@@ -897,6 +904,10 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
     const zoomBehavior = d3
       .zoom<HTMLDivElement, unknown>()
       .scaleExtent([1, 4])
+      .filter((event) => {
+        if (event.type === 'wheel') return event.ctrlKey;
+        return !event.button;
+      })
       .on('zoom', (event) => {
         const k = event.transform.k;
         const total = fullChartData.length || 60;
@@ -2091,14 +2102,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
         title="Scroll or Drag to Pan/Zoom using D3 Zoom"
       >
         
-        <motion.div 
-          key={`${selectedStationName}-${data.length > 0 ? data[0].leadTimeDays : 'all'}-${dataRepresentation}`}
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: "easeOut", staggerChildren: 0.1 }}
-          className="w-full h-full"
-        >
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="w-full h-full min-h-[420px]">
+          <ResponsiveContainer width="100%" height={410} minHeight={380}>
           {viewMode === 'rainfall' ? (
             <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: -10, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={themeStyles.gridStroke} vertical={false} />
@@ -2380,7 +2385,7 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
           )}
         
           </ResponsiveContainer>
-        </motion.div>
+        </div>
       </div>
 
       {/* DESCRIPTIVE LEGEND PANEL */}

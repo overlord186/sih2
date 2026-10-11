@@ -49,6 +49,7 @@ import { SpringTemporalScrubber } from './components/SpringTemporalScrubber';
 import { PerformanceMonitorHud } from './components/PerformanceMonitorHud';
 import { MasterPlansModal } from './components/MasterPlansModal';
 import { UnifiedWorkstationCockpit } from './components/UnifiedWorkstationCockpit';
+import { SideFloatingInspector } from './components/SideFloatingInspector';
 
 import { AtmosphereWidget, AtmosphereMode } from './components/AtmosphereWidget';
 import { WeatherBackground3D } from './components/WeatherBackground3D';
@@ -395,6 +396,15 @@ export default function App() {
   const [isStationPaletteOpen, setIsStationPaletteOpen] = useState(false);
   const [dossierToast, setDossierToast] = useState<string | null>(null);
 
+  // Universal auto-dismiss timer for dossier and temporal horizon scrubber notification toasts
+  useEffect(() => {
+    if (!dossierToast) return;
+    const timer = setTimeout(() => {
+      setDossierToast(null);
+    }, 3200);
+    return () => clearTimeout(timer);
+  }, [dossierToast]);
+
   // Keyboard shortcut listener for Omnipresent Station Search (/ and Ctrl+K)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -487,7 +497,7 @@ export default function App() {
         }}
         transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
         id="monsoon-ai-app-root"
-        className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 ${
+        className={`min-h-screen text-slate-900 flex flex-col font-sans relative z-10 w-full max-w-full overflow-x-hidden ${
           isSidebarExpanded ? 'md:pl-60 pl-16' : 'pl-16'
         } bg-slate-50 transition-all duration-300 ease-in-out`}
       >
@@ -612,7 +622,7 @@ export default function App() {
       </div>
 
       {/* Main Content Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 overflow-x-hidden">
         <ErrorBoundary fallbackTitle="Active View Module Recovery">
         {(activeTab === 'dashboard' || (activeTab as string) === 'cockpit') && (
           <div className="space-y-4 sm:space-y-6">
@@ -977,6 +987,9 @@ export default function App() {
 
       {/* Real-Time 120 FPS Frame Rate & Mathematical Worker Diagnostic HUD */}
       <PerformanceMonitorHud />
+
+      {/* Universal Side-Docked Floating Explanatory Inspector */}
+      <SideFloatingInspector />
 
       {/* Operational Feedback Toast Notification */}
       {dossierToast && (
