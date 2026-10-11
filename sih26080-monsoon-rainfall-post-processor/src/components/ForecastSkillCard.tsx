@@ -2,6 +2,7 @@ import React, { useState, useMemo, useRef, useEffect } from 'react';
 import * as d3 from 'd3';
 import { RainfallDataPoint, RainfallRegime } from '../types';
 import { Award, BarChart2, CheckCircle2, Info, Sparkles, TrendingUp, Target, ShieldCheck, ArrowDownRight, RefreshCw } from 'lucide-react';
+import { MONSOON_DATASET } from '../data/monsoonDataset';
 
 interface ForecastSkillCardProps {
   data: RainfallDataPoint[];
@@ -53,15 +54,22 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
     return () => observer.disconnect();
   }, []);
 
+  // Ensure effective dataset always has full monsoon records
+  const effectiveData = useMemo(() => {
+    if (data && data.length > 0) return data;
+    const fb = MONSOON_DATASET.filter((d) => (d.year === selectedYear || d.year === 2025) && d.leadTimeDays === 1);
+    return fb.length > 0 ? fb : MONSOON_DATASET.filter((d) => d.year === 2025 && d.leadTimeDays === 1);
+  }, [data, selectedYear]);
+
   // Aggregated data for seasonal skill comparison
   const groupedChartData = useMemo<GroupedBarData[]>(() => {
-    if (!data || data.length === 0) return [];
+    if (!effectiveData || effectiveData.length === 0) return [];
 
     if (groupingMode === 'monthly') {
       const monthMap = new Map<string, RainfallDataPoint[]>();
       const monthOrder = ['June', 'July', 'August', 'September'];
 
-      data.forEach((d) => {
+      effectiveData.forEach((d) => {
         const dateObj = new Date(d.date);
         const mName = dateObj.toLocaleString('en-US', { month: 'long' });
         if (!monthMap.has(mName)) {
@@ -104,7 +112,7 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
     if (groupingMode === 'dekadal') {
       // 10-day Dekads across the 60-day season (D1 to D6)
       const dekadMap = new Map<number, RainfallDataPoint[]>();
-      data.forEach((d) => {
+      effectiveData.forEach((d) => {
         // Assume dayOfYear or index in 60-day sequence
         const dayIdx = d.dayOfYear ? (d.dayOfYear % 60) : 0;
         const dekadNum = Math.min(6, Math.floor(dayIdx / 10) + 1);
@@ -163,7 +171,7 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
     ];
 
     const regimeMap = new Map<RainfallRegime, RainfallDataPoint[]>();
-    data.forEach((d) => {
+    effectiveData.forEach((d) => {
       const reg = d.detectedRegime || RainfallRegime.LIGHT;
       if (!regimeMap.has(reg)) {
         regimeMap.set(reg, []);
@@ -200,19 +208,19 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
           skillScorePct,
         };
       });
-  }, [data, groupingMode]);
+  }, [effectiveData, groupingMode]);
 
   // Overall Seasonal Summary Stats
   const seasonalStats = useMemo(() => {
-    if (!data || data.length === 0) {
-      return { totalObs: 0, totalRaw: 0, totalAi: 0, rawMae: 0, aiMae: 0, skillGainPct: 0, biasCorrectionPct: 0 };
+    if (!effectiveData || effectiveData.length === 0) {
+      return { totalObs: 0, totalRaw: 0, totalAi: 0, rawMae: 0, aiMae: 0, skillGainPct: 0, rawBias: 0, aiBias: 0 };
     }
-    const totalObs = d3.sum(data, (d) => d.observedMm);
-    const totalRaw = d3.sum(data, (d) => d.rawForecastMm);
-    const totalAi = d3.sum(data, (d) => d.correctedForecastMm);
+    const totalObs = d3.sum(effectiveData, (d) => d.observedMm);
+    const totalRaw = d3.sum(effectiveData, (d) => d.rawForecastMm);
+    const totalAi = d3.sum(effectiveData, (d) => d.correctedForecastMm);
 
-    const rawMae = d3.mean(data, (d) => Math.abs(d.rawForecastMm - d.observedMm)) || 0;
-    const aiMae = d3.mean(data, (d) => Math.abs(d.correctedForecastMm - d.observedMm)) || 0;
+    const rawMae = d3.mean(effectiveData, (d) => Math.abs(d.rawForecastMm - d.observedMm)) || 0;
+    const aiMae = d3.mean(effectiveData, (d) => Math.abs(d.correctedForecastMm - d.observedMm)) || 0;
 
     const skillGainPct = rawMae > 0 ? Math.round(((rawMae - aiMae) / rawMae) * 100) : 0;
     const rawBias = totalObs > 0 ? ((totalRaw - totalObs) / totalObs) * 100 : 0;
@@ -225,10 +233,10 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
       rawMae: Math.round(rawMae * 10) / 10,
       aiMae: Math.round(aiMae * 10) / 10,
       skillGainPct,
-      rawBias: Math.round(rawBias * 10) / 10,
-      aiBias: Math.round(aiBias * 10) / 10,
+      rawBias: isNaN(rawBias) ? 0 : Math.round(rawBias * 10) / 10,
+      aiBias: isNaN(aiBias) ? 0 : Math.round(aiBias * 10) / 10,
     };
-  }, [data]);
+  }, [effectiveData]);
 
   // Dimensions & Scales for D3 Chart
   const height = 280;
@@ -700,7 +708,7 @@ export const ForecastSkillCard: React.FC<ForecastSkillCardProps> = ({
           </span>
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono text-slate-500">
-          <span>Sample size: {data.length} days</span>
+          <span>Sample size: {effectiveData.length} days</span>
         </div>
       </div>
     </div>

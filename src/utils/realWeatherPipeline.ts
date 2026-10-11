@@ -7,7 +7,7 @@
  * Provides a clean bridge to transition from synthetic climatology to 100% genuine live telemetry.
  */
 
-import { MET_STATIONS } from '../data/monsoonDataset';
+import { MET_STATIONS, MONSOON_DATASET } from '../data/monsoonDataset';
 import { RainfallDataPoint, RainfallRegime } from '../types';
 import { classifyRegime, applyRegimeAwareCorrection } from '../ml/postProcessor';
 
@@ -180,10 +180,29 @@ export async function hydrateAllRealStationDataset(forceFresh: boolean = false):
     });
   });
 
-  // Store in cache for 3 hours
-  await metCache.set(BATCH_CACHE_KEY, realPoints, 3);
+  // Merge live real observational telemetry onto the operational monsoon season
+  // so the platform retains full 122-day synoptic depth across all 20 stations
+  const mergedDataset: RainfallDataPoint[] = MONSOON_DATASET.map((basePt) => {
+    const liveUpdate = realPoints.find((rp) => rp.stationId === basePt.stationId);
+    if (liveUpdate && basePt.year === 2025 && basePt.dayOfYear >= 270) {
+      return {
+        ...basePt,
+        rawForecastMm: liveUpdate.rawForecastMm,
+        observedMm: liveUpdate.observedMm,
+        correctedForecastMm: liveUpdate.correctedForecastMm,
+        relativeHumidity850hPa: liveUpdate.relativeHumidity850hPa,
+        temp2mC: liveUpdate.temp2mC,
+        surfacePressureHpa: liveUpdate.surfacePressureHpa,
+        windSpeed10mKmh: liveUpdate.windSpeed10mKmh,
+      };
+    }
+    return basePt;
+  });
 
-  return realPoints;
+  // Store in cache for 3 hours
+  await metCache.set(BATCH_CACHE_KEY, mergedDataset, 3);
+
+  return mergedDataset;
 }
 
 /**

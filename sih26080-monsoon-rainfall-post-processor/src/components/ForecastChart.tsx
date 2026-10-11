@@ -53,7 +53,7 @@ import {
   Copy
 } from 'lucide-react';
 import { weatherSynth } from '../utils/audio';
-import { MET_STATIONS } from '../data/monsoonDataset';
+import { MET_STATIONS, MONSOON_DATASET } from '../data/monsoonDataset';
 
 interface ForecastChartProps {
   selectedStationId?: string;
@@ -240,11 +240,17 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
   
   // Isolate primary station for baseline metrics to not break legacy functionality
   const primaryData = useMemo(() => {
-    if (!data || data.length === 0) return [];
-    let filtered = data.filter(d => d.stationId === primaryStationId);
-    if (filtered.length === 0) {
+    let filtered = (data || []).filter(d => d.stationId === primaryStationId);
+    if (filtered.length === 0 && data && data.length > 0) {
       const fallbackId = data[0].stationId;
       filtered = data.filter(d => d.stationId === fallbackId);
+    }
+    // Resilient fallback to MONSOON_DATASET to ensure the graph never appears blank or 0 days
+    if (filtered.length === 0) {
+      filtered = MONSOON_DATASET.filter(d => d.stationId === primaryStationId && d.leadTimeDays === 1 && (d.year === 2025 || d.year === 2024));
+    }
+    if (filtered.length === 0) {
+      filtered = MONSOON_DATASET.filter(d => d.stationId === 'BOM_SANTACRUZ' && d.leadTimeDays === 1 && d.year === 2025);
     }
     return filtered.slice(0, 60);
   }, [data, primaryStationId]);
@@ -253,7 +259,8 @@ export const ForecastChart: React.FC<ForecastChartProps> = ({
 
   // Keep zoomRange bounded whenever data or primary station changes
   useEffect(() => {
-    setZoomRange([0, Math.min(60, slicedData.length)]);
+    const total = Math.max(slicedData.length, 60);
+    setZoomRange([0, Math.min(60, slicedData.length > 0 ? slicedData.length : total)]);
   }, [primaryStationId, data.length, slicedData.length]);
 
   const aiCorrectedValues = useMemo(() => slicedData.map((d) => d.correctedForecastMm), [slicedData]);

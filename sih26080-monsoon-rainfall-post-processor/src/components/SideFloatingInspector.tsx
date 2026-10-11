@@ -566,65 +566,193 @@ export const SideFloatingInspector: React.FC = () => {
         className="fixed inset-0 pointer-events-none z-[9990] w-full h-full overflow-hidden select-none"
       >
         <defs>
-          {/* Cybernetic Neon Glow Gradients */}
+          {/* Cybernetic High-Luminance Neon Gradients */}
           <linearGradient id="hudLeaderGradCyan" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#00f0ff" stopOpacity="1" />
+            <stop offset="50%" stopColor="#38bdf8" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#0284c7" stopOpacity="0.7" />
           </linearGradient>
 
           <linearGradient id="hudLeaderGradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.95" />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.8" />
+            <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
+            <stop offset="50%" stopColor="#f59e0b" stopOpacity="0.9" />
+            <stop offset="100%" stopColor="#d97706" stopOpacity="0.7" />
           </linearGradient>
 
-          <filter id="hudNeonFilter" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
+          <linearGradient id="hudLaserPulseCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="30%" stopColor="#00f0ff" stopOpacity="1" />
+            <stop offset="100%" stopColor="#00f0ff" stopOpacity="0" />
+          </linearGradient>
+
+          <linearGradient id="hudLaserPulseAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+            <stop offset="30%" stopColor="#fbbf24" stopOpacity="1" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+          </linearGradient>
+
+          {/* Intense Sci-Fi Laser Bloom Filter */}
+          <filter id="hudLaserBloom" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur1" />
+            <feGaussianBlur in="SourceGraphic" stdDeviation="1.5" result="blur2" />
             <feMerge>
-              <feMergeNode in="blur" />
+              <feMergeNode in="blur1" />
+              <feMergeNode in="blur2" />
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
         </defs>
 
         {/* --- LINE 1: Element / Sub-Control Leader Line --- */}
-        <g filter="url(#hudNeonFilter)">
-          {/* Glowing Dogleg Path */}
+        <g filter="url(#hudLaserBloom)">
+          {/* Base Glowing Dogleg Path */}
           <path
             d={`M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`}
             fill="none"
             stroke="url(#hudLeaderGradCyan)"
-            strokeWidth="1.8"
-            strokeDasharray="5 2.5"
-            className="animate-[dash_1s_linear_infinite]"
+            strokeWidth="2"
+            strokeDasharray="6 3"
           />
-          {/* Element Target Reticle Dot */}
-          <circle cx={t1AnchorX} cy={t1AnchorY} r="7" fill="#00f0ff" fillOpacity="0.3" className="animate-ping" />
-          <circle cx={t1AnchorX} cy={t1AnchorY} r="3.5" fill="#00f0ff" stroke="#020617" strokeWidth="1.5" />
-          {/* Card Dock Dot */}
-          <circle cx={c1DockX} cy={c1DockY} r="3" fill="#38bdf8" />
+
+          {/* High-Energy Animated Laser Tracer Pulse flowing along the line */}
+          <path
+            d={`M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`}
+            fill="none"
+            stroke="url(#hudLaserPulseCyan)"
+            strokeWidth="3.5"
+            strokeDasharray="20 180"
+            className="animate-[dash_1.8s_linear_infinite]"
+          />
+
+          {/* Dual Rotating Concentric Target Reticle on Target Element */}
+          <g transform={`translate(${t1AnchorX}, ${t1AnchorY})`}>
+            {/* Outer Rotating Segmented Reticle Ring */}
+            <circle
+              r="15"
+              fill="none"
+              stroke="#00f0ff"
+              strokeWidth="1.2"
+              strokeDasharray="7 5"
+              className="animate-[spin_6s_linear_infinite]"
+            />
+            {/* Inner Counter-Rotating Reticle Ring */}
+            <circle
+              r="10"
+              fill="none"
+              stroke="#38bdf8"
+              strokeWidth="1"
+              strokeDasharray="4 4"
+              className="animate-[spin_4s_linear_infinite_reverse]"
+            />
+            {/* Precision Crosshair Lines */}
+            <line x1="-7" y1="0" x2="7" y2="0" stroke="#00f0ff" strokeWidth="1.5" />
+            <line x1="0" y1="-7" x2="0" y2="7" stroke="#00f0ff" strokeWidth="1.5" />
+            {/* Center Laser Core */}
+            <circle r="3.5" fill="#00f0ff" stroke="#020617" strokeWidth="1.2" />
+            <circle r="8" fill="#00f0ff" fillOpacity="0.25" className="animate-ping" />
+
+            {/* Rangefinder Telemetry readout tag */}
+            <text
+              x={fitsRight ? 20 : -95}
+              y="-7"
+              fill="#00f0ff"
+              fontSize="8.5"
+              fontFamily="monospace"
+              fontWeight="900"
+              letterSpacing="0.1em"
+            >
+              LOCK // AZ:45°
+            </text>
+            <text
+              x={fitsRight ? 20 : -95}
+              y="5"
+              fill="#38bdf8"
+              fontSize="7.5"
+              fontFamily="monospace"
+              opacity="0.85"
+            >
+              ΔX:{Math.round(c1DockX - t1AnchorX)}px
+            </text>
+          </g>
+
+          {/* Card Docking Reticle Anchor Dot */}
+          <circle cx={c1DockX} cy={c1DockY} r="4" fill="#00f0ff" stroke="#020617" strokeWidth="1.5" />
         </g>
 
         {/* --- LINE 2: Parent Scrubber Leader Line (Dual-Callout Mode) --- */}
         {isDualCallout && parentRect && (
-          <g filter="url(#hudNeonFilter)">
-            {/* Dogleg Leader Line to Scrubber Track */}
+          <g filter="url(#hudLaserBloom)">
+            {/* Amber Glowing Dogleg Path */}
             <path
               d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pDockY}`}
               fill="none"
               stroke="url(#hudLeaderGradAmber)"
-              strokeWidth="2"
-              strokeDasharray="6 3"
+              strokeWidth="2.2"
+              strokeDasharray="7 3.5"
             />
-            {/* Scrubber Anchor Reticle */}
-            <circle cx={pAnchorX} cy={pAnchorY} r="8" fill="#f59e0b" fillOpacity="0.35" className="animate-ping" />
-            <circle cx={pAnchorX} cy={pAnchorY} r="4" fill="#fbbf24" stroke="#020617" strokeWidth="1.5" />
+            {/* Amber Animated Laser Tracer Pulse */}
+            <path
+              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pDockY}`}
+              fill="none"
+              stroke="url(#hudLaserPulseAmber)"
+              strokeWidth="3.8"
+              strokeDasharray="25 200"
+              className="animate-[dash_2s_linear_infinite]"
+            />
+
+            {/* Rotating Reticle on Primary Scrubber Track */}
+            <g transform={`translate(${pAnchorX}, ${pAnchorY})`}>
+              <circle
+                r="16"
+                fill="none"
+                stroke="#fbbf24"
+                strokeWidth="1.4"
+                strokeDasharray="8 5"
+                className="animate-[spin_5s_linear_infinite]"
+              />
+              <circle
+                r="10"
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="1.2"
+                strokeDasharray="4 4"
+                className="animate-[spin_3.5s_linear_infinite_reverse]"
+              />
+              <line x1="-8" y1="0" x2="8" y2="0" stroke="#fbbf24" strokeWidth="1.5" />
+              <line x1="0" y1="-8" x2="0" y2="8" stroke="#fbbf24" strokeWidth="1.5" />
+              <circle r="4" fill="#fbbf24" stroke="#020617" strokeWidth="1.5" />
+              <circle r="9" fill="#f59e0b" fillOpacity="0.3" className="animate-ping" />
+
+              <text
+                x="22"
+                y="-6"
+                fill="#fbbf24"
+                fontSize="8.5"
+                fontFamily="monospace"
+                fontWeight="900"
+                letterSpacing="0.1em"
+              >
+                MACRO // HORIZON
+              </text>
+              <text
+                x="22"
+                y="6"
+                fill="#f59e0b"
+                fontSize="7.5"
+                fontFamily="monospace"
+                opacity="0.85"
+              >
+                120 FPS SPRING
+              </text>
+            </g>
+
             {/* Parent Card Dock Dot */}
-            <circle cx={pDockX} cy={pDockY} r="3" fill="#fbbf24" />
+            <circle cx={pDockX} cy={pDockY} r="4" fill="#fbbf24" stroke="#020617" strokeWidth="1.5" />
           </g>
         )}
       </svg>
 
-      {/* 2. Floating Futuristic Callout Cards (Strictly Non-Blocking: pointer-events-none) */}
+      {/* 2. Floating Cybernetic Holographic Callout Cards (Strictly Non-Blocking: pointer-events-none) */}
       <div id="side-floating-inspector-panel" className="pointer-events-none select-none">
         {/* --- CARD 1: Sub-control or Standalone Element Tab --- */}
         <div
@@ -635,69 +763,85 @@ export const SideFloatingInspector: React.FC = () => {
             width: `${card1Width}px`,
             zIndex: 99995,
           }}
-          className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]"
+          className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_16px_40px_rgba(0,240,255,0.25)]"
         >
-          <div className="relative rounded-xl border border-sky-400/50 bg-slate-950/95 backdrop-blur-2xl p-3 text-slate-100 shadow-2xl shadow-sky-950/80 overflow-hidden">
-            {/* Cybernetic Corner Reticle Accents */}
-            <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-cyan-400" />
-            <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400" />
-            <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400" />
-            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-400" />
+          {/* Chamfered Sci-Fi Angular HUD Polygon */}
+          <div
+            style={{
+              clipPath:
+                'polygon(0 14px, 14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px))',
+              backgroundImage:
+                'radial-gradient(circle at 10% 10%, rgba(14, 165, 233, 0.22) 0%, rgba(2, 6, 23, 0.96) 80%), repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0, 240, 255, 0.04) 3px, rgba(0, 240, 255, 0.04) 6px)',
+            }}
+            className="relative border-2 border-cyan-400/80 bg-slate-950 p-3.5 text-slate-100 shadow-[0_0_30px_rgba(0,240,255,0.35)] backdrop-blur-3xl overflow-hidden"
+          >
+            {/* Cybernetic High-Tech Corner Reticle Brackets */}
+            <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-cyan-300" />
+            <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-cyan-300" />
+            <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-cyan-300" />
+            <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-cyan-300" />
 
-            {/* Top Glow Ribbon */}
-            <div className="absolute top-0 left-3 right-3 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+            {/* Glowing Neon Plasma Top Header Ribbon */}
+            <div className="absolute top-0 left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_10px_#00f0ff]" />
 
-            {/* Header */}
+            {/* Futuristic Telemetry Header Bar */}
+            <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-cyan-500/30 text-[8.5px] font-mono text-cyan-300">
+              <span className="flex items-center gap-1 font-bold tracking-widest uppercase">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping inline-block" />
+                SYS // MET_HUD_v4.2
+              </span>
+              <span className="px-1.5 py-0.2 rounded bg-cyan-950/90 border border-cyan-400/40 text-cyan-200 font-black">
+                [LOCKED: 120 FPS]
+              </span>
+            </div>
+
+            {/* Main Title & Category Chip */}
             <div className="flex items-start justify-between gap-2 mb-1.5">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
-                  </span>
-                  <span className="text-[8px] font-mono font-black uppercase tracking-widest text-cyan-300 px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/30">
+                  <span className="text-[8px] font-mono font-black uppercase tracking-widest text-cyan-200 px-1.5 py-0.3 rounded bg-cyan-900/60 border border-cyan-400/60 shadow-[0_0_8px_rgba(0,240,255,0.4)]">
                     {entry.category} CALLOUT
                   </span>
                 </div>
-                <h4 className="text-xs font-bold text-white tracking-tight leading-tight">
+                <h4 className="text-xs font-black text-white tracking-wide leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                   {entry.title}
                 </h4>
               </div>
 
-              <div className="p-1 rounded bg-sky-950/60 border border-sky-500/20 text-sky-400 shrink-0">
-                {entry.category === 'GRAPH' && <BarChart3 size={12} />}
-                {entry.category === 'TOGGLE' && <ToggleLeft size={12} />}
-                {entry.category === 'HORIZON' && <Compass size={12} />}
-                {entry.category === 'SELECTABLE' && <Sliders size={12} />}
-                {entry.category === 'ACTION' && <Zap size={12} />}
-                {entry.category === 'STATISTIC' && <Activity size={12} />}
+              <div className="p-1.5 rounded-lg bg-cyan-950/80 border border-cyan-400/50 text-cyan-300 shadow-[0_0_12px_rgba(0,240,255,0.3)] shrink-0">
+                {entry.category === 'GRAPH' && <BarChart3 size={13} />}
+                {entry.category === 'TOGGLE' && <ToggleLeft size={13} />}
+                {entry.category === 'HORIZON' && <Compass size={13} />}
+                {entry.category === 'SELECTABLE' && <Sliders size={13} />}
+                {entry.category === 'ACTION' && <Zap size={13} />}
+                {entry.category === 'STATISTIC' && <Activity size={13} />}
               </div>
             </div>
 
-            {/* Function Description */}
-            <p className="text-[10px] text-slate-300 leading-relaxed mb-1.5 font-normal">
+            {/* Plain English Functional Description */}
+            <p className="text-[10px] text-slate-200 leading-relaxed mb-2 font-normal font-sans">
               {entry.description}
             </p>
 
-            {/* Atmospheric / Scientific Relevance Box */}
-            <div className="rounded-lg bg-sky-950/40 border border-sky-500/20 p-1.5 mb-1.5 text-[9px] space-y-0.5">
-              <div className="flex items-center gap-1 text-[8px] font-mono font-bold text-sky-300 uppercase tracking-wider">
-                <Info size={9} className="text-sky-400" />
-                <span>Atmospheric Physics & Model Context</span>
+            {/* Tactical Meteorological Black-Box Tape */}
+            <div className="rounded-lg bg-sky-950/60 border border-cyan-500/30 p-2 mb-1.5 text-[9px] space-y-1">
+              <div className="flex items-center gap-1 text-[8px] font-mono font-bold text-cyan-300 uppercase tracking-wider">
+                <Info size={9} className="text-cyan-400" />
+                <span>&gt;&gt; Atmospheric Physics & Governing Dynamics</span>
               </div>
-              <p className="text-slate-300/90 leading-normal font-sans">
+              <p className="text-slate-200/90 leading-normal font-sans">
                 {entry.meteorologicalContext}
               </p>
             </div>
 
-            {/* Interaction Hint */}
+            {/* Interaction Hint & Zero-Interference Tag */}
             {entry.interactionHint && (
-              <div className="flex items-center justify-between text-[8px] font-mono text-cyan-300/80 pt-1 border-t border-slate-800">
-                <span className="flex items-center gap-1">
-                  <ChevronRight size={9} />
+              <div className="flex items-center justify-between text-[8px] font-mono text-cyan-300/90 pt-1 border-t border-cyan-500/20">
+                <span className="flex items-center gap-1 font-semibold">
+                  <ChevronRight size={9} className="text-cyan-400 animate-pulse" />
                   <span>{entry.interactionHint}</span>
                 </span>
-                <span className="text-slate-500">Target Line</span>
+                <span className="text-cyan-400/60 font-bold uppercase tracking-wider">Pass-Through Bus</span>
               </div>
             )}
           </div>
@@ -713,80 +857,98 @@ export const SideFloatingInspector: React.FC = () => {
               width: `330px`,
               zIndex: 99996,
             }}
-            className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]"
+            className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_16px_40px_rgba(245,158,11,0.25)]"
           >
-            <div className="relative rounded-xl border border-amber-500/50 bg-slate-950/95 backdrop-blur-2xl p-3 text-slate-100 shadow-2xl shadow-amber-950/80 overflow-hidden">
-              {/* Corner Accents in Amber */}
-              <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-amber-400" />
-              <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-amber-400" />
-              <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-amber-400" />
-              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-amber-400" />
+            {/* Chamfered Sci-Fi Angular HUD Polygon in Plasma Amber */}
+            <div
+              style={{
+                clipPath:
+                  'polygon(0 14px, 14px 0, calc(100% - 14px) 0, 100% 14px, 100% calc(100% - 14px), calc(100% - 14px) 100%, 14px 100%, 0 calc(100% - 14px))',
+                backgroundImage:
+                  'radial-gradient(circle at 10% 10%, rgba(245, 158, 11, 0.22) 0%, rgba(2, 6, 23, 0.96) 80%), repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(251, 191, 36, 0.04) 3px, rgba(251, 191, 36, 0.04) 6px)',
+              }}
+              className="relative border-2 border-amber-400/80 bg-slate-950 p-3.5 text-slate-100 shadow-[0_0_30px_rgba(245,158,11,0.35)] backdrop-blur-3xl overflow-hidden"
+            >
+              {/* Amber Corner Reticle Accents */}
+              <div className="absolute top-1 left-1 w-3 h-3 border-t-2 border-l-2 border-amber-300" />
+              <div className="absolute top-1 right-1 w-3 h-3 border-t-2 border-r-2 border-amber-300" />
+              <div className="absolute bottom-1 left-1 w-3 h-3 border-b-2 border-l-2 border-amber-300" />
+              <div className="absolute bottom-1 right-1 w-3 h-3 border-b-2 border-r-2 border-amber-300" />
 
-              {/* Amber Top Ribbon */}
-              <div className="absolute top-0 left-3 right-3 h-[1px] bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+              {/* Amber Top Glow Ribbon */}
+              <div className="absolute top-0 left-4 right-4 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent shadow-[0_0_10px_#f59e0b]" />
 
-              {/* Header */}
+              {/* Futuristic Amber Telemetry Header Bar */}
+              <div className="flex items-center justify-between gap-2 pb-1.5 mb-1.5 border-b border-amber-500/30 text-[8.5px] font-mono text-amber-300">
+                <span className="flex items-center gap-1 font-bold tracking-widest uppercase">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping inline-block" />
+                  PRIMARY WIDGET CONTEXT // SYNC_LEAD
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-amber-950/90 border border-amber-400/40 text-amber-200 font-black">
+                  [ζ = 1.0 DAMPED]
+                </span>
+              </div>
+
+              {/* Main Title & Icon */}
               <div className="flex items-start justify-between gap-2 mb-1.5">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
-                    </span>
-                    <span className="text-[8px] font-mono font-black uppercase tracking-widest text-amber-300 px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30">
-                      PRIMARY WIDGET CONTEXT
+                    <span className="text-[8px] font-mono font-black uppercase tracking-widest text-amber-200 px-1.5 py-0.3 rounded bg-amber-900/60 border border-amber-400/60 shadow-[0_0_8px_rgba(245,158,11,0.4)]">
+                      TEMPORAL HORIZON PHYSICS
                     </span>
                   </div>
-                  <h4 className="text-xs font-bold text-amber-100 tracking-tight leading-tight">
+                  <h4 className="text-xs font-black text-amber-100 tracking-wide leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.8)]">
                     {parentEntry.title}
                   </h4>
                 </div>
 
-                <div className="p-1 rounded bg-amber-950/60 border border-amber-500/30 text-amber-400 shrink-0">
-                  <Compass size={12} />
+                <div className="p-1.5 rounded-lg bg-amber-950/80 border border-amber-400/50 text-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.3)] shrink-0">
+                  <Compass size={13} />
                 </div>
               </div>
 
-              {/* Function Description */}
-              <p className="text-[10px] text-slate-300 leading-relaxed mb-1.5 font-normal">
+              {/* Description */}
+              <p className="text-[10px] text-slate-200 leading-relaxed mb-2 font-normal font-sans">
                 {parentEntry.description}
               </p>
 
-              {/* Meteorological Context */}
-              <div className="rounded-lg bg-amber-950/30 border border-amber-500/20 p-1.5 mb-1.5 text-[9px] space-y-0.5">
+              {/* Meteorological Context Box */}
+              <div className="rounded-lg bg-amber-950/50 border border-amber-500/30 p-2 mb-1.5 text-[9px] space-y-1">
                 <div className="flex items-center gap-1 text-[8px] font-mono font-bold text-amber-300 uppercase tracking-wider">
                   <Activity size={9} className="text-amber-400" />
-                  <span>Harmonic Spring & Synoptic Dynamics</span>
+                  <span>&gt;&gt; Harmonic Spring Dynamics & Lead Synchronization</span>
                 </div>
-                <p className="text-slate-300/90 leading-normal font-sans">
+                <p className="text-slate-200/90 leading-normal font-sans">
                   {parentEntry.meteorologicalContext}
                 </p>
               </div>
 
               {/* Interaction Hint */}
-              <div className="flex items-center justify-between text-[8px] font-mono text-amber-300/80 pt-1 border-t border-slate-800">
-                <span className="flex items-center gap-1">
-                  <ChevronRight size={9} />
+              <div className="flex items-center justify-between text-[8px] font-mono text-amber-300/90 pt-1 border-t border-amber-500/20">
+                <span className="flex items-center gap-1 font-semibold">
+                  <ChevronRight size={9} className="text-amber-400 animate-pulse" />
                   <span>{parentEntry.interactionHint}</span>
                 </span>
-                <span className="text-slate-500">Parent Lead Track</span>
+                <span className="text-amber-400/60 font-bold uppercase tracking-wider">Parent Lead Track</span>
               </div>
             </div>
           </div>
         )}
       </div>
 
-      {/* 3. Discreet Floating Pill to Toggle Callout Lines Mode */}
+      {/* 3. Cybernetic Floating HUD Control Pill */}
       <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
         <button
           type="button"
           onClick={toggleInspector}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border border-sky-400/80 bg-sky-950/90 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:bg-sky-900 transition-all shadow-xl cursor-pointer"
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-black tracking-wider backdrop-blur-2xl border-2 border-cyan-400/80 bg-slate-950/90 text-cyan-200 shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:bg-cyan-950/80 hover:shadow-[0_0_35px_rgba(0,240,255,0.6)] transition-all cursor-pointer"
           title="Toggle Futuristic HUD Vector Leader Explanations (Shortcut: Alt+E)"
         >
-          <Eye size={12} className="text-cyan-400 animate-pulse" />
-          <span>HUD CALLOUTS: ON</span>
-          <span className="text-[10px] px-1 py-0.2 rounded bg-sky-900/80 text-sky-300 border border-sky-400/30">Alt+E</span>
+          <Eye size={13} className="text-cyan-400 animate-pulse" />
+          <span>FUTURISTIC HUD: ACTIVE</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-900/80 text-cyan-200 border border-cyan-400/40">
+            Alt+E
+          </span>
         </button>
       </div>
     </>

@@ -1061,13 +1061,13 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
                     </div>
                     <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
                       <Award className="w-4 h-4" />
-                      <span>Plan A: Dual-Tier Dogleg HUD Leader Lines</span>
+                      <span>Plan A: Cybernetic Holographic HUD (Chamfered Polygons & Laser Tracers)</span>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">
-                      Fixed viewport SVG canvas with 45° dogleg dashed vector lines and pulsing target reticles. Smart spatial decomposition mounts Tab 1 in clear space above (Parent Widget) and Tab 2 to the side/below (Sub-Control Toggle).
+                      Sci-Fi chamfered angular HUD tabs (<code>clip-path</code> polygons) with dual rotating concentric crosshair reticles, rangefinder coordinates (<code>ΔX/AZ:45°</code>), and animated laser beam pulses along dogleg leader lines. Dual callout splits Scrubber into amber plasma timeline tab above and cyan laser sub-control tab below.
                     </p>
                     <div className="pt-2 border-t border-slate-800 text-[11px] space-y-1 text-slate-400">
-                      <div className="flex justify-between"><span className="text-slate-500">Visual Aesthetic:</span> <span className="text-cyan-300 font-semibold">Futuristic Sci-Fi HUD</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Visual Aesthetic:</span> <span className="text-cyan-300 font-semibold">Ultra-Futuristic Cyberpunk HUD</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Dual-Callout Support:</span> <span className="text-emerald-400 font-semibold">Native Orthogonal Split</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Interference Risk:</span> <span className="text-emerald-400 font-semibold">0% (pointer-events: none)</span></div>
                       <div className="flex justify-between"><span className="text-slate-500">Performance Cost:</span> <span className="text-emerald-400 font-semibold">Near 0% (Passive RAF/debounced)</span></div>
