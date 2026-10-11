@@ -96,16 +96,16 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
     <div className="flex-1 p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto max-h-full font-sans select-none text-slate-100">
       {/* 1. Top Drainage Surcharge & Hazard Banner */}
       <div
-        className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
+        className={`p-3.5 rounded-2xl border transition-all ${
           hydroState.isDrainageOverwhelmed
             ? 'bg-rose-950/40 border-rose-500/50 text-rose-200'
             : 'bg-emerald-950/30 border-emerald-500/40 text-emerald-200'
         }`}
       >
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+        <div className="flex flex-col gap-3">
           <div className="flex items-start gap-3">
             <div
-              className={`p-2.5 rounded-xl border shrink-0 ${
+              className={`p-2 rounded-xl border shrink-0 ${
                 hydroState.isDrainageOverwhelmed
                   ? 'bg-rose-600/20 border-rose-500/40 text-rose-400 animate-pulse'
                   : 'bg-emerald-600/20 border-emerald-500/40 text-emerald-400'
@@ -118,44 +118,44 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
               )}
             </div>
 
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/40 border border-white/10">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-black/40 border border-white/10">
                   {hydroState.isDrainageOverwhelmed ? 'CRITICAL DRAINAGE SURCHARGE' : 'STABLE CATCHMENT DRAINAGE'}
                 </span>
                 {catchment.isCoastalCatchment && (
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/60">
-                    High Spring Tide: {catchment.springTideLevelM}m
+                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/60">
+                    Spring Tide: {catchment.springTideLevelM}m
                   </span>
                 )}
               </div>
 
-              <h3 className="text-sm sm:text-base font-bold text-white mt-1">
+              <h3 className="text-sm font-bold text-white mt-1 leading-snug">
                 {hydroState.isDrainageOverwhelmed
                   ? `Rainfall exceeds gravity outfall capacity by +${hydroState.drainageSurplusMmH} mm/h`
                   : `Stormwater inflow (${rainRateMmH} mm/h) is within municipal drainage limit (${catchment.gravityDrainageCapacityMmH} mm/h)`}
               </h3>
 
-              <p className="text-xs text-slate-300/90 mt-0.5">
+              <p className="text-[11px] text-slate-300/90 mt-1 leading-relaxed">
                 {hydroState.isDrainageOverwhelmed
-                  ? `Municipal pipes are choked. Excess storm runoff is ponding in low-lying underpasses and arterial corridors at rate of ${hydroState.excessRainMmH} mm/h.`
-                  : `Soil infiltration and stormwater mains are absorbing precipitation. Minor gutter pooling with zero arterial roadway blockages.`}
+                  ? `Municipal pipes choked. Runoff ponding in low-lying underpasses at rate of ${hydroState.excessRainMmH} mm/h.`
+                  : `Soil infiltration and stormwater mains absorbing precipitation. Zero arterial road blockages.`}
               </p>
             </div>
           </div>
 
-          {/* Quick Metrics Cluster */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 self-end md:self-center font-mono">
-            <div className="p-2 sm:px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-right">
-              <span className="text-[10px] text-slate-400 block uppercase">Critical Choke-Points</span>
-              <span className={`text-sm font-bold ${hydroState.criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+          {/* Quick Metrics Cluster Bar */}
+          <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/10 font-mono text-xs">
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Critical Choke-Points</span>
+              <span className={`text-xs font-bold ${hydroState.criticalCount > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
                 {hydroState.criticalCount} Closed / {hydroState.cautionCount} Caution
               </span>
             </div>
 
-            <div className="p-2 sm:px-3 py-1.5 rounded-xl bg-slate-900/80 border border-slate-700/70 text-right">
-              <span className="text-[10px] text-slate-400 block uppercase">Soil Infiltration f(t)</span>
-              <span className="text-sm font-bold text-cyan-300">
+            <div className="p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <span className="text-[9px] text-slate-400 block uppercase">Soil Infiltration f(t)</span>
+              <span className="text-xs font-bold text-cyan-300">
                 {hydroState.currentInfiltrationMmH} mm/h
               </span>
             </div>
@@ -177,7 +177,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
+        <div className="grid grid-cols-1 gap-2.5">
           {hydroState.evaluatedHotspots.map((hotspot) => {
             const isCritical = hotspot.severity === 'CRITICAL_FLOODED';
             const isCaution = hotspot.severity === 'CAUTION';
@@ -275,7 +275,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
       </div>
 
       {/* 3. Bottom Row: Horton Hydrograph & Civil Defense SOP Protocols */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4">
+      <div className="flex flex-col gap-3.5">
         {/* Dynamic Horton Infiltration Hydrograph */}
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">

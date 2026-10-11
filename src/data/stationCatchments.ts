@@ -63,8 +63,8 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationId: 'BOM_SANTACRUZ',
     stationName: 'Mumbai (Santacruz)',
     subdivision: 'Konkan & Goa',
-    centerCoordinates: [19.0760, 72.8777],
-    defaultZoom: 13,
+    centerCoordinates: [19.0835, 72.8550],
+    defaultZoom: 15,
     catchmentAreaKm2: 437.7,
     gravityDrainageCapacityMmH: 25.0, // Mumbai municipal stormwater design limit
     rationalRunoffCoeffC: 0.85,       // Dense urban paved impervious surface
@@ -172,7 +172,7 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationName: 'Lucknow (Amausi)',
     subdivision: 'East Uttar Pradesh',
     centerCoordinates: [26.7606, 80.8893],
-    defaultZoom: 13,
+    defaultZoom: 15,
     catchmentAreaKm2: 512.0,
     gravityDrainageCapacityMmH: 22.0,
     rationalRunoffCoeffC: 0.72,
@@ -250,7 +250,7 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationName: 'Cherrapunji (Sohra)',
     subdivision: 'Assam & Meghalaya',
     centerCoordinates: [25.2702, 91.7323],
-    defaultZoom: 13,
+    defaultZoom: 15,
     catchmentAreaKm2: 185.0,
     gravityDrainageCapacityMmH: 65.0, // High natural gorge slope gradient
     rationalRunoffCoeffC: 0.94,       // Bare sandstone and karst plateaus
@@ -314,7 +314,7 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationName: 'Leh Ladakh',
     subdivision: 'Jammu & Kashmir and Ladakh',
     centerCoordinates: [34.1526, 77.5771],
-    defaultZoom: 13,
+    defaultZoom: 15,
     catchmentAreaKm2: 320.0,
     gravityDrainageCapacityMmH: 15.0, // High vulnerability to cloudburst debris flows
     rationalRunoffCoeffC: 0.78,       // Unvegetated glacial scree and moraine
@@ -378,7 +378,7 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationName: 'Pune (Shivajinagar)',
     subdivision: 'Madhya Maharashtra',
     centerCoordinates: [18.5314, 73.8446],
-    defaultZoom: 13,
+    defaultZoom: 15,
     catchmentAreaKm2: 330.0,
     gravityDrainageCapacityMmH: 28.0,
     rationalRunoffCoeffC: 0.80,
@@ -441,7 +441,7 @@ export const STATION_CATCHMENT_REGISTRY: Record<string, StationCatchmentProfile>
     stationName: 'Jodhpur',
     subdivision: 'West Rajasthan',
     centerCoordinates: [26.2514, 73.0489],
-    defaultZoom: 13,
+    defaultZoom: 15,
     catchmentAreaKm2: 285.0,
     gravityDrainageCapacityMmH: 18.0, // Low drainage density typical of arid terrain
     rationalRunoffCoeffC: 0.65,

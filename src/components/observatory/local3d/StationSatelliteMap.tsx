@@ -2,9 +2,11 @@
  * StationSatelliteMap.tsx
  * SAMVARTAKA AI — High-Definition Satellite Catchment & Municipal GIS Map
  * 
- * Renders an ultra-fast 120 FPS raster satellite map (Esri World Imagery / CartoDB Dark Matter)
- * pinned directly over the selected IMD observatory with real-time critical infrastructure
- * waterlogging beacons, catchment drainage basin perimeter, and click-to-inspect popups.
+ * Renders an ultra-fast 120 FPS raster satellite map with zero API keys or watermarks:
+ * - Esri World Imagery (High-Res True Color Satellite)
+ * - Esri Dark Gray Canvas (High-End Stealth Tactical GIS, No Watermarks)
+ * - OpenStreetMap (Civic Street Geometry)
+ * - Pinned urban critical infrastructure flood beacons with click-to-inspect popups
  */
 
 import React, { useEffect, useState, useMemo } from 'react';
@@ -38,34 +40,38 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Custom animated SVG pulse icons for critical urban infrastructure
-function createHotspotDivIcon(hotspot: CriticalInfrastructureHotspot, currentDepthCm: number) {
+// Sleek tactical military radar beacons (Clean, zero label collision)
+function createHotspotDivIcon(
+  hotspot: CriticalInfrastructureHotspot, 
+  currentDepthCm: number,
+  isSelected: boolean
+) {
   const isCritical = currentDepthCm >= hotspot.criticalThresholdCm;
   const isCaution = !isCritical && currentDepthCm >= hotspot.criticalThresholdCm * 0.45;
 
   let color = '#10b981'; // emerald
-  let pulseColor = 'rgba(16, 185, 129, 0.4)';
-  let label = 'CLEAR';
+  let pulseColor = 'rgba(16, 185, 129, 0.45)';
 
   if (isCritical) {
     color = '#ef4444'; // red
-    pulseColor = 'rgba(239, 68, 68, 0.6)';
-    label = 'CRITICAL';
+    pulseColor = 'rgba(239, 68, 68, 0.65)';
   } else if (isCaution) {
     color = '#f59e0b'; // amber
-    pulseColor = 'rgba(245, 158, 11, 0.5)';
-    label = 'CAUTION';
+    pulseColor = 'rgba(245, 158, 11, 0.55)';
   }
 
+  const ringScale = isSelected ? 'scale-125' : '';
+  const selectedBorder = isSelected ? 'border-cyan-300 ring-2 ring-cyan-400' : 'border-white';
+
   const html = `
-    <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+    <div style="position: relative; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
       <div style="
         position: absolute;
-        width: 32px;
-        height: 32px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         background-color: ${pulseColor};
-        animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+        animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
       "></div>
       <div style="
         position: relative;
@@ -73,30 +79,14 @@ function createHotspotDivIcon(hotspot: CriticalInfrastructureHotspot, currentDep
         height: 18px;
         border-radius: 50%;
         background-color: ${color};
-        border: 2px solid white;
-        box-shadow: 0 0 12px ${color};
+        border: 2px solid ${isSelected ? '#00f0ff' : '#ffffff'};
+        box-shadow: 0 0 14px ${color}${isSelected ? ', 0 0 8px #00f0ff' : ''};
         display: flex;
         align-items: center;
         justify-content: center;
+        transition: transform 0.2s ease;
       ">
-        <div style="width: 6px; height: 6px; border-radius: 50%; background-color: white;"></div>
-      </div>
-      <div style="
-        position: absolute;
-        bottom: -18px;
-        white-space: nowrap;
-        background: rgba(15, 23, 42, 0.85);
-        backdrop-filter: blur(4px);
-        border: 1px solid rgba(255, 255, 255, 0.15);
-        color: ${color};
-        font-size: 9px;
-        font-weight: 800;
-        padding: 1px 4px;
-        border-radius: 4px;
-        font-family: ui-monospace, monospace;
-        letter-spacing: 0.5px;
-      ">
-        ${label}
+        <div style="width: 5px; height: 5px; border-radius: 50%; background-color: #ffffff;"></div>
       </div>
     </div>
   `;
@@ -104,9 +94,9 @@ function createHotspotDivIcon(hotspot: CriticalInfrastructureHotspot, currentDep
   return L.divIcon({
     html,
     className: 'custom-hotspot-pin',
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-    popupAnchor: [0, -20],
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -18],
   });
 }
 
@@ -158,8 +148,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
   onSelectHotspot,
 }) => {
   const [basemapStyle, setBasemapStyle] = useState<'SATELLITE' | 'DARK' | 'STREET'>('SATELLITE');
-  const [showCatchmentBasin, setShowCatchmentBasin] = useState(true);
-  const [showSurchargeRadius, setShowSurchargeRadius] = useState(true);
+  const [showCatchmentBasin, setShowCatchmentBasin] = useState(false);
 
   // Compute live water depths & states for all hotspots
   const liveState = useMemo(() => {
@@ -172,36 +161,38 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
     return profile.hotspots.find((h) => h.id === selectedHotspotId) || null;
   }, [profile, selectedHotspotId]);
 
-  // Basemap tile definitions
+  // Basemap tile definitions — 100% Free, NO API KEYS, NO WATERMARKS
   const tileConfig = useMemo(() => {
     switch (basemapStyle) {
-      case 'SATELLITE':
-        return {
-          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-          attribution: '&copy; Esri World Imagery, Maxar, Earthstar Geographics',
-          maxZoom: 19,
-        };
       case 'DARK':
         return {
-          url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-          attribution: '&copy; CartoDB Dark Matter & OpenStreetMap contributors',
-          maxZoom: 19,
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+          attribution: '&copy; Esri, HERE, Garmin, &copy; OpenStreetMap contributors',
+          maxZoom: 18,
         };
       case 'STREET':
-      default:
         return {
           url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
           attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 19,
+        };
+      case 'SATELLITE':
+      default:
+        return {
+          url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+          attribution: '&copy; Esri World Imagery, Maxar, Earthstar Geographics',
           maxZoom: 19,
         };
     }
   }, [basemapStyle]);
 
   return (
-    <div className="relative w-full h-full min-h-[420px] bg-slate-950 overflow-hidden select-none">
+    <div className="relative w-full h-full min-h-[460px] bg-slate-950 overflow-hidden select-none">
       <MapContainer
         center={profile.centerCoordinates}
         zoom={profile.defaultZoom}
+        minZoom={12}
+        maxZoom={19}
         scrollWheelZoom={true}
         className="w-full h-full z-0"
         zoomControl={false}
@@ -219,31 +210,16 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
           targetHotspot={targetHotspot}
         />
 
-        {/* Catchment Watershed Drainage Perimeter Overlay */}
+        {/* Subtle Catchment Watershed Drainage Perimeter Overlay */}
         {showCatchmentBasin && (
           <Circle
             center={profile.centerCoordinates}
-            radius={Math.sqrt((profile.catchmentAreaKm2 * 1e6) / Math.PI) * 0.45}
+            radius={1800}
             pathOptions={{
               color: '#38bdf8',
               fillColor: '#0284c7',
-              fillOpacity: 0.12,
-              weight: 2,
-              dashArray: '6, 6',
-            }}
-          />
-        )}
-
-        {/* Drainage Surcharge Critical Inundation Zone (Expands with Rain Intensity) */}
-        {showSurchargeRadius && liveState.drainageSurplusMmH > 0 && (
-          <Circle
-            center={profile.centerCoordinates}
-            radius={Math.min(4200, 1200 + liveState.drainageSurplusMmH * 65)}
-            pathOptions={{
-              color: '#ef4444',
-              fillColor: '#dc2626',
-              fillOpacity: 0.18,
-              weight: 2,
+              fillOpacity: 0.08,
+              weight: 1.5,
               dashArray: '4, 4',
             }}
           />
@@ -251,7 +227,8 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
 
         {/* Critical Infrastructure Hotspot Pinned Markers */}
         {liveState.evaluatedHotspots.map((hotspot) => {
-          const icon = createHotspotDivIcon(hotspot, hotspot.currentDepthCm);
+          const isSelected = selectedHotspotId === hotspot.id;
+          const icon = createHotspotDivIcon(hotspot, hotspot.currentDepthCm, isSelected);
           const isCritical = hotspot.severity === 'CRITICAL_FLOODED';
           const isCaution = hotspot.severity === 'CAUTION';
 
@@ -267,18 +244,18 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
               }}
             >
               <Popup className="custom-hotspot-popup">
-                <div className="p-3 bg-slate-950 text-white rounded-xl border border-slate-700 shadow-2xl min-w-[240px] font-sans">
+                <div className="p-3 bg-slate-950 text-white rounded-xl border border-slate-700 shadow-2xl min-w-[260px] max-w-[320px] font-sans">
                   <div className="flex items-center justify-between gap-2 border-b border-slate-800 pb-2 mb-2">
                     <span className="font-bold text-xs text-white leading-tight">
                       {hotspot.name}
                     </span>
                     <span
-                      className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full font-bold uppercase ${
+                      className={`text-[9px] font-mono px-2 py-0.5 rounded-full font-bold uppercase whitespace-nowrap ${
                         isCritical
-                          ? 'bg-red-500/20 text-red-400 border border-red-500/40'
+                          ? 'bg-red-500/25 text-red-400 border border-red-500/50'
                           : isCaution
-                          ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40'
-                          : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          ? 'bg-amber-500/25 text-amber-400 border border-amber-500/50'
+                          : 'bg-emerald-500/25 text-emerald-400 border border-emerald-500/50'
                       }`}
                     >
                       {hotspot.statusLabel}
@@ -289,7 +266,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
                     {hotspot.locationDescription}
                   </p>
 
-                  <div className="grid grid-cols-2 gap-2 p-2 bg-slate-900/80 rounded-lg border border-slate-800 mb-2.5 font-mono text-xs">
+                  <div className="grid grid-cols-2 gap-2 p-2 bg-slate-900/90 rounded-lg border border-slate-800 mb-2.5 font-mono text-xs">
                     <div>
                       <div className="text-[9px] text-slate-400">Live Ponding</div>
                       <div
@@ -313,7 +290,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
                   </div>
 
                   {/* Water Depth Gauge Bar */}
-                  <div className="mb-2">
+                  <div className="mb-2.5">
                     <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                       <div
                         className={`h-full transition-all duration-500 ${
@@ -330,7 +307,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
                   </div>
 
                   <div className="text-[10px] text-sky-300 bg-sky-950/40 p-2 rounded-lg border border-sky-800/40 leading-snug">
-                    <strong className="text-white block mb-0.5">Tactical Action:</strong>
+                    <strong className="text-white block mb-0.5">Emergency SOP Directive:</strong>
                     {hotspot.actionProtocol}
                   </div>
                 </div>
@@ -340,27 +317,27 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
         })}
       </MapContainer>
 
-      {/* Floating Top-Left Aero-Glass HUD: Station Coordinates & Active Hotspots */}
+      {/* Floating Top-Left Aero-Glass Station Header HUD */}
       <div className="absolute top-3 left-3 z-20 flex flex-col gap-2 max-w-[280px]">
-        <div className="p-3 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-700/80 shadow-2xl text-white font-sans">
+        <div className="p-2.5 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-slate-800/90 shadow-2xl text-white font-sans">
           <div className="flex items-center gap-2 mb-1">
             <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-            <span className="font-bold text-xs uppercase tracking-wider text-slate-200">
+            <span className="font-bold text-xs uppercase tracking-wider text-slate-100">
               {profile.stationName}
             </span>
           </div>
 
-          <div className="text-[11px] font-mono text-cyan-300 flex items-center gap-2 mb-2">
+          <div className="text-[10px] font-mono text-cyan-300 flex items-center gap-1.5 mb-2">
             <span>{profile.centerCoordinates[0].toFixed(3)}°N</span>
             <span>•</span>
             <span>{profile.centerCoordinates[1].toFixed(3)}°E</span>
             <span>•</span>
-            <span>Basin: {profile.catchmentAreaKm2} km²</span>
+            <span>{profile.catchmentAreaKm2} km²</span>
           </div>
 
-          <div className="flex items-center gap-1.5 pt-2 border-t border-slate-800/80 text-[10px]">
+          <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-800/80 text-[10px]">
             <span className="px-2 py-0.5 rounded-md bg-red-500/20 text-red-400 font-bold font-mono">
-              {liveState.criticalCount} Submerged
+              {liveState.criticalCount} Closed
             </span>
             <span className="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-400 font-bold font-mono">
               {liveState.cautionCount} Caution
@@ -372,14 +349,13 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
         </div>
       </div>
 
-      {/* Floating Top-Right Aero-Glass Basemap & Layer Switcher */}
+      {/* Floating Top-Right Basemap Switcher */}
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-2 items-end">
-        {/* Basemap Switcher */}
-        <div className="flex items-center gap-1 p-1 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-700/80 shadow-xl">
+        <div className="flex items-center gap-1 p-1 bg-slate-950/85 backdrop-blur-md rounded-2xl border border-slate-800/90 shadow-xl">
           <button
             type="button"
             onClick={() => setBasemapStyle('SATELLITE')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               basemapStyle === 'SATELLITE'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white'
@@ -390,7 +366,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
           <button
             type="button"
             onClick={() => setBasemapStyle('DARK')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               basemapStyle === 'DARK'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white'
@@ -401,7 +377,7 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
           <button
             type="button"
             onClick={() => setBasemapStyle('STREET')}
-            className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               basemapStyle === 'STREET'
                 ? 'bg-blue-600 text-white shadow-xs'
                 : 'text-slate-400 hover:text-white'
@@ -410,60 +386,36 @@ export const StationSatelliteMap: React.FC<StationSatelliteMapProps> = ({
             🏙️ Street
           </button>
         </div>
-
-        {/* Layer Toggles */}
-        <div className="flex items-center gap-1.5 p-1 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-700/80 text-[11px] text-slate-300">
-          <label className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-900 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showCatchmentBasin}
-              onChange={(e) => setShowCatchmentBasin(e.target.checked)}
-              className="accent-cyan-500 rounded"
-            />
-            <span>Basin Perimeter</span>
-          </label>
-          <label className="flex items-center gap-1 px-2 py-1 rounded-lg hover:bg-slate-900 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showSurchargeRadius}
-              onChange={(e) => setShowSurchargeRadius(e.target.checked)}
-              className="accent-red-500 rounded"
-            />
-            <span>Surcharge Zone</span>
-          </label>
-        </div>
       </div>
 
-      {/* Floating Bottom-Left Weather Telemetry Ticker */}
-      <div className="absolute bottom-3 left-3 z-20 flex items-center gap-3 px-3 py-1.5 bg-slate-950/85 backdrop-blur-md rounded-xl border border-slate-700/80 text-white font-mono text-xs shadow-xl">
-        <div className="flex items-center gap-1.5 text-cyan-400">
-          <Droplets className="w-3.5 h-3.5" />
-          <span>{rainRateMmH} mm/h</span>
+      {/* Floating Bottom Hotspot Quick Selector Pills */}
+      <div className="absolute bottom-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        {/* Left: Weather Telemetry Bar */}
+        <div className="pointer-events-auto flex items-center gap-2.5 px-3 py-1.5 bg-slate-950/90 backdrop-blur-md rounded-xl border border-slate-800 text-white font-mono text-xs shadow-xl">
+          <div className="flex items-center gap-1 text-cyan-400">
+            <Droplets className="w-3.5 h-3.5" />
+            <span>{rainRateMmH} mm/h</span>
+          </div>
+          <div className="w-px h-3 bg-slate-800"></div>
+          <div className="flex items-center gap-1 text-blue-300">
+            <Wind className="w-3.5 h-3.5" />
+            <span>{windSpeedKmH} km/h ({windDirDeg}°)</span>
+          </div>
         </div>
-        <div className="w-px h-3 bg-slate-800"></div>
-        <div className="flex items-center gap-1.5 text-blue-300">
-          <Wind className="w-3.5 h-3.5" />
-          <span>{windSpeedKmH} km/h ({windDirDeg}°)</span>
-        </div>
-        <div className="w-px h-3 bg-slate-800"></div>
-        <div className="flex items-center gap-1.5 text-emerald-400">
-          <Activity className="w-3.5 h-3.5" />
-          <span>Pipe Cap: {profile.gravityDrainageCapacityMmH} mm/h</span>
-        </div>
-      </div>
 
-      {/* Floating Bottom-Right Recenter Button */}
-      <div className="absolute bottom-3 right-3 z-20">
-        <button
-          type="button"
-          onClick={() => {
-            if (onSelectHotspot) onSelectHotspot('');
-          }}
-          className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl border border-slate-700 shadow-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all"
-        >
-          <Navigation className="w-3.5 h-3.5 text-cyan-400" />
-          <span>Recenter Basin</span>
-        </button>
+        {/* Right: Recenter Button */}
+        <div className="pointer-events-auto">
+          <button
+            type="button"
+            onClick={() => {
+              if (onSelectHotspot) onSelectHotspot('');
+            }}
+            className="px-3 py-1.5 bg-slate-900/90 hover:bg-slate-800 text-slate-200 hover:text-white rounded-xl border border-slate-700 shadow-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all"
+          >
+            <Navigation className="w-3.5 h-3.5 text-cyan-400" />
+            <span>Reset Camera</span>
+          </button>
+        </div>
       </div>
     </div>
   );

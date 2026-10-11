@@ -2,13 +2,11 @@
  * LocalStationSimulatorModal.tsx
  * SAMVARTAKA AI — Municipal Catchment & Satellite GIS Command Center (SAM-GIS C4I)
  * 
- * Replaces the 15 FPS cosmetic 3D diorama with an ultra-responsive 120 FPS
- * high-definition satellite GIS command console:
- * - Real Esri World Imagery & CartoDB Dark Matter satellite tiles centered on IMD stations
- * - Real-world critical infrastructure flood choke-points with animated pulse radar beacons
- * - Municipal drainage surcharge calculator (Q_rain vs Q_pipe capacity)
- * - Click-to-fly-to camera tracking between hotspot cards and satellite geography
- * - Real-time Horton soil infiltration hydrograph & NDRF action protocols
+ * High-End Defense/Municipal Command Cockpit:
+ * - 3 View Modes: Split Command (52/48), Full-Screen Satellite GIS (100%), Deep Hydrology SCADA (100%)
+ * - 100% Free, Unwatermarked Esri Dark Gray & True-Color Satellite Imagery (No API keys)
+ * - Click-to-Fly-To Camera Tracking between Hotspot Cards and Satellite Imagery
+ * - Sleek Cybernetic Aero-HUD with Zero White Scrollbars and Clean Layout
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
@@ -40,7 +38,10 @@ import {
   Clock,
   Activity,
   Sliders,
-  ChevronDown
+  ChevronDown,
+  Columns,
+  Map as MapIcon,
+  BarChart3
 } from 'lucide-react';
 import { StationMetadata } from '../../../types';
 import { MET_STATIONS } from '../../../data/monsoonDataset';
@@ -57,6 +58,8 @@ interface LocalStationSimulatorModalProps {
   initialStationId?: string;
   onClose: () => void;
 }
+
+type ViewMode = 'SPLIT' | 'MAP_ONLY' | 'TELEMETRY_ONLY';
 
 // Synoptic weather scenarios for rapid 1-click evaluation
 interface WeatherScenario {
@@ -117,6 +120,9 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
   const [selectedStationId, setSelectedStationId] = useState<string>(
     initialStationId || 'BOM_SANTACRUZ'
   );
+
+  // View mode switcher: Split Command, Map-Only, or Telemetry-Only
+  const [viewMode, setViewMode] = useState<ViewMode>('SPLIT');
 
   useEffect(() => {
     if (initialStationId) {
@@ -204,7 +210,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/90 backdrop-blur-xl p-2 sm:p-4 animate-in fade-in duration-200">
       <div 
         className={`w-full ${
-          isFullscreen ? 'h-full max-w-none rounded-none' : 'max-w-7xl h-[92vh] max-h-[920px] rounded-3xl'
+          isFullscreen ? 'h-full max-w-none rounded-none' : 'max-w-7xl h-[94vh] max-h-[960px] rounded-3xl'
         } bg-slate-950 border border-slate-800 shadow-2xl flex flex-col overflow-hidden transition-all duration-300 font-sans`}
       >
         {/* Supreme Header Bar */}
@@ -259,7 +265,50 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
 
           {/* Header Action Controls */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Quick Scenario Drawer Toggle */}
+            {/* View Mode Segmented Switcher */}
+            <div className="hidden sm:flex items-center gap-1 p-1 bg-slate-950/80 rounded-xl border border-slate-800 text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('SPLIT')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'SPLIT'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Split Command View (Map + Dashboard)"
+              >
+                <Columns className="w-3.5 h-3.5" />
+                <span>Split</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('MAP_ONLY')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'MAP_ONLY'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Full Satellite Map View"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                <span>Map</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('TELEMETRY_ONLY')}
+                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                  viewMode === 'TELEMETRY_ONLY'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="Full Hydrological Dashboard View"
+              >
+                <BarChart3 className="w-3.5 h-3.5" />
+                <span>Telemetry</span>
+              </button>
+            </div>
+
+            {/* Weather Controls Toggle */}
             <button
               type="button"
               onClick={() => setShowScenarioDrawer(!showScenarioDrawer)}
@@ -270,7 +319,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               }`}
             >
               <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">Weather Controls</span>
+              <span className="hidden md:inline">Weather Controls</span>
               <ChevronDown className={`w-3 h-3 transition-transform ${showScenarioDrawer ? 'rotate-180' : ''}`} />
             </button>
 
@@ -310,12 +359,12 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
           </div>
         </div>
 
-        {/* Collapsible Weather Control Drawer */}
+        {/* Clean Weather Control Drawer (Zero White Scrollbars) */}
         {showScenarioDrawer && (
           <div className="bg-slate-900 border-b border-slate-800 p-3 sm:px-6 animate-in slide-in-from-top-2 duration-150">
-            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-              {/* Presets */}
-              <div className="flex items-center gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+              {/* Presets - Wrap cleanly, zero scrollbars */}
+              <div className="flex items-center gap-2 flex-wrap w-full md:w-auto">
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 mr-1">
                   Synoptic Presets:
                 </span>
@@ -329,7 +378,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                       setWindSpeedKmH(sc.windSpeedKmH);
                       setWindDirDeg(sc.windDirDeg);
                     }}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold shrink-0 transition-all cursor-pointer ${
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       activeScenarioId === sc.id
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700'
@@ -343,7 +392,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               {/* Sliders */}
               <div className="flex items-center gap-6 w-full md:w-auto justify-end font-mono text-xs">
                 {/* Rain Slider */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <span className="text-cyan-400 font-bold flex items-center gap-1">
                     <CloudRain className="w-3.5 h-3.5" />
                     Rain:
@@ -358,13 +407,13 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                       setRainRateMmH(parseFloat(e.target.value));
                       setActiveScenarioId('CUSTOM');
                     }}
-                    className="accent-cyan-400 w-28 sm:w-36 cursor-pointer"
+                    className="accent-cyan-400 w-28 cursor-pointer"
                   />
-                  <span className="text-white font-bold w-14 text-right">{rainRateMmH} mm/h</span>
+                  <span className="text-white font-bold w-12 text-right">{rainRateMmH} mm/h</span>
                 </div>
 
                 {/* Wind Slider */}
-                <div className="flex items-center gap-2.5">
+                <div className="flex items-center gap-2">
                   <span className="text-emerald-400 font-bold flex items-center gap-1">
                     <Wind className="w-3.5 h-3.5" />
                     Wind:
@@ -379,45 +428,57 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                       setWindSpeedKmH(parseFloat(e.target.value));
                       setActiveScenarioId('CUSTOM');
                     }}
-                    className="accent-emerald-400 w-24 sm:w-28 cursor-pointer"
+                    className="accent-emerald-400 w-24 cursor-pointer"
                   />
-                  <span className="text-white font-bold w-14 text-right">{windSpeedKmH} km/h</span>
+                  <span className="text-white font-bold w-12 text-right">{windSpeedKmH} km/h</span>
                 </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Main Operational Split Console Body */}
+        {/* Main Operational Body */}
         <div className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden relative">
-          {/* Left Pane: Interactive High-Definition Satellite GIS Map (62% Desktop Width) */}
-          <div className="w-full lg:w-[62%] h-[420px] lg:h-full relative bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-800">
-            <StationSatelliteMap
-              profile={catchmentProfile}
-              rainRateMmH={rainRateMmH}
-              windSpeedKmH={windSpeedKmH}
-              windDirDeg={windDirDeg}
-              surfaceWaterDepthCm={surfaceWaterDepthCm}
-              selectedHotspotId={selectedHotspotId}
-              onSelectHotspot={(id) => setSelectedHotspotId(id || null)}
-            />
-          </div>
-
-          {/* Right Pane: Operational Telemetry & Surcharge Command Center (38% Desktop Width) */}
-          <div className="w-full lg:w-[38%] h-full flex flex-col bg-slate-950 min-h-0 overflow-hidden">
-            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
-              <StationCatchmentDashboard
-                catchment={catchmentProfile}
+          {/* Left Pane: Interactive High-Definition Satellite GIS Map */}
+          {(viewMode === 'SPLIT' || viewMode === 'MAP_ONLY') && (
+            <div 
+              className={`${
+                viewMode === 'MAP_ONLY' ? 'w-full h-full' : 'w-full lg:w-[52%] h-[440px] lg:h-full'
+              } relative bg-slate-950 border-b lg:border-b-0 lg:border-r border-slate-800 transition-all`}
+            >
+              <StationSatelliteMap
+                profile={catchmentProfile}
                 rainRateMmH={rainRateMmH}
-                surfaceWaterDepthCm={surfaceWaterDepthCm}
-                elapsedSimMinutes={elapsedSimMinutes}
                 windSpeedKmH={windSpeedKmH}
                 windDirDeg={windDirDeg}
+                surfaceWaterDepthCm={surfaceWaterDepthCm}
                 selectedHotspotId={selectedHotspotId}
-                onSelectHotspot={(id) => setSelectedHotspotId(id)}
+                onSelectHotspot={(id) => setSelectedHotspotId(id || null)}
               />
             </div>
-          </div>
+          )}
+
+          {/* Right Pane: Operational Telemetry & Surcharge Command Center */}
+          {(viewMode === 'SPLIT' || viewMode === 'TELEMETRY_ONLY') && (
+            <div 
+              className={`${
+                viewMode === 'TELEMETRY_ONLY' ? 'w-full h-full' : 'w-full lg:w-[48%] h-full'
+              } flex flex-col bg-slate-950 min-h-0 overflow-hidden transition-all`}
+            >
+              <div className="flex-1 overflow-y-auto overflow-x-hidden p-3 sm:p-4 space-y-4 [scrollbar-width:thin] [scrollbar-color:rgba(51,65,85,0.5)_transparent]">
+                <StationCatchmentDashboard
+                  catchment={catchmentProfile}
+                  rainRateMmH={rainRateMmH}
+                  surfaceWaterDepthCm={surfaceWaterDepthCm}
+                  elapsedSimMinutes={elapsedSimMinutes}
+                  windSpeedKmH={windSpeedKmH}
+                  windDirDeg={windDirDeg}
+                  selectedHotspotId={selectedHotspotId}
+                  onSelectHotspot={(id) => setSelectedHotspotId(id)}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
