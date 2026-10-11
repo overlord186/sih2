@@ -217,10 +217,10 @@ export function createPbrWetTerrainMaterial(baseColorHex: string, rockColorHex: 
       '#include <roughnessmap_fragment>',
       `
       #include <roughnessmap_fragment>
-      // Water accumulates in depression pockets: roughness drops to mirror-smooth 0.03
+      // Water accumulates in depression pockets: roughness drops for realistic wet sheen
       float localPuddle = clamp(uPuddleDepth * 0.18 - vWorldPos.y * 0.22, 0.0, 1.0);
-      float effectiveWetness = clamp(uWetness * 0.85 + localPuddle * 0.95, 0.0, 1.0);
-      roughnessFactor = mix(roughnessFactor, 0.035, effectiveWetness);
+      float effectiveWetness = clamp(uWetness * 0.75 + localPuddle * 0.85, 0.0, 1.0);
+      roughnessFactor = mix(roughnessFactor, 0.12, effectiveWetness);
       `
     );
 
@@ -228,8 +228,8 @@ export function createPbrWetTerrainMaterial(baseColorHex: string, rockColorHex: 
       '#include <color_fragment>',
       `
       #include <color_fragment>
-      // Wet soil absorption darkens albedo due to internal micro-refractions
-      diffuseColor.rgb *= mix(1.0, 0.62, clamp(uWetness * 0.9, 0.0, 0.85));
+      // Subtle wet albedo absorption retaining natural surface contrast & terrain highlights
+      diffuseColor.rgb *= mix(1.0, 0.84, clamp(uWetness * 0.7, 0.0, 0.55));
       `
     );
 
@@ -317,6 +317,9 @@ export interface AtmosphericLightingProfile {
   sunColor: THREE.Color;
   sunIntensity: number;
   skyColor: THREE.Color;
+  groundColor: THREE.Color;
+  ambientIntensity: number;
+  hemisphereIntensity: number;
   fogColor: THREE.Color;
   fogDensity: number;
 }
@@ -331,47 +334,52 @@ export function computeAtmosphericLighting(
   const sunAzimuth = Math.cos(solarAngle);
 
   const sunX = sunAzimuth * 45;
-  const sunY = Math.max(2, sunElevation * 65);
+  const sunY = Math.max(12, sunElevation * 65);
   const sunZ = -25;
   const sunPosition = new THREE.Vector3(sunX, sunY, sunZ).normalize();
 
-  // Cloudburst overcast attenuation factor (0.0 = deep storm, 1.0 = clear sky)
-  const clearSkyFactor = Math.max(0.12, 1.0 - Math.min(0.88, rainRateMmH / 75));
+  // Cloudburst overcast attenuation factor (guarantee vibrant visibility floor)
+  const clearSkyFactor = Math.max(0.48, 1.0 - Math.min(0.52, rainRateMmH / 100));
 
-  // Sun direct light intensity & tint
-  const baseIntensity = Math.max(0.2, sunElevation * 2.8) * clearSkyFactor;
+  // Sun direct light intensity & tint: minimum 1.4 for bright crisp geometry
+  const baseIntensity = Math.max(1.3, (sunElevation * 2.2 + 0.9)) * clearSkyFactor;
   let sunColor = new THREE.Color('#fffbeb');
   if (sunElevation < 0.25) {
     // Golden hour warm dusk/dawn
-    sunColor = new THREE.Color('#f97316');
+    sunColor = new THREE.Color('#fb923c');
   } else if (rainRateMmH > 40) {
-    // Monsoon overcast blue-grey haze
-    sunColor = new THREE.Color('#94a3b8');
+    // High-altitude monsoon silver daylight illumination
+    sunColor = new THREE.Color('#e2e8f0');
   }
 
   // Rayleigh Sky Dome Color
   let skyColor = new THREE.Color('#38bdf8');
   if (rainRateMmH > 60) {
-    skyColor = new THREE.Color('#334155'); // Deep monsoon depression nimbostratus
+    skyColor = new THREE.Color('#64748b'); // Soft overcast slate, clear daylight
   } else if (rainRateMmH > 20) {
-    skyColor = new THREE.Color('#64748b'); // Overcast stratus
+    skyColor = new THREE.Color('#94a3b8'); // Overcast stratus daylight
   } else if (sunElevation < 0.25) {
     skyColor = new THREE.Color('#ea580c'); // Sunset orange
   }
 
-  // Koschmieder optical extinction fog
-  // V_km = 12 * R^(-0.68)
-  const visibilityKm = rainRateMmH > 0.5 ? 12 * Math.pow(rainRateMmH, -0.68) : 25;
-  const extinctionCoeff = 3.912 / Math.max(0.2, visibilityKm);
-  const fogDensity = Math.min(0.045, Math.max(0.003, extinctionCoeff * 0.0018));
+  const groundColor = new THREE.Color('#334155');
 
-  const fogColor = skyColor.clone().multiplyScalar(0.88);
+  // Koschmieder optical extinction fog - calibrated for 3D visibility
+  // Fog density clamped to max 0.007 to preserve sharp terrain contrast and depth
+  const visibilityKm = rainRateMmH > 0.5 ? 12 * Math.pow(rainRateMmH, -0.68) : 25;
+  const extinctionCoeff = 3.912 / Math.max(0.5, visibilityKm);
+  const fogDensity = Math.min(0.0075, Math.max(0.002, extinctionCoeff * 0.0006));
+
+  const fogColor = skyColor.clone().lerp(new THREE.Color('#cbd5e1'), 0.35);
 
   return {
     sunPosition,
     sunColor,
     sunIntensity: baseIntensity,
     skyColor,
+    groundColor,
+    ambientIntensity: Math.max(0.85, baseIntensity * 0.65),
+    hemisphereIntensity: 0.95,
     fogColor,
     fogDensity,
   };

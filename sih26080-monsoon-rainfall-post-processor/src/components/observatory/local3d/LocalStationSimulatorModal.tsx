@@ -530,6 +530,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               )}
               <Canvas
                 shadows
+                dpr={[1, 1.5]}
                 camera={{ position: [0, 2, 12], fov: 50 }}
                 gl={{ antialias: true, powerPreference: 'high-performance' }}
               >

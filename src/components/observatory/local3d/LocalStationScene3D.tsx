@@ -38,7 +38,6 @@ import {
   Clouds,
   Cloud,
   ContactShadows,
-  MeshReflectorMaterial,
 } from '@react-three/drei';
 import { LocalBiomeProfile } from '../../../data/localBiomeTerrains';
 import {
@@ -212,21 +211,20 @@ function BiomeTerrain({
       {/* PBR Wet Solid Ground Mesh with Procedural Normal Maps */}
       <mesh ref={meshRef} geometry={geometry} material={terrainMaterial} receiveShadow castShadow />
 
-      {/* Real-Time Planar Screen-Space Reflection Water Basin */}
+      {/* Dynamic PBR Water Basin with Physical Refraction & Waves */}
       <mesh position={[0, waterLevelY, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <planeGeometry args={[140, 140]} />
-        <MeshReflectorMaterial
-          blur={[400, 100]}
-          resolution={1024}
-          mirror={0.75}
-          mixBlur={0.8}
-          mixStrength={1.5}
-          roughness={0.04}
-          depthScale={1.2}
-          minDepthThreshold={0.4}
-          maxDepthThreshold={1.4}
+        <meshPhysicalMaterial
           color={biome.waterColor}
-          metalness={0.15}
+          transparent
+          opacity={0.84}
+          roughness={0.06}
+          metalness={0.12}
+          transmission={0.68}
+          ior={1.333}
+          clearcoat={1.0}
+          clearcoatRoughness={0.04}
+          reflectivity={0.92}
         />
       </mesh>
 
@@ -292,7 +290,7 @@ function InstancedGrassField({
   windDirDeg: number;
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const grassCount = biome.id === 'ARID_STEPPE_MARGIN' ? 8000 : 25000;
+  const grassCount = biome.id === 'ARID_STEPPE_MARGIN' ? 2200 : 4800;
 
   const { matrices, colors } = useMemo(() => {
     const dummy = new THREE.Object3D();
@@ -404,8 +402,8 @@ function InstancedGrassField({
   });
 
   const bladeGeom = useMemo(() => {
-    const geom = new THREE.PlaneGeometry(0.14, 0.7, 1, 3);
-    geom.translate(0, 0.35, 0);
+    const geom = new THREE.PlaneGeometry(0.22, 0.82, 1, 2);
+    geom.translate(0, 0.41, 0);
     return geom;
   }, []);
 
@@ -413,7 +411,6 @@ function InstancedGrassField({
     <instancedMesh
       ref={meshRef}
       args={[bladeGeom, grassMaterial, matrices.length]}
-      castShadow
       receiveShadow
     />
   );
@@ -424,7 +421,7 @@ function InstancedGrassField({
 // ----------------------------------------------------------------------------
 function InstancedBoulders({ biome }: { biome: LocalBiomeProfile }) {
   const meshRef = useRef<THREE.InstancedMesh>(null);
-  const boulderCount = 110;
+  const boulderCount = 65;
 
   const { matrices, colors } = useMemo(() => {
     const dummy = new THREE.Object3D();
@@ -480,7 +477,6 @@ function InstancedBoulders({ biome }: { biome: LocalBiomeProfile }) {
     <instancedMesh
       ref={meshRef}
       args={[geom, mat, matrices.length]}
-      castShadow
       receiveShadow
     />
   );
@@ -505,13 +501,13 @@ function GunnKinzerRainParticles({
 
   const dropCount = useMemo(() => {
     if (rainRateMmH <= 0.5) return 0;
-    const base = Math.min(6000, Math.floor(600 + (rainRateMmH / 150) * 5400));
+    const base = Math.min(1500, Math.floor(350 + (rainRateMmH / 150) * 1150));
     return Math.floor(base * rainDensityMultiplier);
   }, [rainRateMmH, rainDensityMultiplier]);
 
   const splashCount = useMemo(() => {
     if (rainRateMmH <= 1.5) return 0;
-    const base = Math.min(1200, Math.floor(150 + (rainRateMmH / 150) * 1050));
+    const base = Math.min(260, Math.floor(70 + (rainRateMmH / 150) * 190));
     return Math.floor(base * rainDensityMultiplier);
   }, [rainRateMmH, rainDensityMultiplier]);
 
@@ -536,7 +532,7 @@ function GunnKinzerRainParticles({
       vel[i * 3 + 1] = vY;
       vel[i * 3 + 2] = vZ;
 
-      const streakLength = 0.022;
+      const streakLength = 0.038;
       const endX = baseX + vX * streakLength;
       const endY = baseY + vY * streakLength;
       const endZ = baseZ + vZ * streakLength;
@@ -594,7 +590,7 @@ function GunnKinzerRainParticles({
         const resetY = 50 + Math.random() * 5;
         const resetZ = (Math.random() - 0.5) * 85;
 
-        const streakLength = 0.022;
+        const streakLength = 0.038;
         p[i * 6 + 0] = resetX;
         p[i * 6 + 1] = resetY;
         p[i * 6 + 2] = resetZ;
@@ -1044,18 +1040,30 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
         />
       </Clouds>
 
-      {/* Atmospheric Lighting based on Preetham Solar Model */}
+      {/* Balanced Atmospheric Hemisphere Light for realistic overcast bounce */}
+      <hemisphereLight
+        args={[
+          atmosphericLighting.skyColor,
+          atmosphericLighting.groundColor,
+          atmosphericLighting.hemisphereIntensity,
+        ]}
+      />
+
+      {/* Atmospheric Ambient Lighting with high baseline floor */}
       <ambientLight
         color={atmosphericLighting.skyColor}
-        intensity={isLightningActive ? 3.5 : Math.max(0.32, atmosphericLighting.sunIntensity * 0.5)}
+        intensity={isLightningActive ? 3.5 : atmosphericLighting.ambientIntensity}
       />
+
+      {/* Primary Directional Sunlight with optimized shadow map */}
       <directionalLight
         position={atmosphericLighting.sunPosition.clone().multiplyScalar(60)}
         color={atmosphericLighting.sunColor}
         intensity={isLightningActive ? 6.5 : atmosphericLighting.sunIntensity}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={1024}
+        shadow-mapSize-height={1024}
+        shadow-bias={-0.0005}
         shadow-camera-near={0.5}
         shadow-camera-far={150}
         shadow-camera-left={-35}
@@ -1063,19 +1071,23 @@ export const LocalStationScene3D: React.FC<LocalStationScene3DProps> = ({
         shadow-camera-top={35}
         shadow-camera-bottom={-35}
       />
+
+      {/* Camera-aligned Top-Down Viewport Fill Light */}
+      <directionalLight position={[0, 45, 5]} intensity={0.55} color="#cbd5e1" />
       {isLightningActive && (
         <pointLight position={[0, 38, 0]} color="#e0f2fe" intensity={24} distance={220} />
       )}
 
-      {/* Soft Ground Contact Ambient Occlusion */}
+      {/* Ground Contact Ambient Occlusion baked once (frames={1}) for 60-120 FPS */}
       <ContactShadows
         position={[0, 0.05, 0]}
-        opacity={0.78}
+        opacity={0.65}
         scale={35}
-        blur={1.8}
+        blur={1.6}
         far={12}
-        resolution={1024}
-        color="#020617"
+        resolution={512}
+        frames={1}
+        color="#0f172a"
       />
 
       {/* 3D Scene Components with AAA Photorealism */}

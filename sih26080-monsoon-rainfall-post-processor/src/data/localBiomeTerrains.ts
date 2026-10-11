@@ -43,8 +43,8 @@ export const BIOME_ARCHETYPES: Record<BiomeArchetypeId, LocalBiomeProfile> = {
     subtitle: 'Tidal Mangrove & Urban Stormwater Catchment',
     description: 'Low-lying coastal alluvium near sea level. Narrow gravity drainage gradients make this terrain vulnerable to severe waterlogging when intense downpours coincide with high tide.',
     defaultElevationM: 14,
-    terrainColor: '#1e293b', // Dark wet asphalt & reclaimed land
-    rockColor: '#475569',
+    terrainColor: '#3b485d', // Balanced coastal alluvium & damp basalt with clear contrast
+    rockColor: '#64748b',
     waterColor: '#0369a1',
     foliageType: 'PALM_COASTAL',
     soilType: 'Alluvial Marine Silt',
