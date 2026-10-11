@@ -10,6 +10,7 @@ import { Lock, Unlock, Compass, Move } from 'lucide-react';
 interface Props {
   mode: AtmosphereMode;
   selectedSeasonPhase?: number; // 1: June Onset, 2: July Peak, 3: Aug Active/Break, 4: Sept Withdrawal
+  paused?: boolean;
 }
 
 class ThreeErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -815,7 +816,7 @@ const CameraController: React.FC<CameraControllerProps> = ({ isLocked, onToggleL
   );
 };
 
-export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase = 2 }) => {
+export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase = 2, paused = false }) => {
   const [isCameraLocked, setIsCameraLocked] = useState<boolean>(() => {
     try {
       return localStorage.getItem('samvartaka_engine_wasd') !== 'true';
@@ -869,6 +870,7 @@ export const WeatherBackground3D: React.FC<Props> = ({ mode, selectedSeasonPhase
     <div className={`fixed inset-0 z-0 ${isCameraLocked ? 'pointer-events-none' : 'pointer-events-auto'}`}>
       <ThreeErrorBoundary>
         <Canvas
+          frameloop={paused ? 'demand' : 'always'}
           dpr={[1, Math.min(typeof window !== 'undefined' ? window.devicePixelRatio : 1, 1.25)]}
           camera={{ position: [0, 8, 26], fov: 60 }}
           gl={{ powerPreference: 'high-performance', antialias: true }}

@@ -9,7 +9,7 @@
  * 4. Actionable disaster mitigation protocols and automated diversion directives
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect } from 'react';
 import {
   AlertTriangle,
   ShieldCheck,
@@ -60,6 +60,23 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
     );
   }, [catchment, rainRateMmH, surfaceWaterDepthCm, elapsedSimMinutes]);
 
+  // Auto-scroll to selected hotspot card when marker is clicked on GIS map
+  useEffect(() => {
+    if (selectedHotspotId) {
+      const cardEl = document.getElementById(`hotspot-card-${selectedHotspotId}`);
+      if (cardEl) {
+        cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }
+  }, [selectedHotspotId]);
+
+  const scrollToSection = (sectionId: string) => {
+    const el = document.getElementById(sectionId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   // Generate coordinates for SVG Horton Infiltration Hydrograph
   const hydrographPoints = useMemo(() => {
     const points: { t: number; infiltration: number; rain: number }[] = [];
@@ -93,9 +110,54 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
   };
 
   return (
-    <div className="flex-1 p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto max-h-full font-sans select-none text-slate-100">
+    <div className="flex-1 p-3 sm:p-5 flex flex-col space-y-4 overflow-y-auto max-h-full font-sans select-none text-slate-100 relative scroll-smooth">
+      {/* Sticky Quick-Jump Navigation Pills */}
+      <div className="sticky top-0 z-20 -mx-3 -mt-3 sm:-mx-5 sm:-mt-5 px-3 sm:px-5 py-2.5 bg-slate-950/90 backdrop-blur-md border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar shadow-lg">
+        <button
+          type="button"
+          onClick={() => scrollToSection('section-drainage')}
+          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10.5px] font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+        >
+          <span className={`w-2 h-2 rounded-full ${hydroState.isDrainageOverwhelmed ? 'bg-rose-500 animate-pulse' : 'bg-emerald-400'}`} />
+          <span>Status</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => scrollToSection('section-chokepoints')}
+          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10.5px] font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+        >
+          <AlertTriangle className="w-3 h-3 text-amber-400" />
+          <span>Choke-Points ({hydroState.evaluatedHotspots.length})</span>
+          {hydroState.criticalCount > 0 && (
+            <span className="px-1.5 py-0.2 rounded bg-rose-600 text-white text-[9px] font-bold">
+              {hydroState.criticalCount} Critical
+            </span>
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() => scrollToSection('section-hydrograph')}
+          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10.5px] font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+        >
+          <Activity className="w-3 h-3 text-cyan-400" />
+          <span>Horton Hydrograph</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => scrollToSection('section-sop')}
+          className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700/80 text-[10.5px] font-mono text-slate-300 hover:text-white flex items-center gap-1.5 transition-all shrink-0 cursor-pointer"
+        >
+          <ShieldCheck className="w-3 h-3 text-emerald-400" />
+          <span>NDRF Protocols</span>
+        </button>
+      </div>
+
       {/* 1. Top Drainage Surcharge & Hazard Banner */}
       <div
+        id="section-drainage"
         className={`p-3.5 rounded-2xl border transition-all ${
           hydroState.isDrainageOverwhelmed
             ? 'bg-rose-950/40 border-rose-500/50 text-rose-200'
@@ -164,7 +226,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
       </div>
 
       {/* 2. Critical Infrastructure Hotspots Grid */}
-      <div>
+      <div id="section-chokepoints">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-blue-400" />
@@ -186,6 +248,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
 
             return (
               <div
+                id={`hotspot-card-${hotspot.id}`}
                 key={hotspot.id}
                 onClick={() => onSelectHotspot && onSelectHotspot(hotspot.id)}
                 className={`p-3.5 rounded-2xl border transition-all flex flex-col justify-between cursor-pointer select-none ${
@@ -277,7 +340,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
       {/* 3. Bottom Row: Horton Hydrograph & Civil Defense SOP Protocols */}
       <div className="flex flex-col gap-3.5">
         {/* Dynamic Horton Infiltration Hydrograph */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+        <div id="section-hydrograph" className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between scroll-mt-12">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-cyan-400" />
@@ -375,7 +438,7 @@ export const StationCatchmentDashboard: React.FC<StationCatchmentDashboardProps>
         </div>
 
         {/* Civil Defense SOP Emergency Protocols */}
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between">
+        <div id="section-sop" className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col justify-between scroll-mt-12">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />

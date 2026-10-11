@@ -41,7 +41,8 @@ import {
   ChevronDown,
   Columns,
   Map as MapIcon,
-  BarChart3
+  BarChart3,
+  FileText
 } from 'lucide-react';
 import { StationMetadata } from '../../../types';
 import { MET_STATIONS } from '../../../data/monsoonDataset';
@@ -52,6 +53,7 @@ import {
 import { weatherSynth } from '../../../utils/audio';
 import { StationSatelliteMap } from './StationSatelliteMap';
 import { StationCatchmentDashboard } from './StationCatchmentDashboard';
+import { SitRepModal } from './SitRepModal';
 
 interface LocalStationSimulatorModalProps {
   isOpen: boolean;
@@ -111,6 +113,15 @@ const QUICK_WEATHER_SCENARIOS: WeatherScenario[] = [
   },
 ];
 
+// Multi-horizon forecast scrubber intervals
+const TIME_HORIZONS = [
+  { minutes: 0, label: 'Now (T+0)', desc: 'Real-time IMD AWS Telemetry' },
+  { minutes: 15, label: '+15m', desc: 'Nowcast Infiltration Window' },
+  { minutes: 30, label: '+30m', desc: 'Short-range Surcharge Peak' },
+  { minutes: 60, label: '+1h', desc: 'Hourly Catchment Balance' },
+  { minutes: 120, label: '+2h', desc: 'Extended Runoff Horizon' },
+];
+
 export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProps> = ({
   isOpen,
   initialStationId,
@@ -153,6 +164,30 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [selectedHotspotId, setSelectedHotspotId] = useState<string | null>(null);
   const [showScenarioDrawer, setShowScenarioDrawer] = useState<boolean>(false);
+
+  // Multi-Horizon Temporal Scrubber & SitRep State
+  const [forecastHorizonMinutes, setForecastHorizonMinutes] = useState<number>(0);
+  const [isSitRepOpen, setIsSitRepOpen] = useState<boolean>(false);
+
+  const effectiveElapsedSimMinutes = elapsedSimMinutes + forecastHorizonMinutes;
+
+  const effectiveWaterDepthCm = useMemo(() => {
+    if (forecastHorizonMinutes === 0) return surfaceWaterDepthCm;
+    const netInflow = Math.max(0, rainRateMmH - catchmentProfile.gravityDrainageCapacityMmH);
+    const projectedAccumulation = (netInflow / 60) * forecastHorizonMinutes * (catchmentProfile.rationalRunoffCoeffC * 0.18);
+    const projectedDrain = rainRateMmH <= catchmentProfile.gravityDrainageCapacityMmH ? (forecastHorizonMinutes * 0.08) : 0;
+    return Math.max(0, Math.min(60, Number((surfaceWaterDepthCm + projectedAccumulation - projectedDrain).toFixed(2))));
+  }, [surfaceWaterDepthCm, forecastHorizonMinutes, rainRateMmH, catchmentProfile]);
+
+  const triggerThunderIfSevere = (newRate: number) => {
+    if (!isAudioMuted && newRate > 80) {
+      try {
+        weatherSynth.playLightningThunderCrack();
+      } catch {
+        // Audio handled
+      }
+    }
+  };
 
   // Audio Engine sync
   useEffect(() => {
@@ -308,6 +343,17 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
               </button>
             </div>
 
+            {/* Export SitRep Executive Report Button */}
+            <button
+              type="button"
+              onClick={() => setIsSitRepOpen(true)}
+              className="px-3 py-1.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-1.5 bg-gradient-to-r from-blue-700/70 to-cyan-700/70 hover:from-blue-600 hover:to-cyan-600 text-white border-blue-400/40 shadow-xs cursor-pointer"
+              title="Generate Official Disaster Situation Report (SitRep)"
+            >
+              <FileText className="w-3.5 h-3.5 text-cyan-300" />
+              <span className="hidden sm:inline">Export SitRep</span>
+            </button>
+
             {/* Weather Controls Toggle */}
             <button
               type="button"
@@ -377,6 +423,7 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                       setRainRateMmH(sc.rainRateMmH);
                       setWindSpeedKmH(sc.windSpeedKmH);
                       setWindDirDeg(sc.windDirDeg);
+                      triggerThunderIfSevere(sc.rainRateMmH);
                     }}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                       activeScenarioId === sc.id
@@ -404,8 +451,12 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                     step="2"
                     value={rainRateMmH}
                     onChange={(e) => {
-                      setRainRateMmH(parseFloat(e.target.value));
+                      const val = parseFloat(e.target.value);
+                      setRainRateMmH(val);
                       setActiveScenarioId('CUSTOM');
+                      if (val > 80 && rainRateMmH <= 80) {
+                        triggerThunderIfSevere(val);
+                      }
                     }}
                     className="accent-cyan-400 w-28 cursor-pointer"
                   />
@@ -451,10 +502,53 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                 rainRateMmH={rainRateMmH}
                 windSpeedKmH={windSpeedKmH}
                 windDirDeg={windDirDeg}
-                surfaceWaterDepthCm={surfaceWaterDepthCm}
+                surfaceWaterDepthCm={effectiveWaterDepthCm}
                 selectedHotspotId={selectedHotspotId}
                 onSelectHotspot={(id) => setSelectedHotspotId(id || null)}
               />
+
+              {/* Floating High-Tech Temporal Forecast Scrubber Bar */}
+              <div className="absolute bottom-3 left-3 right-3 z-[1000] p-2 sm:p-2.5 bg-slate-950/85 backdrop-blur-xl rounded-2xl border border-white/10 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-2 select-none pointer-events-auto">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded-lg bg-blue-600/30 text-cyan-400 border border-blue-500/40 shrink-0">
+                    <Clock className="w-3.5 h-3.5" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <div className="text-[10px] font-mono font-bold text-slate-300 uppercase flex items-center gap-1.5 flex-wrap">
+                      <span>Forecast Horizon</span>
+                      {forecastHorizonMinutes > 0 ? (
+                        <span className="px-1.5 py-0.2 rounded bg-cyan-900/70 text-cyan-300 text-[9px] border border-cyan-700">
+                          +{forecastHorizonMinutes}m Forward Surcharge
+                        </span>
+                      ) : (
+                        <span className="px-1.5 py-0.2 rounded bg-emerald-900/60 text-emerald-300 text-[9px] border border-emerald-700">
+                          Live T+0 Telemetry
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[10.5px] font-mono text-cyan-400 font-bold truncate">
+                      {TIME_HORIZONS.find((h) => h.minutes === forecastHorizonMinutes)?.desc}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 p-1 bg-slate-900/90 rounded-xl border border-slate-800 overflow-x-auto no-scrollbar shrink-0">
+                  {TIME_HORIZONS.map((h) => (
+                    <button
+                      key={h.minutes}
+                      type="button"
+                      onClick={() => setForecastHorizonMinutes(h.minutes)}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer whitespace-nowrap ${
+                        forecastHorizonMinutes === h.minutes
+                          ? 'bg-blue-600 text-white shadow-md shadow-blue-900/50 scale-102'
+                          : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                      }`}
+                    >
+                      {h.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 
@@ -469,8 +563,8 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
                 <StationCatchmentDashboard
                   catchment={catchmentProfile}
                   rainRateMmH={rainRateMmH}
-                  surfaceWaterDepthCm={surfaceWaterDepthCm}
-                  elapsedSimMinutes={elapsedSimMinutes}
+                  surfaceWaterDepthCm={effectiveWaterDepthCm}
+                  elapsedSimMinutes={effectiveElapsedSimMinutes}
                   windSpeedKmH={windSpeedKmH}
                   windDirDeg={windDirDeg}
                   selectedHotspotId={selectedHotspotId}
@@ -481,6 +575,18 @@ export const LocalStationSimulatorModal: React.FC<LocalStationSimulatorModalProp
           )}
         </div>
       </div>
+
+      {/* Official Municipal Situation Report (SitRep) Modal */}
+      <SitRepModal
+        isOpen={isSitRepOpen}
+        onClose={() => setIsSitRepOpen(false)}
+        station={activeStation}
+        catchment={catchmentProfile}
+        rainRateMmH={rainRateMmH}
+        surfaceWaterDepthCm={effectiveWaterDepthCm}
+        elapsedSimMinutes={effectiveElapsedSimMinutes}
+        forecastHorizonMinutes={forecastHorizonMinutes}
+      />
     </div>
   );
 };

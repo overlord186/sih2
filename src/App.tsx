@@ -492,7 +492,11 @@ export default function App() {
       {/* 3D Real-time Ambient Weather Simulation Background */}
       {activeTab !== 'cockpit' && (
         <div className="transition-opacity duration-1000 opacity-100">
-          <WeatherBackground3D mode={atmosphereMode} selectedSeasonPhase={selectedSeasonPhase} />
+          <WeatherBackground3D 
+            mode={atmosphereMode} 
+            selectedSeasonPhase={selectedSeasonPhase} 
+            paused={isLocal3dSimulatorOpen}
+          />
         </div>
       )}
       <div className="md:hidden fixed top-20 right-4 z-30 pointer-events-auto">

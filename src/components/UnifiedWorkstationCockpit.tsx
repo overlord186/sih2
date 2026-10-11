@@ -570,6 +570,7 @@ export const UnifiedWorkstationCockpit: React.FC<UnifiedWorkstationCockpitProps>
             >
               <Canvas
                 shadows
+                frameloop="demand"
                 dpr={[1, 1.5]}
                 camera={{ position: [0, 2.5, 12], fov: 48 }}
                 gl={{ antialias: true, powerPreference: 'high-performance' }}
