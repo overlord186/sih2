@@ -136,7 +136,7 @@ export const SpringTemporalScrubber: React.FC<SpringTemporalScrubberProps> = ({
   };
 
   return (
-    <div className={`bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 shadow-xl text-slate-100 ${className}`}>
+    <div id="spring-temporal-scrubber" className={`bg-slate-900/90 backdrop-blur-xl border border-slate-800 rounded-2xl p-4 shadow-xl text-slate-100 ${className}`}>
       {/* Top Header with Active Horizon HUD */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2.5">
@@ -254,6 +254,7 @@ export const SpringTemporalScrubber: React.FC<SpringTemporalScrubberProps> = ({
         {/* Audio Micro-Clicks Toggle & Info */}
         <div className="flex items-center gap-3 text-slate-400">
           <button
+            id="scrubber-audio-clicks-btn"
             onClick={() => setIsAudioFeedbackEnabled(!isAudioFeedbackEnabled)}
             className="flex items-center gap-1 hover:text-slate-200 transition-colors"
             title="Toggle Web Audio acoustic clicks"

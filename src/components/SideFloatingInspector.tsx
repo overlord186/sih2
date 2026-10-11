@@ -14,6 +14,8 @@ import {
   EyeOff,
   ChevronRight,
   ChevronLeft,
+  Crosshair,
+  Radio,
 } from 'lucide-react';
 
 export interface ExplanationEntry {
@@ -33,6 +35,13 @@ const EXPLANATION_REGISTRY: Record<string, ExplanationEntry> = {
     description: 'Scrubs through synchronized meteorological forecast lead-times from -3h Doppler radar nowcasts to +120h Day-5 medium-range NWP.',
     meteorologicalContext: 'Employs critically damped harmonic spring physics (ζ = 1.0) to dynamically recalculate downstream boundary conditions, GIS isochrones, and AI quantile adjustments across synoptic assimilation cycles.',
     interactionHint: 'Drag the glowing scrub head or click any circular synoptic node to shift temporal lead.',
+  },
+  'scrubber-audio-clicks-btn': {
+    title: 'Acoustic Synthesizer Feedback Toggle',
+    category: 'TOGGLE',
+    description: 'Toggles real-time procedural Web Audio oscillator clicks on forecast horizon node transitions.',
+    meteorologicalContext: 'Generates a 140 Hz micro-acoustic haptic ping to provide non-visual confirmation when scrub lead times cross critical synoptic boundaries.',
+    interactionHint: 'Click to mute/unmute temporal scrubber audio feedback.',
   },
   'horizon-node-minus-3': {
     title: 'T-3h Doppler Radar Nowcast Assimilation',
@@ -243,7 +252,10 @@ const EXPLANATION_REGISTRY: Record<string, ExplanationEntry> = {
 interface HoverInfo {
   entry: ExplanationEntry;
   targetRect: DOMRect;
-  dockSide: 'left' | 'right';
+  // Dual-Callout support for composite widgets (e.g. Scrubber parent + Audio Toggle child)
+  parentEntry?: ExplanationEntry;
+  parentRect?: DOMRect;
+  isDualCallout: boolean;
 }
 
 export const SideFloatingInspector: React.FC = () => {
@@ -366,7 +378,7 @@ export const SideFloatingInspector: React.FC = () => {
     return null;
   };
 
-  // Global pointerover / mouseover listener
+  // Global pointerover / mouseover listener with smart hierarchy decomposition
   useEffect(() => {
     if (!isEnabled) {
       setHoverInfo(null);
@@ -378,11 +390,11 @@ export const SideFloatingInspector: React.FC = () => {
       if (!target) return;
 
       // Ignore hover inside the inspector itself
-      if (target.closest('#side-floating-inspector-panel')) return;
+      if (target.closest('#side-floating-inspector-panel') || target.closest('#hud-leader-lines-svg')) return;
 
       // Find nearest eligible element (button, select, input, graph, toggle, etc.)
       const eligible = target.closest(
-        'button, select, input, [role="button"], [role="switch"], [role="tab"], [role="slider"], svg.recharts-surface, .recharts-wrapper, .taylor-diagram, canvas, [data-explain-title]'
+        'button, select, input, [role="button"], [role="switch"], [role="tab"], [role="slider"], svg.recharts-surface, .recharts-wrapper, .taylor-diagram, canvas, #spring-temporal-scrubber, [data-explain-title]'
       ) as HTMLElement | null;
 
       if (!eligible) {
@@ -402,7 +414,7 @@ export const SideFloatingInspector: React.FC = () => {
         clearTimeout(hoverTimeoutRef.current);
       }
 
-      // 120ms debounce to prevent visual flutter on rapid sweeps
+      // 100ms debounce to prevent visual flutter on rapid sweeps
       hoverTimeoutRef.current = setTimeout(() => {
         const explanation = resolveExplanation(eligible);
         if (!explanation) {
@@ -411,26 +423,43 @@ export const SideFloatingInspector: React.FC = () => {
         }
 
         const rect = eligible.getBoundingClientRect();
-        
-        // Compute strict side-dock placement:
-        // Default to RIGHT of the target element.
-        // If target is too close to right edge (< 360px available), flip to LEFT side of element.
-        const cardWidth = 340;
-        const spacing = 14;
-        const fitsRight = rect.right + cardWidth + spacing < window.innerWidth;
-        const dockSide = fitsRight ? 'right' : 'left';
 
-        setHoverInfo({
-          entry: explanation,
-          targetRect: rect,
-          dockSide,
-        });
-      }, 120);
+        // Check if inside composite widget (like Spring Temporal Scrubber)
+        const scrubberParent = eligible.closest('#spring-temporal-scrubber') as HTMLElement | null;
+        const isChildOfScrubber = scrubberParent && eligible !== scrubberParent;
+
+        if (isChildOfScrubber) {
+          // DUAL-CALLOUT MODE:
+          // Tab 1: Explains parent Scrubber
+          // Tab 2: Explains specific sub-control (e.g. Audio Clicks toggle)
+          const parentRect = scrubberParent.getBoundingClientRect();
+          const parentExplanation = EXPLANATION_REGISTRY['spring-temporal-scrubber'];
+
+          setHoverInfo({
+            entry: explanation,
+            targetRect: rect,
+            parentEntry: parentExplanation,
+            parentRect: parentRect,
+            isDualCallout: true,
+          });
+        } else {
+          // SINGLE-CALLOUT MODE:
+          setHoverInfo({
+            entry: explanation,
+            targetRect: rect,
+            isDualCallout: false,
+          });
+        }
+      }, 100);
     };
 
     const handlePointerOut = (e: MouseEvent) => {
       const related = e.relatedTarget as HTMLElement;
-      if (!related || (!related.closest('button, select, input, svg, canvas') && !related.closest('#side-floating-inspector-panel'))) {
+      if (
+        !related ||
+        (!related.closest('button, select, input, svg, canvas, #spring-temporal-scrubber') &&
+          !related.closest('#side-floating-inspector-panel'))
+      ) {
         if (hoverTimeoutRef.current) {
           clearTimeout(hoverTimeoutRef.current);
           hoverTimeoutRef.current = null;
@@ -450,149 +479,314 @@ export const SideFloatingInspector: React.FC = () => {
     };
   }, [isEnabled]);
 
-  // Render floating side card coordinates
-  let cardStyle: React.CSSProperties = { display: 'none' };
-  let pointerStyle: React.CSSProperties = {};
-
-  if (hoverInfo) {
-    const { targetRect, dockSide } = hoverInfo;
-    const cardWidth = 330;
-    const estimatedHeight = 190;
-    const spacing = 14;
-
-    // Strict side-docked X position: right or left of element
-    const x = dockSide === 'right' ? targetRect.right + spacing : targetRect.left - cardWidth - spacing;
-
-    // Vertical center alignment with target element, clamped within viewport
-    const targetCenterY = targetRect.top + targetRect.height / 2;
-    let y = targetCenterY - estimatedHeight / 2;
-    y = Math.max(16, Math.min(window.innerHeight - estimatedHeight - 16, y));
-
-    cardStyle = {
-      position: 'fixed',
-      left: `${Math.round(x)}px`,
-      top: `${Math.round(y)}px`,
-      width: `${cardWidth}px`,
-      zIndex: 99999,
-      pointerEvents: 'none',
-    };
-
-    // Pointer chevron position pointing to target center
-    const pointerRelativeY = Math.max(14, Math.min(estimatedHeight - 14, targetCenterY - y));
-    pointerStyle = {
-      top: `${Math.round(pointerRelativeY)}px`,
-    };
-  }
-
-  return (
-    <>
-      {/* Floating Explanatory Inspector Card (Strictly Side-Docked) */}
-      {isEnabled && hoverInfo && (
-        <div
-          id="side-floating-inspector-panel"
-          style={cardStyle}
-          className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_12px_36px_rgba(0,0,0,0.65)] select-none"
-        >
-          {/* Main Glassmorphic Inspector Body */}
-          <div className="relative rounded-xl border border-sky-400/40 bg-slate-950/95 backdrop-blur-xl p-3.5 text-slate-100 shadow-2xl shadow-sky-950/70 overflow-hidden">
-            {/* Ambient Top Glow Line */}
-            <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-sky-400 to-transparent" />
-
-            {/* Side Indicator Chevron Pointing Directly at Target */}
-            {hoverInfo.dockSide === 'right' ? (
-              <div
-                style={pointerStyle}
-                className="absolute -left-2 -translate-y-1/2 w-0 h-0 border-y-[6px] border-y-transparent border-r-[8px] border-r-sky-400/80"
-              />
-            ) : (
-              <div
-                style={pointerStyle}
-                className="absolute -right-2 -translate-y-1/2 w-0 h-0 border-y-[6px] border-y-transparent border-l-[8px] border-l-sky-400/80"
-              />
-            )}
-
-            {/* Header: Category Badge & Title */}
-            <div className="flex items-start justify-between gap-2 mb-2">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-1.5">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
-                  </span>
-                  <span className="text-[9px] font-mono font-black uppercase tracking-wider text-cyan-300 px-1.5 py-0.5 rounded bg-cyan-950/80 border border-cyan-500/30">
-                    {hoverInfo.entry.category} EXPLANATION
-                  </span>
-                </div>
-                <h4 className="text-xs font-bold text-white tracking-tight leading-snug">
-                  {hoverInfo.entry.title}
-                </h4>
-              </div>
-
-              <div className="p-1 rounded-md bg-sky-950/60 border border-sky-500/20 text-sky-400 shrink-0">
-                {hoverInfo.entry.category === 'GRAPH' && <BarChart3 size={13} />}
-                {hoverInfo.entry.category === 'TOGGLE' && <ToggleLeft size={13} />}
-                {hoverInfo.entry.category === 'HORIZON' && <Compass size={13} />}
-                {hoverInfo.entry.category === 'SELECTABLE' && <Sliders size={13} />}
-                {hoverInfo.entry.category === 'ACTION' && <Zap size={13} />}
-                {hoverInfo.entry.category === 'STATISTIC' && <Activity size={13} />}
-              </div>
-            </div>
-
-            {/* Section 1: Plain-English Functional Explanation */}
-            <p className="text-[11px] text-slate-300 leading-relaxed mb-2 font-normal">
-              {hoverInfo.entry.description}
-            </p>
-
-            {/* Section 2: Meteorological & Physics Significance Box */}
-            <div className="rounded-lg bg-sky-950/40 border border-sky-500/20 p-2 mb-2 text-[10px] space-y-0.5">
-              <div className="flex items-center gap-1 text-[9px] font-mono font-bold text-sky-300 uppercase tracking-wider">
-                <Info size={10} className="text-sky-400" />
-                <span>Atmospheric Physics & Context</span>
-              </div>
-              <p className="text-slate-300/90 leading-normal font-sans">
-                {hoverInfo.entry.meteorologicalContext}
-              </p>
-            </div>
-
-            {/* Section 3: Interaction & Hotkey Hint */}
-            {hoverInfo.entry.interactionHint && (
-              <div className="flex items-center justify-between text-[9px] font-mono text-cyan-300/80 pt-1 border-t border-slate-800">
-                <span className="flex items-center gap-1">
-                  <ChevronRight size={10} />
-                  <span>{hoverInfo.entry.interactionHint}</span>
-                </span>
-                <span className="text-slate-500">Side-Docked</span>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Discreet Persistent Floating Pill to Toggle Side Explanations Mode */}
+  if (!isEnabled || !hoverInfo) {
+    return (
       <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
         <button
           type="button"
           onClick={toggleInspector}
-          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border transition-all duration-300 shadow-xl cursor-pointer ${
-            isEnabled
-              ? 'bg-sky-950/90 text-cyan-200 border-sky-400/80 shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:bg-sky-900'
-              : 'bg-slate-900/80 text-slate-400 border-slate-700 hover:text-white hover:border-slate-500'
-          }`}
-          title="Toggle Universal Side-Docked Floating Explanations (Shortcut: Alt+E)"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-white hover:border-slate-500 transition-all shadow-xl cursor-pointer"
+          title="Toggle Futuristic HUD Callout Explanations (Shortcut: Alt+E)"
         >
-          {isEnabled ? (
-            <>
-              <Eye size={12} className="text-cyan-400 animate-pulse" />
-              <span>SIDE EXPLANATIONS: ON</span>
-              <span className="text-[10px] px-1 py-0.2 rounded bg-sky-900/80 text-sky-300 border border-sky-400/30">Alt+E</span>
-            </>
-          ) : (
-            <>
-              <EyeOff size={12} className="text-slate-400" />
-              <span>SIDE EXPLANATIONS: OFF</span>
-              <span className="text-[10px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">Alt+E</span>
-            </>
-          )}
+          <EyeOff size={12} className="text-slate-400" />
+          <span>HUD CALLOUTS: OFF</span>
+          <span className="text-[10px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">Alt+E</span>
+        </button>
+      </div>
+    );
+  }
+
+  const { entry, targetRect, parentEntry, parentRect, isDualCallout } = hoverInfo;
+
+  // Compute Card 1 (Sub-control or Standalone Element)
+  const card1Width = 320;
+  const card1Height = 175;
+
+  // Default placement: to the right or left with dogleg line
+  const fitsRight = targetRect.right + card1Width + 30 < window.innerWidth;
+  const card1Left = fitsRight
+    ? targetRect.right + 30
+    : Math.max(16, targetRect.left - card1Width - 30);
+  
+  let card1Top = targetRect.top + targetRect.height / 2 - card1Height / 2;
+  card1Top = Math.max(16, Math.min(window.innerHeight - card1Height - 16, card1Top));
+
+  // Anchor dot on element 1
+  const t1AnchorX = fitsRight ? targetRect.right : targetRect.left;
+  const t1AnchorY = targetRect.top + targetRect.height / 2;
+
+  // Dock connection on Card 1
+  const c1DockX = fitsRight ? card1Left : card1Left + card1Width;
+  const c1DockY = card1Top + 30;
+
+  // Dogleg knee point 1 (45° angle)
+  const k1X = fitsRight ? t1AnchorX + 15 : t1AnchorX - 15;
+  const k1Y = c1DockY;
+
+  // Compute Card 2 (Parent Scrubber Callout in Dual Mode)
+  let parentCardLeft = 0;
+  let parentCardTop = 0;
+  let pAnchorX = 0;
+  let pAnchorY = 0;
+  let pDockX = 0;
+  let pDockY = 0;
+  let pKneeX = 0;
+  let pKneeY = 0;
+
+  if (isDualCallout && parentRect && parentEntry) {
+    // Parent Card sits in clear space ABOVE / LEFT of the Scrubber (as in user's diagram)
+    const pCardWidth = 330;
+    const pCardHeight = 170;
+
+    parentCardLeft = Math.max(16, parentRect.left + 20);
+    parentCardTop = Math.max(16, parentRect.top - pCardHeight - 24);
+
+    // If too close to top of viewport, dock to top-left corner
+    if (parentCardTop < 20) {
+      parentCardTop = parentRect.bottom + 20;
+    }
+
+    // Anchor on Scrubber timeline track
+    pAnchorX = parentRect.left + parentRect.width * 0.45;
+    pAnchorY = parentRect.top + 45;
+
+    // Dock on bottom of Parent Card
+    pDockX = parentCardLeft + pCardWidth / 2;
+    pDockY = parentCardTop < parentRect.top ? parentCardTop + pCardHeight : parentCardTop;
+
+    pKneeX = pDockX;
+    pKneeY = pAnchorY - 20;
+  }
+
+  return (
+    <>
+      {/* 1. Full-Viewport Fixed Transparent SVG for Vector Leader Lines */}
+      <svg
+        id="hud-leader-lines-svg"
+        className="fixed inset-0 pointer-events-none z-[9990] w-full h-full overflow-hidden select-none"
+      >
+        <defs>
+          {/* Cybernetic Neon Glow Gradients */}
+          <linearGradient id="hudLeaderGradCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00f0ff" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.8" />
+          </linearGradient>
+
+          <linearGradient id="hudLeaderGradAmber" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.95" />
+            <stop offset="100%" stopColor="#f59e0b" stopOpacity="0.8" />
+          </linearGradient>
+
+          <filter id="hudNeonFilter" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+
+        {/* --- LINE 1: Element / Sub-Control Leader Line --- */}
+        <g filter="url(#hudNeonFilter)">
+          {/* Glowing Dogleg Path */}
+          <path
+            d={`M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`}
+            fill="none"
+            stroke="url(#hudLeaderGradCyan)"
+            strokeWidth="1.8"
+            strokeDasharray="5 2.5"
+            className="animate-[dash_1s_linear_infinite]"
+          />
+          {/* Element Target Reticle Dot */}
+          <circle cx={t1AnchorX} cy={t1AnchorY} r="7" fill="#00f0ff" fillOpacity="0.3" className="animate-ping" />
+          <circle cx={t1AnchorX} cy={t1AnchorY} r="3.5" fill="#00f0ff" stroke="#020617" strokeWidth="1.5" />
+          {/* Card Dock Dot */}
+          <circle cx={c1DockX} cy={c1DockY} r="3" fill="#38bdf8" />
+        </g>
+
+        {/* --- LINE 2: Parent Scrubber Leader Line (Dual-Callout Mode) --- */}
+        {isDualCallout && parentRect && (
+          <g filter="url(#hudNeonFilter)">
+            {/* Dogleg Leader Line to Scrubber Track */}
+            <path
+              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pDockY}`}
+              fill="none"
+              stroke="url(#hudLeaderGradAmber)"
+              strokeWidth="2"
+              strokeDasharray="6 3"
+            />
+            {/* Scrubber Anchor Reticle */}
+            <circle cx={pAnchorX} cy={pAnchorY} r="8" fill="#f59e0b" fillOpacity="0.35" className="animate-ping" />
+            <circle cx={pAnchorX} cy={pAnchorY} r="4" fill="#fbbf24" stroke="#020617" strokeWidth="1.5" />
+            {/* Parent Card Dock Dot */}
+            <circle cx={pDockX} cy={pDockY} r="3" fill="#fbbf24" />
+          </g>
+        )}
+      </svg>
+
+      {/* 2. Floating Futuristic Callout Cards (Strictly Non-Blocking: pointer-events-none) */}
+      <div id="side-floating-inspector-panel" className="pointer-events-none select-none">
+        {/* --- CARD 1: Sub-control or Standalone Element Tab --- */}
+        <div
+          style={{
+            position: 'fixed',
+            left: `${Math.round(card1Left)}px`,
+            top: `${Math.round(card1Top)}px`,
+            width: `${card1Width}px`,
+            zIndex: 99995,
+          }}
+          className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]"
+        >
+          <div className="relative rounded-xl border border-sky-400/50 bg-slate-950/95 backdrop-blur-2xl p-3 text-slate-100 shadow-2xl shadow-sky-950/80 overflow-hidden">
+            {/* Cybernetic Corner Reticle Accents */}
+            <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-cyan-400" />
+            <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-cyan-400" />
+            <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-cyan-400" />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-cyan-400" />
+
+            {/* Top Glow Ribbon */}
+            <div className="absolute top-0 left-3 right-3 h-[1px] bg-gradient-to-r from-transparent via-cyan-400 to-transparent" />
+
+            {/* Header */}
+            <div className="flex items-start justify-between gap-2 mb-1.5">
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-1.5">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
+                  </span>
+                  <span className="text-[8px] font-mono font-black uppercase tracking-widest text-cyan-300 px-1.5 py-0.2 rounded bg-cyan-950/80 border border-cyan-500/30">
+                    {entry.category} CALLOUT
+                  </span>
+                </div>
+                <h4 className="text-xs font-bold text-white tracking-tight leading-tight">
+                  {entry.title}
+                </h4>
+              </div>
+
+              <div className="p-1 rounded bg-sky-950/60 border border-sky-500/20 text-sky-400 shrink-0">
+                {entry.category === 'GRAPH' && <BarChart3 size={12} />}
+                {entry.category === 'TOGGLE' && <ToggleLeft size={12} />}
+                {entry.category === 'HORIZON' && <Compass size={12} />}
+                {entry.category === 'SELECTABLE' && <Sliders size={12} />}
+                {entry.category === 'ACTION' && <Zap size={12} />}
+                {entry.category === 'STATISTIC' && <Activity size={12} />}
+              </div>
+            </div>
+
+            {/* Function Description */}
+            <p className="text-[10px] text-slate-300 leading-relaxed mb-1.5 font-normal">
+              {entry.description}
+            </p>
+
+            {/* Atmospheric / Scientific Relevance Box */}
+            <div className="rounded-lg bg-sky-950/40 border border-sky-500/20 p-1.5 mb-1.5 text-[9px] space-y-0.5">
+              <div className="flex items-center gap-1 text-[8px] font-mono font-bold text-sky-300 uppercase tracking-wider">
+                <Info size={9} className="text-sky-400" />
+                <span>Atmospheric Physics & Model Context</span>
+              </div>
+              <p className="text-slate-300/90 leading-normal font-sans">
+                {entry.meteorologicalContext}
+              </p>
+            </div>
+
+            {/* Interaction Hint */}
+            {entry.interactionHint && (
+              <div className="flex items-center justify-between text-[8px] font-mono text-cyan-300/80 pt-1 border-t border-slate-800">
+                <span className="flex items-center gap-1">
+                  <ChevronRight size={9} />
+                  <span>{entry.interactionHint}</span>
+                </span>
+                <span className="text-slate-500">Target Line</span>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* --- CARD 2: Parent Composite Scrubber Tab (Dual-Callout Mode) --- */}
+        {isDualCallout && parentRect && parentEntry && (
+          <div
+            style={{
+              position: 'fixed',
+              left: `${Math.round(parentCardLeft)}px`,
+              top: `${Math.round(parentCardTop)}px`,
+              width: `330px`,
+              zIndex: 99996,
+            }}
+            className="animate-in fade-in-50 zoom-in-95 duration-200 transition-all filter drop-shadow-[0_12px_32px_rgba(0,0,0,0.7)]"
+          >
+            <div className="relative rounded-xl border border-amber-500/50 bg-slate-950/95 backdrop-blur-2xl p-3 text-slate-100 shadow-2xl shadow-amber-950/80 overflow-hidden">
+              {/* Corner Accents in Amber */}
+              <div className="absolute top-0 left-0 w-2.5 h-2.5 border-t-2 border-l-2 border-amber-400" />
+              <div className="absolute top-0 right-0 w-2.5 h-2.5 border-t-2 border-r-2 border-amber-400" />
+              <div className="absolute bottom-0 left-0 w-2.5 h-2.5 border-b-2 border-l-2 border-amber-400" />
+              <div className="absolute bottom-0 right-0 w-2.5 h-2.5 border-b-2 border-r-2 border-amber-400" />
+
+              {/* Amber Top Ribbon */}
+              <div className="absolute top-0 left-3 right-3 h-[1px] bg-gradient-to-r from-transparent via-amber-400 to-transparent" />
+
+              {/* Header */}
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-amber-500"></span>
+                    </span>
+                    <span className="text-[8px] font-mono font-black uppercase tracking-widest text-amber-300 px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/30">
+                      PRIMARY WIDGET CONTEXT
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-bold text-amber-100 tracking-tight leading-tight">
+                    {parentEntry.title}
+                  </h4>
+                </div>
+
+                <div className="p-1 rounded bg-amber-950/60 border border-amber-500/30 text-amber-400 shrink-0">
+                  <Compass size={12} />
+                </div>
+              </div>
+
+              {/* Function Description */}
+              <p className="text-[10px] text-slate-300 leading-relaxed mb-1.5 font-normal">
+                {parentEntry.description}
+              </p>
+
+              {/* Meteorological Context */}
+              <div className="rounded-lg bg-amber-950/30 border border-amber-500/20 p-1.5 mb-1.5 text-[9px] space-y-0.5">
+                <div className="flex items-center gap-1 text-[8px] font-mono font-bold text-amber-300 uppercase tracking-wider">
+                  <Activity size={9} className="text-amber-400" />
+                  <span>Harmonic Spring & Synoptic Dynamics</span>
+                </div>
+                <p className="text-slate-300/90 leading-normal font-sans">
+                  {parentEntry.meteorologicalContext}
+                </p>
+              </div>
+
+              {/* Interaction Hint */}
+              <div className="flex items-center justify-between text-[8px] font-mono text-amber-300/80 pt-1 border-t border-slate-800">
+                <span className="flex items-center gap-1">
+                  <ChevronRight size={9} />
+                  <span>{parentEntry.interactionHint}</span>
+                </span>
+                <span className="text-slate-500">Parent Lead Track</span>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 3. Discreet Floating Pill to Toggle Callout Lines Mode */}
+      <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
+        <button
+          type="button"
+          onClick={toggleInspector}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border border-sky-400/80 bg-sky-950/90 text-cyan-200 shadow-[0_0_20px_rgba(6,182,212,0.35)] hover:bg-sky-900 transition-all shadow-xl cursor-pointer"
+          title="Toggle Futuristic HUD Vector Leader Explanations (Shortcut: Alt+E)"
+        >
+          <Eye size={12} className="text-cyan-400 animate-pulse" />
+          <span>HUD CALLOUTS: ON</span>
+          <span className="text-[10px] px-1 py-0.2 rounded bg-sky-900/80 text-sky-300 border border-sky-400/30">Alt+E</span>
         </button>
       </div>
     </>

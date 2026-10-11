@@ -1027,6 +1027,7 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
           {/* TAB: UNIVERSAL SIDE-DOCKED FLOATING EXPLANATION MASTER PLAN */}
           {activeTab === 'floating_explanation_plan' && (
             <div className="space-y-6">
+              {/* Top Banner */}
               <div className="p-5 rounded-2xl bg-gradient-to-r from-sky-950/70 via-cyan-950/50 to-slate-900 border border-sky-500/30 flex items-start gap-4 shadow-xl">
                 <div className="p-3 rounded-xl bg-sky-500/20 border border-sky-400/40 text-cyan-300">
                   <Eye className="w-6 h-6" />
@@ -1034,68 +1035,133 @@ export const MasterPlansModal: React.FC<MasterPlansModalProps> = ({
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
                     <h3 className="text-base font-bold text-white">
-                      Master Plan: Universal Side-Docked Floating Explanations & Adaptive Inspector
+                      Futuristic HUD Floating Explanation Tabs: Multi-Plan Comparative Studio
                     </h3>
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold">
-                      Fully Operational (Alt+E)
+                      Selected Plan A Deployed (Alt+E)
                     </span>
                   </div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Provides continuous, non-intrusive floating explanations that appear <strong>strictly to the side</strong> of any hovered selectable parameter, toggleable switch, or graphical visualization—never covering the element itself.
+                    Comparison of architectural strategies for futuristic floating callout tabs with angled leader lines connecting directly to hovered elements (including dual callouts on composite widgets like the 120 FPS Spring Temporal Scrubber and its toggles) with <strong>100% zero interference</strong> on underlying functions.
                   </p>
                 </div>
               </div>
 
-              {/* 3 Pillars Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="p-4 rounded-xl bg-slate-900/80 border border-sky-500/20 space-y-2">
-                  <div className="flex items-center gap-2 text-sky-400 font-bold text-xs">
-                    <SplitSquareHorizontal className="w-4 h-4" />
-                    <span>1. Strict Side-Docking Physics</span>
-                  </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Cards calculate element bounding boxes and mount strictly to the <strong>Right</strong> (or <strong>Left</strong> if within 340px of viewport edge). Vertically centered to target centroid and clamped to viewport bounds.
-                  </p>
+              {/* Multi-Plan Comparison Matrix */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-slate-200">
+                  <Scale className="w-4 h-4 text-cyan-400" />
+                  <span>Architectural Options Comparison Matrix</span>
                 </div>
-
-                <div className="p-4 rounded-xl bg-slate-900/80 border border-cyan-500/20 space-y-2">
-                  <div className="flex items-center gap-2 text-cyan-400 font-bold text-xs">
-                    <Layers className="w-4 h-4" />
-                    <span>2. Universal Element Hooks</span>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Plan A */}
+                  <div className="p-4 rounded-xl bg-slate-900/90 border-2 border-cyan-500/50 space-y-2 relative shadow-lg shadow-cyan-950/40">
+                    <div className="absolute -top-2.5 right-3 px-2 py-0.5 rounded-full text-[9px] font-mono font-bold bg-cyan-500 text-slate-950">
+                      SELECTED FINAL PLAN
+                    </div>
+                    <div className="flex items-center gap-1.5 text-cyan-300 font-bold text-xs">
+                      <Award className="w-4 h-4" />
+                      <span>Plan A: Dual-Tier Dogleg HUD Leader Lines</span>
+                    </div>
+                    <p className="text-xs text-slate-300 leading-relaxed">
+                      Fixed viewport SVG canvas with 45° dogleg dashed vector lines and pulsing target reticles. Smart spatial decomposition mounts Tab 1 in clear space above (Parent Widget) and Tab 2 to the side/below (Sub-Control Toggle).
+                    </p>
+                    <div className="pt-2 border-t border-slate-800 text-[11px] space-y-1 text-slate-400">
+                      <div className="flex justify-between"><span className="text-slate-500">Visual Aesthetic:</span> <span className="text-cyan-300 font-semibold">Futuristic Sci-Fi HUD</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dual-Callout Support:</span> <span className="text-emerald-400 font-semibold">Native Orthogonal Split</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Interference Risk:</span> <span className="text-emerald-400 font-semibold">0% (pointer-events: none)</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Performance Cost:</span> <span className="text-emerald-400 font-semibold">Near 0% (Passive RAF/debounced)</span></div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Hooks into buttons, toggles, switches, tabs, range sliders, select dropdowns, D3 time-series curves, Taylor polar diagrams, GIS pins, and Doppler radar scopes using centralized pointer delegation.
-                  </p>
-                </div>
 
-                <div className="p-4 rounded-xl bg-slate-900/80 border border-purple-500/20 space-y-2">
-                  <div className="flex items-center gap-2 text-purple-400 font-bold text-xs">
-                    <Sparkles className="w-4 h-4" />
-                    <span>3. Atmospheric Physics Depth</span>
+                  {/* Plan B */}
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+                    <div className="flex items-center gap-1.5 text-amber-300 font-bold text-xs">
+                      <Sliders className="w-4 h-4" />
+                      <span>Plan B: Spring-Attached Holo-Orbitals</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      Floating orbital tabs attached via physics spring joints directly to the cursor coordinates, dynamically orbiting the cursor with radial spring inertia.
+                    </p>
+                    <div className="pt-2 border-t border-slate-800 text-[11px] space-y-1 text-slate-400">
+                      <div className="flex justify-between"><span className="text-slate-500">Visual Aesthetic:</span> <span className="text-amber-300 font-semibold">High Motion / Elastic</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dual-Callout Support:</span> <span className="text-amber-400 font-semibold">Prone to card collision</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Interference Risk:</span> <span className="text-yellow-400 font-semibold">Low (May obscure click target)</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Performance Cost:</span> <span className="text-yellow-400 font-semibold">Medium (Continuous RAF loop)</span></div>
+                    </div>
                   </div>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Delivers functional plain-English summaries alongside deep meteorological relevance: IMD statutory criteria (64.5mm), RK2 advection, 1901 climatology priors, and Z-score anomaly mathematics.
-                  </p>
+
+                  {/* Plan C */}
+                  <div className="p-4 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+                    <div className="flex items-center gap-1.5 text-indigo-300 font-bold text-xs">
+                      <Layers className="w-4 h-4" />
+                      <span>Plan C: Viewport Margin Dock Tracers</span>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">
+                      All explanations dock strictly to the left or right screen edges with long cubic Bézier tracer lines traveling across the entire screen from the element to the edge rail.
+                    </p>
+                    <div className="pt-2 border-t border-slate-800 text-[11px] space-y-1 text-slate-400">
+                      <div className="flex justify-between"><span className="text-slate-500">Visual Aesthetic:</span> <span className="text-indigo-300 font-semibold">Clean Sidebar Rail</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Dual-Callout Support:</span> <span className="text-slate-400 font-semibold">Poor (Tabs separated from context)</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Interference Risk:</span> <span className="text-emerald-400 font-semibold">0% (Edge docked)</span></div>
+                      <div className="flex justify-between"><span className="text-slate-500">Eye-Tracking Effort:</span> <span className="text-rose-400 font-semibold">High (Eyes must dart to margin)</span></div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Technical Architecture Specs */}
-              <div className="p-4 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3 font-mono text-xs">
-                <div className="text-slate-300 font-bold flex items-center gap-2">
-                  <Code2 className="w-4 h-4 text-cyan-400" />
-                  <span>Architecture Specification & Interaction Protocols</span>
+              {/* Exact User Sketch Implementation: 120 FPS Spring Temporal Scrubber Case Study */}
+              <div className="p-4 rounded-xl bg-slate-950/80 border border-cyan-500/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-xs font-bold text-white">
+                    <Sparkles className="w-4 h-4 text-cyan-400" />
+                    <span>User Diagram Execution: Dual-Callout Decomposition on 120 FPS Scrubber</span>
+                  </div>
+                  <span className="text-[10px] font-mono text-cyan-300 px-2 py-0.5 rounded bg-cyan-950 border border-cyan-800">
+                    Live Active in Platform
+                  </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-400">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-300">
+                  <div className="p-3 rounded-lg bg-slate-900/80 border border-amber-500/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                      <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
+                      <span>Tab 1: Parent Widget Context (Top-Left Dock)</span>
+                    </div>
+                    <p className="text-slate-400 leading-relaxed text-[11px]">
+                      Anchors a glowing amber leader line to the central timeline lead track. Floats in clear space above the widget (e.g., over the map ocean area in the user's diagram) explaining the 120 FPS Spring Temporal Scrubber physics and synchronized NWP lead times.
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-lg bg-slate-900/80 border border-cyan-500/30 space-y-1.5">
+                    <div className="flex items-center gap-1.5 font-bold text-cyan-300">
+                      <div className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                      <span>Tab 2: Sub-Control Callout (Bottom-Right Dock)</span>
+                    </div>
+                    <p className="text-slate-400 leading-relaxed text-[11px]">
+                      Anchors a glowing cyan dogleg leader line directly to the hovered button (e.g. <code>#scrubber-audio-clicks-btn</code>), floating below in the gutter explaining the acoustic haptic ping oscillator and toggling interaction.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Zero-Interference Architectural Guarantees */}
+              <div className="p-4 rounded-xl bg-slate-950/60 border border-emerald-500/30 space-y-3 font-mono text-xs">
+                <div className="text-emerald-300 font-bold flex items-center gap-2 font-sans">
+                  <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                  <span>Zero-Interference Architectural Guarantees</span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-slate-400 font-sans text-xs">
                   <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
-                    <span className="text-cyan-300 font-semibold block">Positioning Formulation</span>
-                    <div>X_dock = dockSide === 'right' ? rect.right + 14 : rect.left - 340 - 14</div>
-                    <div>Y_clamp = clamp(16, rect.top + rect.height/2 - H/2, innerHeight - H - 16)</div>
+                    <span className="text-cyan-300 font-semibold block font-mono">1. Absolute Pass-Through Pointer Events</span>
+                    <p className="text-[11px] leading-relaxed">
+                      Both the full-screen SVG canvas and all floating card wrappers enforce <code>pointer-events: none !important;</code>. Mouse events (clicks, double-clicks, drags, scrubs, right-clicks, scroll) pass through instantly to underlying buttons, timelines, and maps with zero latency.
+                    </p>
                   </div>
                   <div className="p-3 rounded-lg bg-slate-900/60 border border-slate-800 space-y-1">
-                    <span className="text-amber-300 font-semibold block">Performance & Debouncing</span>
-                    <div>Debounce interval: 120ms pointer rest threshold</div>
-                    <div>Pointer Events: none on card body (zero click interception)</div>
-                    <div>Shortcut: Alt + E to toggle inspection mode globally</div>
+                    <span className="text-emerald-300 font-semibold block font-mono">2. Passive Event Delegation & Zero Layout Shift</span>
+                    <p className="text-[11px] leading-relaxed">
+                      Uses a single root-level passive <code>mouseover</code> listener with 100ms debounce. Floating tabs use fixed positioning with transform GPU composition, producing 0 DOM layout shifts or paint invalidations on existing charts and canvas scopes.
+                    </p>
                   </div>
                 </div>
               </div>
