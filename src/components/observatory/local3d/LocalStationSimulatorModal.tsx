@@ -30,6 +30,7 @@ import {
   Clock,
   Video,
   Download,
+  Activity,
 } from 'lucide-react';
 import { StationMetadata } from '../../../types';
 import { MET_STATIONS } from '../../../data/monsoonDataset';
