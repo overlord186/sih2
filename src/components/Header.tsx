@@ -164,7 +164,7 @@ export const Header: React.FC<HeaderProps> = ({
     <header id="app-header" className="bg-slate-900 border-b border-slate-800 text-white relative">
       {/* Top Banner */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
           <div className="flex items-start gap-3">
             <div>
               <div className="flex flex-wrap items-center gap-2">
@@ -231,9 +231,8 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Quick Header Status & Actions on the Right */}
-          <div className="flex items-center gap-2 self-start md:self-auto shrink-0 flex-wrap">
-            <DataSourceSwitcher />
+          {/* Quick Header Status & Actions on the Right - Flex wrapped to prevent page overflow */}
+          <div className="flex items-center gap-2 flex-wrap max-w-full justify-start xl:justify-end">
             <TacticalDisasterOpsToggle />
 
             <button
@@ -264,7 +263,7 @@ export const Header: React.FC<HeaderProps> = ({
               title="Launch Dual-Viewport NWP vs AI Comparison Swipe (UI-MP 3)"
             >
               <ArrowLeftRight className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden lg:inline">NWP Split Swipe</span>
+              <span>NWP Split Swipe</span>
             </button>
 
             <button

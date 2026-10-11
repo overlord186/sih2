@@ -262,7 +262,7 @@ export const SideFloatingInspector: React.FC = () => {
   const [isEnabled, setIsEnabled] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     try {
-      const saved = localStorage.getItem('SAMVARTAKA_SIDE_INSPECTOR_ENABLED');
+      const saved = localStorage.getItem('SAMVARTAKA_SIDE_INSPECTOR_ENABLED_V3');
       return saved === null ? true : saved === 'true';
     } catch {
       return true;
@@ -278,7 +278,7 @@ export const SideFloatingInspector: React.FC = () => {
     setIsEnabled((prev) => {
       const next = !prev;
       try {
-        localStorage.setItem('SAMVARTAKA_SIDE_INSPECTOR_ENABLED', String(next));
+        localStorage.setItem('SAMVARTAKA_SIDE_INSPECTOR_ENABLED_V3', String(next));
       } catch {
         // ignore
       }
@@ -414,7 +414,7 @@ export const SideFloatingInspector: React.FC = () => {
         clearTimeout(hoverTimeoutRef.current);
       }
 
-      // 100ms debounce to prevent visual flutter on rapid sweeps
+      // 40ms high-responsiveness debounce to prevent visual flutter on rapid sweeps
       hoverTimeoutRef.current = setTimeout(() => {
         const explanation = resolveExplanation(eligible);
         if (!explanation) {
@@ -450,7 +450,7 @@ export const SideFloatingInspector: React.FC = () => {
             isDualCallout: false,
           });
         }
-      }, 100);
+      }, 40);
     };
 
     const handlePointerOut = (e: MouseEvent) => {
@@ -479,18 +479,43 @@ export const SideFloatingInspector: React.FC = () => {
     };
   }, [isEnabled]);
 
-  if (!isEnabled || !hoverInfo) {
+  // When disabled by user
+  if (!isEnabled) {
     return (
       <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
         <button
           type="button"
           onClick={toggleInspector}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-mono font-bold tracking-wider backdrop-blur-xl border border-slate-700 bg-slate-900/80 text-slate-400 hover:text-white hover:border-slate-500 transition-all shadow-xl cursor-pointer"
-          title="Toggle Futuristic HUD Callout Explanations (Shortcut: Alt+E)"
+          title="Enable Futuristic HUD Callout Explanations (Shortcut: Alt+E)"
         >
-          <EyeOff size={12} className="text-slate-400" />
-          <span>HUD CALLOUTS: OFF</span>
+          <EyeOff size={12} className="text-slate-500" />
+          <span>HUD CALLOUTS: MUTED</span>
           <span className="text-[10px] px-1 py-0.2 rounded bg-slate-800 text-slate-400">Alt+E</span>
+        </button>
+      </div>
+    );
+  }
+
+  // When enabled but not currently hovering over an inspectable element
+  if (!hoverInfo) {
+    return (
+      <div className="fixed bottom-4 right-4 z-40 pointer-events-auto">
+        <button
+          type="button"
+          onClick={toggleInspector}
+          className="flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-mono font-black tracking-wider backdrop-blur-2xl border-2 border-cyan-400/80 bg-slate-950/90 text-cyan-200 shadow-[0_0_25px_rgba(0,240,255,0.4)] hover:bg-cyan-950/80 hover:shadow-[0_0_35px_rgba(0,240,255,0.6)] transition-all cursor-pointer"
+          title="Futuristic HUD Callouts Active! Hover over any button, graph, or toggle to inspect. Shortcut: Alt+E to mute."
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+          </span>
+          <Eye size={13} className="text-cyan-400 animate-pulse" />
+          <span>FUTURISTIC HUD: ACTIVE</span>
+          <span className="text-[10px] px-1.5 py-0.2 rounded bg-cyan-900/80 text-cyan-200 border border-cyan-400/40">
+            Alt+E
+          </span>
         </button>
       </div>
     );
