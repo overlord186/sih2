@@ -38,7 +38,12 @@ export const TacticalDisasterOpsToggle: React.FC<TacticalDisasterOpsToggleProps>
             ? 'bg-rose-600 text-white border-rose-400 shadow-rose-900/40 ring-2 ring-rose-500/50'
             : 'bg-slate-900/90 text-slate-300 border-slate-700 hover:border-slate-500 hover:text-white'
         }`}
-        title="Toggle High-Contrast Tactical Disaster Operations Mode (WCAG AAA 7:1 Contrast)"
+        aria-label="Toggle High-Contrast Tactical Disaster Operations Mode (WCAG AAA 7:1 Contrast)"
+        data-explain-title="Tactical Ops Mode"
+        data-explain-cat="TOGGLE"
+        data-explain-desc="Toggles high-contrast WCAG AAA 7:1 incident operations mode for Emergency Operations Centers (EOC)."
+        data-explain-context="Modulates UI palette into emergency warning colorways and highlights high-risk hydrological deluges."
+        data-explain-hint="Click to toggle tactical disaster mode on or off."
       >
         <ShieldAlert className={`w-4 h-4 ${isTacticalOps ? 'animate-bounce text-white' : 'text-rose-400'}`} />
         <span>{isTacticalOps ? 'Tactical Ops: ACTIVE' : 'Tactical Ops Mode'}</span>

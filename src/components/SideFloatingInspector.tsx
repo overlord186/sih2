@@ -299,6 +299,28 @@ export const SideFloatingInspector: React.FC = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [toggleInspector]);
 
+  // Suppress browser native white tooltips from popping up over HUD tabs
+  useEffect(() => {
+    const handleSuppressNativeTitle = (e: MouseEvent) => {
+      const el = (e.target as HTMLElement)?.closest('[title]') as HTMLElement | null;
+      if (el && el.hasAttribute('title')) {
+        const titleVal = el.getAttribute('title');
+        if (titleVal && titleVal.trim()) {
+          el.setAttribute('data-hud-title', titleVal);
+          el.removeAttribute('title');
+        }
+      }
+    };
+
+    document.addEventListener('mouseover', handleSuppressNativeTitle, { capture: true, passive: true });
+    document.addEventListener('pointerover', handleSuppressNativeTitle as any, { capture: true, passive: true });
+
+    return () => {
+      document.removeEventListener('mouseover', handleSuppressNativeTitle, { capture: true } as any);
+      document.removeEventListener('pointerover', handleSuppressNativeTitle as any, { capture: true } as any);
+    };
+  }, []);
+
   // Resolves element explanation from registry, attributes, or semantic tags
   const resolveExplanation = (el: HTMLElement): ExplanationEntry | null => {
     // 1. Direct explicit data-explain attributes
@@ -354,7 +376,15 @@ export const SideFloatingInspector: React.FC = () => {
     const isTab = el.getAttribute('role') === 'tab';
 
     if (isButton || isSelect || isInput || isSlider || isTab) {
-      const text = (el.textContent || el.getAttribute('title') || el.getAttribute('aria-label') || '').trim();
+      const text = (
+        el.dataset.explainTitle ||
+        el.getAttribute('data-explain-title') ||
+        el.getAttribute('data-hud-title') ||
+        el.getAttribute('title') ||
+        el.getAttribute('aria-label') ||
+        el.textContent ||
+        ''
+      ).trim();
       const titleClean = text.slice(0, 40) || (isButton ? 'Interactive Action Control' : 'Interactive Selector');
       
       let cat: ExplanationEntry['category'] = 'SELECTABLE';
@@ -523,64 +553,157 @@ export const SideFloatingInspector: React.FC = () => {
 
   const { entry, targetRect, parentEntry, parentRect, isDualCallout } = hoverInfo;
 
-  // Compute Card 1 (Sub-control or Standalone Element)
+  // Accurate dimensions for Card 1 (Sub-control or Standalone Element)
   const card1Width = 320;
-  const card1Height = 175;
+  const card1Height = 250;
 
-  // Default placement: to the right or left with dogleg line
-  const fitsRight = targetRect.right + card1Width + 30 < window.innerWidth;
-  const card1Left = fitsRight
-    ? targetRect.right + 30
-    : Math.max(16, targetRect.left - card1Width - 30);
-  
-  let card1Top = targetRect.top + targetRect.height / 2 - card1Height / 2;
-  card1Top = Math.max(16, Math.min(window.innerHeight - card1Height - 16, card1Top));
+  // Determine optimal non-colliding placement: 'below' | 'above' | 'right' | 'left'
+  let placement: 'below' | 'above' | 'right' | 'left' = 'right';
 
-  // Anchor dot on element 1
-  const t1AnchorX = fitsRight ? targetRect.right : targetRect.left;
-  const t1AnchorY = targetRect.top + targetRect.height / 2;
+  // If element is in top header/toolbar area (top < 180), place below so it doesn't cover adjacent buttons
+  if (targetRect.top < 180) {
+    if (targetRect.bottom + card1Height + 25 < window.innerHeight) {
+      placement = 'below';
+    } else {
+      placement = targetRect.right + card1Width + 30 < window.innerWidth ? 'right' : 'left';
+    }
+  } else if (targetRect.bottom > window.innerHeight - 260) {
+    // Near bottom of screen -> place above
+    if (targetRect.top - card1Height - 20 > 16) {
+      placement = 'above';
+    } else {
+      placement = targetRect.right + card1Width + 30 < window.innerWidth ? 'right' : 'left';
+    }
+  } else {
+    // Normal vertical placement: side with most space
+    placement = targetRect.right + card1Width + 30 < window.innerWidth ? 'right' : 'left';
+  }
 
-  // Dock connection on Card 1
-  const c1DockX = fitsRight ? card1Left : card1Left + card1Width;
-  const c1DockY = card1Top + 30;
+  let card1Left = 16;
+  let card1Top = 16;
+  let t1AnchorX = 0;
+  let t1AnchorY = 0;
+  let c1DockX = 0;
+  let c1DockY = 0;
+  let k1X = 0;
+  let k1Y = 0;
+  let c1Path = '';
 
-  // Dogleg knee point 1 (45° angle)
-  const k1X = fitsRight ? t1AnchorX + 15 : t1AnchorX - 15;
-  const k1Y = c1DockY;
+  if (placement === 'below') {
+    card1Top = targetRect.bottom + 20;
+    card1Left = Math.max(16, Math.min(window.innerWidth - card1Width - 16, targetRect.left));
+    t1AnchorX = targetRect.left + targetRect.width / 2;
+    t1AnchorY = targetRect.bottom;
+    c1DockX = Math.max(card1Left + 24, Math.min(card1Left + card1Width - 24, t1AnchorX));
+    c1DockY = card1Top;
+    k1X = t1AnchorX;
+    k1Y = targetRect.bottom + 10;
+    c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${k1Y} L ${c1DockX} ${c1DockY}`;
+  } else if (placement === 'above') {
+    card1Top = Math.max(16, targetRect.top - card1Height - 20);
+    card1Left = Math.max(16, Math.min(window.innerWidth - card1Width - 16, targetRect.left));
+    t1AnchorX = targetRect.left + targetRect.width / 2;
+    t1AnchorY = targetRect.top;
+    c1DockX = Math.max(card1Left + 24, Math.min(card1Left + card1Width - 24, t1AnchorX));
+    c1DockY = card1Top + card1Height;
+    k1X = t1AnchorX;
+    k1Y = targetRect.top - 10;
+    c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${k1Y} L ${c1DockX} ${c1DockY}`;
+  } else if (placement === 'right') {
+    card1Left = targetRect.right + 30;
+    card1Top = Math.max(16, Math.min(window.innerHeight - card1Height - 16, targetRect.top + targetRect.height / 2 - card1Height / 2));
+    t1AnchorX = targetRect.right;
+    t1AnchorY = targetRect.top + targetRect.height / 2;
+    c1DockX = card1Left;
+    c1DockY = card1Top + 30;
+    k1X = t1AnchorX + 15;
+    k1Y = c1DockY;
+    c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`;
+  } else {
+    // left
+    card1Left = Math.max(16, targetRect.left - card1Width - 30);
+    card1Top = Math.max(16, Math.min(window.innerHeight - card1Height - 16, targetRect.top + targetRect.height / 2 - card1Height / 2));
+    t1AnchorX = targetRect.left;
+    t1AnchorY = targetRect.top + targetRect.height / 2;
+    c1DockX = card1Left + card1Width;
+    c1DockY = card1Top + 30;
+    k1X = t1AnchorX - 15;
+    k1Y = c1DockY;
+    c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`;
+  }
 
   // Compute Card 2 (Parent Scrubber Callout in Dual Mode)
   let parentCardLeft = 0;
   let parentCardTop = 0;
+  const pCardWidth = 330;
+  const pCardHeight = 240;
   let pAnchorX = 0;
   let pAnchorY = 0;
   let pDockX = 0;
   let pDockY = 0;
-  let pKneeX = 0;
   let pKneeY = 0;
 
   if (isDualCallout && parentRect && parentEntry) {
-    // Parent Card sits in clear space ABOVE / LEFT of the Scrubber (as in user's diagram)
-    const pCardWidth = 330;
-    const pCardHeight = 170;
-
+    // Position Parent Card in clear space relative to parent widget
     parentCardLeft = Math.max(16, parentRect.left + 20);
     parentCardTop = Math.max(16, parentRect.top - pCardHeight - 24);
 
-    // If too close to top of viewport, dock to top-left corner
     if (parentCardTop < 20) {
-      parentCardTop = parentRect.bottom + 20;
+      parentCardTop = parentRect.bottom + 24;
+    }
+
+    // STRICT ANTI-OVERLAY RESOLVER:
+    // Check if Card 1 and Card 2 overlap each other
+    const overlapX = (card1Left < parentCardLeft + pCardWidth + 16) && (card1Left + card1Width + 16 > parentCardLeft);
+    const overlapY = (card1Top < parentCardTop + pCardHeight + 16) && (card1Top + card1Height + 16 > parentCardTop);
+
+    if (overlapX && overlapY) {
+      // Offset Card 1 horizontally if space permits, otherwise vertically
+      if (parentCardLeft + pCardWidth + card1Width + 32 < window.innerWidth) {
+        card1Left = parentCardLeft + pCardWidth + 24;
+      } else if (parentCardLeft - card1Width - 24 >= 16) {
+        card1Left = parentCardLeft - card1Width - 24;
+      } else {
+        if (parentCardTop < card1Top) {
+          card1Top = Math.min(window.innerHeight - card1Height - 16, parentCardTop + pCardHeight + 24);
+        } else {
+          card1Top = Math.max(16, parentCardTop - card1Height - 24);
+        }
+      }
+
+      // Recompute dock and path after adjustment
+      if (placement === 'below') {
+        c1DockX = Math.max(card1Left + 24, Math.min(card1Left + card1Width - 24, t1AnchorX));
+        c1DockY = card1Top;
+        c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${k1Y} L ${c1DockX} ${c1DockY}`;
+      } else if (placement === 'above') {
+        c1DockX = Math.max(card1Left + 24, Math.min(card1Left + card1Width - 24, t1AnchorX));
+        c1DockY = card1Top + card1Height;
+        c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${k1Y} L ${c1DockX} ${c1DockY}`;
+      } else if (placement === 'right') {
+        c1DockX = card1Left;
+        c1DockY = card1Top + 30;
+        k1X = t1AnchorX + 15;
+        k1Y = c1DockY;
+        c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`;
+      } else {
+        c1DockX = card1Left + card1Width;
+        c1DockY = card1Top + 30;
+        k1X = t1AnchorX - 15;
+        k1Y = c1DockY;
+        c1Path = `M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`;
+      }
     }
 
     // Anchor on Scrubber timeline track
     pAnchorX = parentRect.left + parentRect.width * 0.45;
     pAnchorY = parentRect.top + 45;
 
-    // Dock on bottom of Parent Card
+    // Dock on bottom/top of Parent Card
     pDockX = parentCardLeft + pCardWidth / 2;
     pDockY = parentCardTop < parentRect.top ? parentCardTop + pCardHeight : parentCardTop;
 
-    pKneeX = pDockX;
-    pKneeY = pAnchorY - 20;
+    pKneeY = parentCardTop < parentRect.top ? pAnchorY - 20 : pAnchorY + 20;
   }
 
   return (
@@ -632,7 +755,7 @@ export const SideFloatingInspector: React.FC = () => {
         <g filter="url(#hudLaserBloom)">
           {/* Base Glowing Dogleg Path */}
           <path
-            d={`M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`}
+            d={c1Path}
             fill="none"
             stroke="url(#hudLeaderGradCyan)"
             strokeWidth="2"
@@ -641,7 +764,7 @@ export const SideFloatingInspector: React.FC = () => {
 
           {/* High-Energy Animated Laser Tracer Pulse flowing along the line */}
           <path
-            d={`M ${t1AnchorX} ${t1AnchorY} L ${k1X} ${k1Y} L ${c1DockX} ${c1DockY}`}
+            d={c1Path}
             fill="none"
             stroke="url(#hudLaserPulseCyan)"
             strokeWidth="3.5"
@@ -678,7 +801,7 @@ export const SideFloatingInspector: React.FC = () => {
 
             {/* Rangefinder Telemetry readout tag */}
             <text
-              x={fitsRight ? 20 : -95}
+              x={placement === 'left' ? -95 : 20}
               y="-7"
               fill="#00f0ff"
               fontSize="8.5"
@@ -689,7 +812,7 @@ export const SideFloatingInspector: React.FC = () => {
               LOCK // AZ:45°
             </text>
             <text
-              x={fitsRight ? 20 : -95}
+              x={placement === 'left' ? -95 : 20}
               y="5"
               fill="#38bdf8"
               fontSize="7.5"
@@ -709,7 +832,7 @@ export const SideFloatingInspector: React.FC = () => {
           <g filter="url(#hudLaserBloom)">
             {/* Amber Glowing Dogleg Path */}
             <path
-              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pDockY}`}
+              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pKneeY} L ${pDockX} ${pDockY}`}
               fill="none"
               stroke="url(#hudLeaderGradAmber)"
               strokeWidth="2.2"
@@ -717,7 +840,7 @@ export const SideFloatingInspector: React.FC = () => {
             />
             {/* Amber Animated Laser Tracer Pulse */}
             <path
-              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pDockY}`}
+              d={`M ${pAnchorX} ${pAnchorY} L ${pAnchorX} ${pKneeY} L ${pDockX} ${pKneeY} L ${pDockX} ${pDockY}`}
               fill="none"
               stroke="url(#hudLaserPulseAmber)"
               strokeWidth="3.8"
